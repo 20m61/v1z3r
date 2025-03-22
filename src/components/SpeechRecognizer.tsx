@@ -10,6 +10,7 @@ interface SpeechRecognitionEvent extends Event {
 interface SpeechRecognitionResult {
   isFinal: boolean;
   [index: number]: SpeechRecognitionAlternative;
+  length?: number; // TypeScript エラー対策
 }
 
 interface SpeechRecognitionAlternative {
@@ -106,14 +107,19 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     let bestConfidence = 0;
     
     // 各候補から最も信頼性の高いものを選択
-    for (let i = 0; i < result.length; i++) {
-      const { transcript, confidence } = result[i];
-      const filteredText = filterNoise(transcript.trim());
-      
-      // 信頼性が高く、ノイズではない場合に採用
-      if (filteredText && confidence > bestConfidence && confidence >= minConfidence) {
-        bestText = filteredText;
-        bestConfidence = confidence;
+    // SpeechRecognitionResultの型定義に問題があるため、安全に処理する
+    for (let i = 0; i < (Object.keys(result).length - 1); i++) {
+      try {
+        const { transcript, confidence } = result[i];
+        const filteredText = filterNoise(transcript.trim());
+        
+        // 信頼性が高く、ノイズではない場合に採用
+        if (filteredText && confidence > bestConfidence && confidence >= minConfidence) {
+          bestText = filteredText;
+          bestConfidence = confidence;
+        }
+      } catch (e) {
+        console.error('Error processing recognition result:', e);
       }
     }
     
