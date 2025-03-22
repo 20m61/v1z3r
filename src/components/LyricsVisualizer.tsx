@@ -7,6 +7,11 @@ interface LyricsVisualizerProps {
   className?: string;
 }
 
+// カスタムCSS変数のための型定義拡張
+type CSSPropertiesWithVars = React.CSSProperties & {
+  [key: `--${string}`]: string | number;
+};
+
 const LyricsVisualizer: React.FC<LyricsVisualizerProps> = ({ audioData, className = '' }) => {
   const {
     isLyricsEnabled,
@@ -139,15 +144,13 @@ const LyricsVisualizer: React.FC<LyricsVisualizerProps> = ({ audioData, classNam
   };
 
   // カスタムアニメーションスタイルの計算
-  const getAnimationStyle = (animation: AnimationType) => {
+  const getAnimationStyle = (animation: AnimationType): CSSPropertiesWithVars => {
     // ベーススタイル
-    const baseStyle: React.CSSProperties & { [key: string]: string | number } = {
+    const baseStyle: CSSPropertiesWithVars = {
       color: lyricsColor,
       opacity: getOpacityFromConfidence(lyricsConfidence),
+      ['--glow-color']: `${lyricsColor}80`, // 半透明のカラー（グロー効果用）
     };
-    
-    // CSSカスタムプロパティを追加
-    baseStyle['--glow-color'] = `${lyricsColor}80`; // 半透明のカラー（グロー効果用）
     
     // 音量に応じてアニメーション強度を調整
     if (animation === 'glow' || animation === 'bounce') {
