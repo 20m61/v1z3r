@@ -1,0 +1,119 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem;
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  background: linear-gradient(to right, #ff3366, #00ccff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.description {
+  font-size: 1.2rem;
+  color: #aaaaaa;
+}
+
+.visualizer {
+  flex: 1;
+  width: 100%;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #777777;
+}
+
+.startButton {
+  margin-top: 1rem;
+  padding: 0.75rem 2rem;
+  background: linear-gradient(to right, #ff3366, #00ccff);
+  border: none;
+  border-radius: 50px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.startButton:hover {
+  transform: scale(1.05);
+}
+
+.controls {
+  width: 100%;
+}
+
+.controlPanel {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.controlPanel h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #ffffff;
+}
+
+.controlGroup {
+  margin-bottom: 1.5rem;
+}
+
+.controlGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #aaaaaa;
+}
+
+.controlGroup select {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #2a2a2a;
+  border: 1px solid #444444;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.colorButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.colorButtons button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.colorButtons button:hover {
+  transform: scale(1.1);
+}
