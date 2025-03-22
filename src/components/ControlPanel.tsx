@@ -6,6 +6,7 @@ import Button from './ui/Button';
 import Slider from './ui/Slider';
 import ColorPicker from './ui/ColorPicker';
 import Tabs from './ui/Tabs';
+import LayerManager from './LayerManager';
 
 interface ControlPanelProps {
   className?: string;
@@ -110,8 +111,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
       icon: <FiLayers className="w-4 h-4" />,
       content: (
         <div className="space-y-4">
-          <p className="text-gray-400 text-sm">レイヤーの管理機能は開発中です</p>
-          {/* レイヤー管理UIをここに追加予定 */}
+          <LayerManager />
         </div>
       ),
     },
