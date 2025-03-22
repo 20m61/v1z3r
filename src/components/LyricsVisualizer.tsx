@@ -80,13 +80,15 @@ const LyricsVisualizer: React.FC<LyricsVisualizerProps> = ({ audioData, classNam
   };
 
   // カスタムアニメーションスタイルの計算
-  const getAnimationStyle = (animation: AnimationType): React.CSSProperties => {
-    const baseStyle: React.CSSProperties = {
+  const getAnimationStyle = (animation: AnimationType) => {
+    const baseStyle: React.CSSProperties & { [key: string]: string | number } = {
       // カラーテーマを反映
-      '--glow-color': `${lyricsColor}80`, // 半透明のカラー（グロー効果用）
       color: lyricsColor,
       opacity: getOpacityFromConfidence(lyricsConfidence),
     };
+    
+    // CSSカスタムプロパティとして追加
+    baseStyle['--glow-color'] = `${lyricsColor}80`; // 半透明のカラー（グロー効果用）
     
     // 音量に応じてアニメーション強度を調整
     if (animation === 'glow' || animation === 'bounce') {
