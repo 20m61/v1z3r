@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import styles from '@/styles/VisualEffects.module.css';
+import { EffectType } from '@/store/visualizerStore';
 
 interface VisualEffectsProps {
   audioData?: Uint8Array;
-  effectType: 'waveform' | 'particles' | 'spectrum';
+  effectType: EffectType;
   colorTheme: string;
 }
 
@@ -40,6 +41,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = ({
 
       // オーディオデータがある場合のみ描画
       if (audioData && audioData.length > 0) {
+        // effectTypeに応じた描画処理
         switch (effectType) {
           case 'waveform':
             drawWaveform(ctx, canvas, audioData, colorTheme);
@@ -190,6 +192,11 @@ const VisualEffects: React.FC<VisualEffectsProps> = ({
     ctx.lineWidth = 2;
     ctx.stroke();
   };
+
+  // effectTypeが'lyrics'または'camera'の場合は何も描画しない
+  if (effectType === 'lyrics' || effectType === 'camera') {
+    return null;
+  }
 
   return <canvas ref={canvasRef} className={styles.canvas} />;
 };
