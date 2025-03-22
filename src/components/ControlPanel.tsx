@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiSettings, FiLayers, FiSave, FiFolder, FiMic, FiVideo, FiMaximize, FiChevronUp, FiChevronDown, FiMusic } from 'react-icons/fi';
 import { useVisualizerStore, EffectType } from '@/store/visualizerStore';
@@ -17,6 +17,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
+  const [activeTab, setActiveTab] = useState('effects');
 
   // Zustand ストアからステートと関数を取得
   const {
@@ -41,6 +42,29 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
     setLyricsEnabled
   } = useVisualizerStore();
 
+  // マイクやカメラの変更を追跡
+  useEffect(() => {
+    const observer = new PermissionStatus();
+    
+    // マイクやカメラの権限変更を監視（ブラウザがサポートしている場合）
+    if (navigator.permissions) {
+      // マイクの権限変更を監視
+      try {
+        navigator.permissions.query({ name: 'microphone' as PermissionName })
+          .then((status) => {
+            status.onchange = () => {
+              if (status.state === 'denied' && isMicrophoneEnabled) {
+                setMicrophoneEnabled(false);
+              }
+            };
+          })
+          .catch(err => console.warn('マイク権限の確認中にエラー:', err));
+      } catch (e) {
+        console.warn('マイク権限の確認はこのブラウザでサポートされていません');
+      }
+    }
+  }, []);
+
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
@@ -55,6 +79,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
       setNewPresetName('');
       setShowPresetModal(false);
     }
+  };
+
+  // タブ変更時のハンドラ
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
   };
 
   // 効果タイプのオプション
@@ -186,7 +215,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
 
   return (
     <motion.div
-      className={`fixed bottom-0 left-0 right-0 bg-v1z3r-darker border-t border-gray-800 transition-all ${className}`}
+      className={`fixed bottom-0 left-0 right-0 bg-v1z3r-darker border-t border-gray-800 transition-all z-50 ${className}`}
       animate={{ height: isCollapsed ? '40px' : 'auto' }}
       initial={false}
     >
@@ -236,7 +265,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
 
       {!isCollapsed && (
         <div className="p-4">
-          <Tabs tabs={tabs} />
+          <Tabs tabs={tabs} onChange={handleTabChange} defaultTabId={activeTab} />
         </div>
       )}
 
