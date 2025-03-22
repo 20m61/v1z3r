@@ -19,7 +19,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.createContext('2d');
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const resize = () => {
