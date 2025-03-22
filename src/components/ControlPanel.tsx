@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiSettings, FiLayers, FiSave, FiFolder, FiMic, FiVideo, FiMaximize, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { FiSettings, FiLayers, FiSave, FiFolder, FiMic, FiVideo, FiMaximize, FiChevronUp, FiChevronDown, FiMusic } from 'react-icons/fi';
 import { useVisualizerStore, EffectType } from '@/store/visualizerStore';
 import Button from './ui/Button';
 import Slider from './ui/Slider';
 import ColorPicker from './ui/ColorPicker';
 import Tabs from './ui/Tabs';
 import LayerManager from './LayerManager';
+import LyricsControl from './LyricsControl';
 
 interface ControlPanelProps {
   className?: string;
@@ -26,6 +27,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
     isMicrophoneEnabled,
     isCameraEnabled,
     isFullscreen,
+    isLyricsEnabled,
     setEffectType,
     setColorTheme,
     setSensitivity,
@@ -35,7 +37,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
     presets,
     savePreset,
     loadPreset,
-    deletePreset
+    deletePreset,
+    setLyricsEnabled
   } = useVisualizerStore();
 
   const toggleCollapse = () => {
@@ -112,6 +115,16 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
       content: (
         <div className="space-y-4">
           <LayerManager />
+        </div>
+      ),
+    },
+    {
+      id: 'lyrics',
+      label: '歌詞',
+      icon: <FiMusic className="w-4 h-4" />,
+      content: (
+        <div className="space-y-4">
+          <LyricsControl />
         </div>
       ),
     },
@@ -194,6 +207,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
             icon={<FiVideo />}
           >
             カメラ
+          </Button>
+          <Button
+            onClick={() => setLyricsEnabled(!isLyricsEnabled)}
+            variant={isLyricsEnabled ? 'primary' : 'outline'}
+            size="sm"
+            icon={<FiMusic />}
+          >
+            歌詞
           </Button>
           <Button
             onClick={toggleFullscreen}
