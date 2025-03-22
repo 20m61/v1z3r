@@ -38,7 +38,7 @@ declare global {
 }
 
 // クライアントサイドでのみSpeechRecognitionを初期化
-const getSpeechRecognition = () => {
+const getSpeechRecognition = (): SpeechRecognitionType | undefined => {
   if (typeof window === 'undefined') return undefined;
   return window.SpeechRecognition || window.webkitSpeechRecognition;
 };
@@ -73,7 +73,6 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     isLyricsEnabled,
     updateCurrentLyrics,
     updateNextLyrics,
-    lyricsConfidence,
   } = useVisualizerStore();
 
   // 音声データのノイズフィルタリング
@@ -123,7 +122,10 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
   
   // Web Speech APIの初期化と設定
   const initializeRecognition = () => {
-    if (recognitionInitializedRef.current) return;
+    if (recognitionInitializedRef.current) return true;
+    
+    // サーバーサイドレンダリング対策
+    if (typeof window === 'undefined') return false;
     
     const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) {
@@ -207,6 +209,11 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     }
     
     try {
+      // 認識オブジェクトの存在確認
+      if (!recognitionRef.current) {
+        if (!initializeRecognition() || !recognitionRef.current) return;
+      }
+      
       recognitionRef.current.start();
       setIsListening(true);
       setError(null);
@@ -229,7 +236,8 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
   
   // コンポーネントがマウントされたときに初期化
   useEffect(() => {
-    if (typeof window === 'undefined') return; // SSR対応
+    // SSR対応
+    if (typeof window === 'undefined') return; 
     
     // 初回マウント時にのみ初期化を行う
     if (!recognitionInitializedRef.current) {
@@ -241,6 +249,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
       }
     }
     
+    // コンポーネントのクリーンアップ
     return () => {
       if (isListening && recognitionRef.current) {
         try {
@@ -254,7 +263,8 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
   
   // isLyricsEnabledの変更を監視
   useEffect(() => {
-    if (typeof window === 'undefined') return; // SSR対応
+    // SSR対応
+    if (typeof window === 'undefined') return;
     
     if (isLyricsEnabled && !isListening && isSupported) {
       startListening();
