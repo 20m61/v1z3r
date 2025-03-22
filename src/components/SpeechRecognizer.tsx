@@ -37,8 +37,11 @@ declare global {
   }
 }
 
-// SpeechRecognitionのブラウザ互換性対応
-const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : undefined;
+// クライアントサイドでのみSpeechRecognitionを初期化
+const getSpeechRecognition = () => {
+  if (typeof window === 'undefined') return undefined;
+  return window.SpeechRecognition || window.webkitSpeechRecognition;
+};
 
 interface SpeechRecognizerProps {
   lang?: string;
@@ -64,6 +67,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   const recognitionRef = useRef<any>(null);
+  const recognitionInitializedRef = useRef<boolean>(false);
   
   const {
     isLyricsEnabled,
@@ -116,99 +120,91 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     
     return { text: bestText, confidence: bestConfidence };
   };
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return; // SSR対応
+  
+  // Web Speech APIの初期化と設定
+  const initializeRecognition = () => {
+    if (recognitionInitializedRef.current) return;
     
-    // Web Speech APIのサポート確認
+    const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) {
       setIsSupported(false);
       setError('Speech Recognition API is not supported in this browser.');
-      return;
+      return false;
     }
     
     setIsSupported(true);
     
     // 音声認識インスタンスの作成
-    recognitionRef.current = new SpeechRecognition();
-    const recognition = recognitionRef.current;
-    
-    // 設定
-    recognition.lang = lang;
-    recognition.continuous = continuous;
-    recognition.interimResults = interimResults;
-    recognition.maxAlternatives = maxAlternatives;
-    
-    // 結果イベントのハンドラー
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      if (!isLyricsEnabled) return;
+    try {
+      recognitionRef.current = new SpeechRecognition();
+      const recognition = recognitionRef.current;
       
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
+      // 設定
+      recognition.lang = lang;
+      recognition.continuous = continuous;
+      recognition.interimResults = interimResults;
+      recognition.maxAlternatives = maxAlternatives;
+      
+      // 結果イベントのハンドラー
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        if (!isLyricsEnabled) return;
         
-        if (result.isFinal) {
-          const { text, confidence } = selectBestResult(event.results, i);
-          if (text) {
-            updateCurrentLyrics(text, confidence);
-          }
-        } else {
-          // 暫定的な結果（まだ確定していない発話）
-          const { text } = selectBestResult(event.results, i);
-          if (text) {
-            updateNextLyrics(text);
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          
+          if (result.isFinal) {
+            const { text, confidence } = selectBestResult(event.results, i);
+            if (text) {
+              updateCurrentLyrics(text, confidence);
+            }
+          } else {
+            // 暫定的な結果（まだ確定していない発話）
+            const { text } = selectBestResult(event.results, i);
+            if (text) {
+              updateNextLyrics(text);
+            }
           }
         }
-      }
-    };
-    
-    // エラーハンドラー
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error', event.error);
-      setError(event.error);
-      setIsListening(false);
-    };
-    
-    // 音声認識が終了したときの処理
-    recognition.onend = () => {
-      setIsListening(false);
+      };
       
-      // 継続モードの場合は自動的に再起動
-      if (continuous && isLyricsEnabled) {
-        try {
-          recognition.start();
-          setIsListening(true);
-        } catch (e) {
-          console.error('Failed to restart speech recognition', e);
+      // エラーハンドラー
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        setError(event.error);
+        setIsListening(false);
+      };
+      
+      // 音声認識が終了したときの処理
+      recognition.onend = () => {
+        setIsListening(false);
+        
+        // 継続モードの場合は自動的に再起動
+        if (continuous && isLyricsEnabled) {
+          try {
+            recognition.start();
+            setIsListening(true);
+          } catch (e) {
+            console.error('Failed to restart speech recognition', e);
+          }
         }
-      }
-    };
-    
-    // コンポーネントがマウントされたときに自動起動
-    if (autoStart && isLyricsEnabled) {
-      try {
-        recognition.start();
-        setIsListening(true);
-      } catch (e) {
-        console.error('Failed to start speech recognition', e);
-      }
+      };
+      
+      recognitionInitializedRef.current = true;
+      return true;
+    } catch (e) {
+      console.error('Failed to initialize speech recognition', e);
+      setError('Failed to initialize speech recognition');
+      return false;
     }
-    
-    // クリーンアップ
-    return () => {
-      if (recognition) {
-        try {
-          recognition.stop();
-        } catch (e) {
-          // すでに停止している場合のエラーを無視
-        }
-      }
-    };
-  // isLyricsEnabledが変更されたときにも再評価
-  }, [lang, continuous, autoStart, interimResults, maxAlternatives, noiseFilter, minConfidence, isLyricsEnabled]);
-  
+  };
+
   // 外部からの手動制御用
   const startListening = () => {
-    if (!isSupported || isListening || !recognitionRef.current) return;
+    if (!isSupported || isListening) return;
+    
+    if (!recognitionInitializedRef.current) {
+      if (!initializeRecognition()) return;
+    }
     
     try {
       recognitionRef.current.start();
@@ -231,8 +227,35 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     }
   };
   
+  // コンポーネントがマウントされたときに初期化
+  useEffect(() => {
+    if (typeof window === 'undefined') return; // SSR対応
+    
+    // 初回マウント時にのみ初期化を行う
+    if (!recognitionInitializedRef.current) {
+      const initialized = initializeRecognition();
+      
+      // 初期化成功 & 自動開始設定 & 歌詞機能有効なら開始
+      if (initialized && autoStart && isLyricsEnabled) {
+        startListening();
+      }
+    }
+    
+    return () => {
+      if (isListening && recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // すでに停止している場合のエラーを無視
+        }
+      }
+    };
+  }, []);
+  
   // isLyricsEnabledの変更を監視
   useEffect(() => {
+    if (typeof window === 'undefined') return; // SSR対応
+    
     if (isLyricsEnabled && !isListening && isSupported) {
       startListening();
     } else if (!isLyricsEnabled && isListening) {
