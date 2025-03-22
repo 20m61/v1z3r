@@ -24,7 +24,21 @@ interface SpeechRecognitionResultList {
 }
 
 // Web Speech APIのブラウザ間の差異を吸収
-const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+interface SpeechRecognitionType {
+  new (): any;
+  prototype: any;
+}
+
+// Window型を拡張
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionType;
+    webkitSpeechRecognition?: SpeechRecognitionType;
+  }
+}
+
+// SpeechRecognitionのブラウザ互換性対応
+const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : undefined;
 
 interface SpeechRecognizerProps {
   lang?: string;
@@ -104,6 +118,8 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
   };
 
   useEffect(() => {
+    if (typeof window === 'undefined') return; // SSR対応
+    
     // Web Speech APIのサポート確認
     if (!SpeechRecognition) {
       setIsSupported(false);
@@ -180,7 +196,11 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     // クリーンアップ
     return () => {
       if (recognition) {
-        recognition.stop();
+        try {
+          recognition.stop();
+        } catch (e) {
+          // すでに停止している場合のエラーを無視
+        }
       }
     };
   // isLyricsEnabledが変更されたときにも再評価
@@ -218,7 +238,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     } else if (!isLyricsEnabled && isListening) {
       stopListening();
     }
-  }, [isLyricsEnabled]);
+  }, [isLyricsEnabled, isListening, isSupported]);
   
   // UI表示なし（バックグラウンドで動作）
   return null;
