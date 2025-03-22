@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './fonts.css';
 
 * {
   box-sizing: border-box;
@@ -74,6 +75,24 @@ a {
   
   .tooltip {
     @apply absolute invisible group-hover:visible bg-v1z3r-darker text-v1z3r-light p-2 rounded text-sm z-50 w-max;
+  }
+
+  /* 歌詞表示用スタイル */
+  .lyrics-container {
+    @apply fixed inset-0 flex items-center justify-center pointer-events-none z-30 overflow-hidden;
+  }
+
+  .lyrics-text {
+    @apply text-center max-w-4xl mx-auto px-6 text-white;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  }
+
+  .lyrics-current {
+    @apply text-4xl md:text-6xl font-bold mb-4;
+  }
+
+  .lyrics-next {
+    @apply text-xl md:text-2xl opacity-60;
   }
 }
 
