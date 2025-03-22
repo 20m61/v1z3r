@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 
 export type EffectType = 'waveform' | 'particles' | 'spectrum' | 'lyrics' | 'camera';
+export type FontType = 'teko' | 'prompt' | 'audiowide' | 'russo' | 'orbitron';
+export type AnimationType = 'glow' | 'pulse' | 'bounce' | 'fade' | 'none';
+
 export type PresetType = {
   id: string;
   name: string;
@@ -18,6 +21,14 @@ export type LayerType = {
   colorTheme: string;
   sensitivity: number;
   zIndex: number;
+};
+
+export type LyricsLineType = {
+  id: string;
+  text: string;
+  timestamp: number;
+  duration?: number;
+  confidence?: number;
 };
 
 interface VisualizerState {
@@ -40,6 +51,16 @@ interface VisualizerState {
   isCameraEnabled: boolean;
   isFullscreen: boolean;
   
+  // 歌詞認識関連
+  isLyricsEnabled: boolean;
+  currentLyrics: string;
+  nextLyrics: string;
+  lyricsHistory: LyricsLineType[];
+  lyricsConfidence: number;
+  lyricsFont: FontType;
+  lyricsAnimation: AnimationType;
+  lyricsColor: string;
+  
   // アクション
   setEffectType: (type: EffectType) => void;
   setColorTheme: (color: string) => void;
@@ -58,6 +79,15 @@ interface VisualizerState {
   savePreset: (name: string) => void;
   loadPreset: (id: string) => void;
   deletePreset: (id: string) => void;
+  
+  // 歌詞関連のアクション
+  setLyricsEnabled: (enabled: boolean) => void;
+  updateCurrentLyrics: (text: string, confidence?: number) => void;
+  updateNextLyrics: (text: string) => void;
+  setLyricsFont: (font: FontType) => void;
+  setLyricsAnimation: (animation: AnimationType) => void;
+  setLyricsColor: (color: string) => void;
+  clearLyricsHistory: () => void;
   
   // その他の機能トグル
   toggleCamera: () => void;
@@ -90,6 +120,16 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   
   isCameraEnabled: false,
   isFullscreen: false,
+  
+  // 歌詞認識関連の初期状態
+  isLyricsEnabled: false,
+  currentLyrics: "",
+  nextLyrics: "",
+  lyricsHistory: [],
+  lyricsConfidence: 0,
+  lyricsFont: 'teko',
+  lyricsAnimation: 'glow',
+  lyricsColor: '#ffffff',
   
   // アクション
   setEffectType: (type) => set({ currentEffectType: type }),
@@ -214,6 +254,45 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
       currentPresetId: id === currentId ? null : currentId
     });
   },
+  
+  // 歌詞関連のアクション
+  setLyricsEnabled: (enabled) => set({ isLyricsEnabled: enabled }),
+  
+  updateCurrentLyrics: (text, confidence = 0) => {
+    // 空の場合は更新しない
+    if (!text.trim()) return;
+    
+    const currentTime = Date.now();
+    const newLyricsLine: LyricsLineType = {
+      id: `lyrics-${currentTime}`,
+      text,
+      timestamp: currentTime,
+      confidence
+    };
+    
+    // 重複しないように同じ内容の歌詞は追加しない
+    const { lyricsHistory, currentLyrics } = get();
+    if (currentLyrics === text) return;
+    
+    // 履歴に追加して、最大50個まで保持
+    const updatedHistory = [newLyricsLine, ...lyricsHistory].slice(0, 50);
+    
+    set({
+      currentLyrics: text,
+      lyricsHistory: updatedHistory,
+      lyricsConfidence: confidence
+    });
+  },
+  
+  updateNextLyrics: (text) => set({ nextLyrics: text }),
+  
+  setLyricsFont: (font) => set({ lyricsFont: font }),
+  
+  setLyricsAnimation: (animation) => set({ lyricsAnimation: animation }),
+  
+  setLyricsColor: (color) => set({ lyricsColor: color }),
+  
+  clearLyricsHistory: () => set({ lyricsHistory: [], currentLyrics: "", nextLyrics: "" }),
   
   // その他の機能トグル
   toggleCamera: () => set(state => ({ isCameraEnabled: !state.isCameraEnabled })),
