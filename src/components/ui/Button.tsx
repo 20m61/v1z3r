@@ -42,15 +42,15 @@ const Button: React.FC<ButtonProps> = ({
   
   const buttonClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${activeClasses} ${widthClass} ${className || ''}`;
   
+  // Framer Motionのmotion.buttonを使用する代わりに、通常のbuttonを使用
   return (
-    <motion.button
+    <button
       className={buttonClasses}
-      whileTap={{ scale: 0.97 }}
       {...props}
     >
       {icon && <span className="mr-2">{icon}</span>}
       {children}
-    </motion.button>
+    </button>
   );
 };
 
