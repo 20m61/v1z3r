@@ -12,6 +12,7 @@ import VisualEffects from './components/VisualEffects'
 import AudioAnalyzer from './components/AudioAnalyzer'
 import ControlPanel from './components/ControlPanel'
 import { useVisualizerStore } from './store/visualizerStore'
+import { startPerformanceMonitoring, getCurrentFps, getCurrentMemoryUsage } from './utils/performance'
 
 interface VJApplicationProps {
   config?: {
@@ -73,17 +74,25 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
         
         setIsInitialized(true)
         
-        // Start performance monitoring
+        // Start real performance monitoring
+        const stopPerformanceMonitoring = startPerformanceMonitoring()
+        
         const interval = setInterval(() => {
+          const currentFps = getCurrentFps()
+          const memoryUsage = getCurrentMemoryUsage()
+          
           setPerformanceMetrics({
-            fps: Math.round(55 + Math.random() * 10), // Simulated FPS 55-65
-            frameTime: 16 + Math.random() * 4, // Simulated frame time 16-20ms
-            memoryUsage: Math.round(40 + Math.random() * 20), // Simulated memory 40-60%
+            fps: currentFps || 60, // Use real FPS or fallback to 60
+            frameTime: currentFps > 0 ? (1000 / currentFps) : 16.67, // Calculate frame time from FPS
+            memoryUsage: memoryUsage ? Math.round((memoryUsage / 256) * 100) : 45, // Convert MB to percentage (assume 256MB baseline)
             lastUpdated: Date.now()
           })
         }, 1000)
 
-        return () => clearInterval(interval)
+        return () => {
+          clearInterval(interval)
+          stopPerformanceMonitoring()
+        }
       } catch (error) {
         console.error('Failed to initialize VJ Application:', error)
         setStatus(prev => ({ 

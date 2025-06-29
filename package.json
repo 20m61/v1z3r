@@ -7,7 +7,8 @@
     "modules/*"
   ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
+    "dev:auto": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
