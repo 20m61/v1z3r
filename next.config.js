@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Enable API routes in development, use export for production
-  ...(process.env.NODE_ENV === 'production' && {
+  // Conditional configuration based on environment
+  ...(process.env.EXPORT_MODE === 'true' && {
     output: 'export',
     basePath: '/v1z3r',
     assetPrefix: '/v1z3r/',
