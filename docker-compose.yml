@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # VJ Application Main Service
+  v1z3r-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+        - DOCKER_BUILD=true
+    container_name: v1z3r-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DOCKER_BUILD=true
+      - NEXT_TELEMETRY_DISABLED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.v1z3r.rule=Host(`localhost`)"
+      - "traefik.http.services.v1z3r.loadbalancer.server.port=3000"
+
+  # Development hot-reload service
+  v1z3r-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: v1z3r-dev
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
+    profiles:
+      - dev
+
+  # Nginx reverse proxy for production-like environment
+  nginx:
+    image: nginx:alpine
+    container_name: v1z3r-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - v1z3r-app
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Redis for session storage (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: v1z3r-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    profiles:
+      - with-redis
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    name: v1z3r-network

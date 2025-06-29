@@ -8,6 +8,10 @@ const nextConfig = {
     assetPrefix: '/v1z3r/',
     trailingSlash: true,
   }),
+  // Docker standalone output for production
+  ...(process.env.NODE_ENV === 'production' && process.env.DOCKER_BUILD === 'true' && {
+    output: 'standalone',
+  }),
   images: { unoptimized: true },
   
   // Exclude modules and infrastructure from compilation

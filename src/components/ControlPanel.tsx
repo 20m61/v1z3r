@@ -44,11 +44,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
     setLyricsEnabled
   } = useVisualizerStore();
 
-  // マイクやカメラの変更を追跡
+  // マイクやカメラの権限変更を監視
   useEffect(() => {
-    const observer = new PermissionStatus();
-    
-    // マイクやカメラの権限変更を監視（ブラウザがサポートしている場合）
+    // ブラウザがPermissions APIをサポートしている場合のみ実行
     if (navigator.permissions) {
       // マイクの権限変更を監視
       try {
@@ -65,7 +63,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
         console.warn('マイク権限の確認はこのブラウザでサポートされていません');
       }
     }
-  }, []);
+  }, [isMicrophoneEnabled, setMicrophoneEnabled]);
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
