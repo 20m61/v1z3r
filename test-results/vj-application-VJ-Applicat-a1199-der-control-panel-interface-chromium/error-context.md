@@ -39,7 +39,6 @@
   - textbox: "#00ccff"
   - text: 感度 1.0x
   - slider: "1"
-  - text: "FPS: 60 Frame Time: 16.67ms Memory: 45%"
-- img
+  - text: "FPS: 75 Frame Time: 13.33ms Memory: 32%"
 - alert
 ```

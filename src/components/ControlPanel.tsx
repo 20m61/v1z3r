@@ -240,6 +240,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
 
   return (
     <motion.div
+      data-testid="control-panel"
       className={`fixed bottom-0 left-0 right-0 bg-v1z3r-darker border-t border-gray-800 transition-all z-50 ${className}`}
       animate={{ height: isCollapsed ? '40px' : 'auto' }}
       initial={false}
