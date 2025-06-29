@@ -1,0 +1,66 @@
+
+> v1z3r@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.30
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1601ms
+ ○ Compiling / ...
+ ✓ Compiled / in 5s (716 modules)
+ ✓ Compiled in 430ms (716 modules)
+Do not add stylesheets using next/head (see <link rel="stylesheet"> tag with href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500;600;700&family=Prompt:wght@200;300;400;500;600;700&family=Audiowide&family=Russo+One&family=Orbitron:wght@400;500;600;700;800;900&display=swap"). Use Document instead. 
+See more info here: https://nextjs.org/docs/messages/no-stylesheets-in-head-component
+ GET / 200 in 5925ms
+ ✓ Compiled in 189ms (214 modules)
+ ✓ Compiled in 445ms (267 modules)
+ ✓ Compiled / in 396ms (716 modules)
+ GET / 200 in 553ms
+ GET / 200 in 16ms
+ GET / 200 in 33ms
+ GET / 200 in 61ms
+ GET / 200 in 73ms
+ GET / 200 in 16ms
+ GET / 200 in 15ms
+ GET / 200 in 10ms
+ GET / 200 in 20ms
+ GET / 200 in 17ms
+ GET / 200 in 31ms
+ GET / 200 in 27ms
+ GET / 200 in 38ms
+ ✓ Compiled in 330ms (635 modules)
+ ✓ Compiled in 452ms (635 modules)
+ ✓ Compiled in 396ms (635 modules)
+ ✓ Compiled in 314ms (635 modules)
+ ✓ Compiled in 364ms (635 modules)
+ ✓ Compiled in 380ms (635 modules)
+ ✓ Compiled in 210ms (635 modules)
+ ✓ Compiled in 234ms (635 modules)
+ ✓ Compiled in 184ms (635 modules)
+ ✓ Compiled in 287ms (635 modules)
+ ✓ Compiled in 237ms (635 modules)
+ ⨯ API Routes cannot be used with "output: export". See more info here: https://nextjs.org/docs/advanced-features/static-html-export
+ ✓ Compiled in 211ms (635 modules)
+ ✓ Compiled in 173ms (635 modules)
+ ⨯ API Routes cannot be used with "output: export". See more info here: https://nextjs.org/docs/advanced-features/static-html-export
+ ⨯ API Routes cannot be used with "output: export". See more info here: https://nextjs.org/docs/advanced-features/static-html-export
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+  ▲ Next.js 14.2.30
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1626ms
+ ○ Compiling /api/mcp/github ...
+ ✓ Compiled /api/mcp/github in 678ms (69 modules)
+ GET /api/mcp/github?owner=octocat&repo=Hello-World 500 in 773ms
+ ✓ Compiled in 171ms (53 modules)
+ ✓ Compiled in 50ms (53 modules)
+ ✓ Compiled in 46ms (53 modules)
+ ✓ Compiled in 70ms (53 modules)
+ ✓ Compiled in 335ms (54 modules)
+ ✓ Compiled in 77ms (54 modules)
+ ✓ Compiled in 69ms (54 modules)
+ ✓ Compiled in 83ms (54 modules)
+ ✓ Compiled in 81ms (54 modules)
+ ✓ Compiled in 52ms (54 modules)

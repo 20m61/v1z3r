@@ -8,6 +8,7 @@ import ColorPicker from './ui/ColorPicker';
 import Tabs from './ui/Tabs';
 import LayerManager from './LayerManager';
 import LyricsControl from './LyricsControl';
+import MCPControl from './MCPControl';
 
 interface ControlPanelProps {
   className?: string;
@@ -208,6 +209,16 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
               ))}
             </div>
           )}
+        </div>
+      ),
+    },
+    {
+      id: 'mcp',
+      label: 'MCP',
+      icon: <FiFolder className="w-4 h-4" />,
+      content: (
+        <div className="space-y-4">
+          <MCPControl />
         </div>
       ),
     },

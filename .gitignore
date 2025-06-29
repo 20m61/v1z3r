@@ -31,3 +31,31 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Module-specific ignores
+modules/*/node_modules/
+modules/*/dist/
+modules/*/build/
+modules/*/.next/
+
+# CDK specific
+infra/cdk/cdk.out/
+infra/cdk/cdk.context.json
+infra/cdk/node_modules/
+
+# AWS and deployment
+.aws/
+*.zip
+
+# Performance monitoring
+.performance/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
