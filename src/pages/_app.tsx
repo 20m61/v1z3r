@@ -14,6 +14,56 @@ export default function App({ Component, pageProps }: AppProps) {
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'
     })
 
+    // PWA Service Worker登録
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          errorHandler.info('Service Worker registered successfully', {
+            scope: registration.scope,
+            hasUpdate: !!registration.installing
+          });
+
+          // Service Worker更新チェック
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // 新しいService Workerが利用可能
+                  errorHandler.info('New Service Worker available - refresh recommended');
+                  
+                  // オプション: ユーザーにリロードを促す通知
+                  if (window.confirm('アプリの新しいバージョンが利用可能です。今すぐ更新しますか？')) {
+                    window.location.reload();
+                  }
+                }
+              });
+            }
+          });
+        })
+        .catch((error) => {
+          errorHandler.warn('Service Worker registration failed', error);
+        });
+
+      // PWAインストールプロンプト
+      let deferredPrompt: any;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        errorHandler.info('PWA install prompt available');
+        
+        // カスタムインストールボタンを表示するロジックを追加可能
+        // 例: showInstallButton();
+      });
+
+      // PWAインストール完了通知
+      window.addEventListener('appinstalled', () => {
+        errorHandler.info('PWA installed successfully');
+        deferredPrompt = null;
+      });
+    }
+
     if (typeof window !== 'undefined') {
       // フォントの事前読み込み
       const fontFamilies = ['Teko', 'Prompt', 'Audiowide', 'Russo One', 'Orbitron'];

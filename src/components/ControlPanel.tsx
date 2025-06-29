@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiSettings, FiLayers, FiSave, FiFolder, FiMic, FiVideo, FiMaximize, FiChevronUp, FiChevronDown, FiMusic } from 'react-icons/fi';
+import { FiSettings, FiLayers, FiSave, FiFolder, FiMic, FiVideo, FiMaximize, FiChevronUp, FiChevronDown, FiMusic, FiShare } from 'react-icons/fi';
 import { useVisualizerStore, EffectType } from '@/store/visualizerStore';
 import Button from './ui/Button';
 import Slider from './ui/Slider';
@@ -8,6 +8,7 @@ import ColorPicker from './ui/ColorPicker';
 import Tabs from './ui/Tabs';
 import LayerManager from './LayerManager';
 import LyricsControl from './LyricsControl';
+import PresetShare, { PresetShareData } from './PresetShare';
 
 interface ControlPanelProps {
   className?: string;
@@ -18,6 +19,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [activeTab, setActiveTab] = useState('effects');
+  const [shareModalData, setShareModalData] = useState<PresetShareData | null>(null);
 
   // Zustand ストアからステートと関数を取得
   const {
@@ -79,6 +81,24 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
       setNewPresetName('');
       setShowPresetModal(false);
     }
+  };
+
+  // プリセット共有
+  const handleSharePreset = (preset: any) => {
+    const shareData: PresetShareData = {
+      id: preset.id,
+      name: preset.name,
+      description: `VJ Preset: ${preset.effectType} with ${preset.colorTheme} theme`,
+      settings: {
+        effectType: preset.effectType,
+        colorTheme: preset.colorTheme,
+        sensitivity: preset.sensitivity,
+        // その他の設定
+      },
+      shareUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://v1z3r.app'}/preset?id=${preset.id}`,
+      createdBy: 'VJ User', // 実際のユーザー情報に置き換え
+    };
+    setShareModalData(shareData);
   };
 
   // タブ変更時のハンドラ
@@ -198,6 +218,13 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
                       読込
                     </button>
                     <button
+                      onClick={() => handleSharePreset(preset)}
+                      className="text-xs text-gray-400 hover:text-blue-400"
+                      title="共有"
+                    >
+                      共有
+                    </button>
+                    <button
                       onClick={() => deletePreset(preset.id)}
                       className="text-xs text-gray-400 hover:text-v1z3r-error"
                     >
@@ -300,6 +327,19 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* プリセット共有モーダル */}
+      {shareModalData && (
+        <PresetShare
+          preset={shareModalData}
+          isOpen={!!shareModalData}
+          onClose={() => setShareModalData(null)}
+          onShare={(platform) => {
+            console.log(`Shared preset ${shareModalData.name} on ${platform}`);
+            // 分析のためのトラッキングコードを追加可能
+          }}
+        />
       )}
     </motion.div>
   );

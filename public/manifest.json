@@ -1,0 +1,91 @@
+{
+  "name": "v1z3r - Web VJ Application",
+  "short_name": "v1z3r",
+  "description": "Advanced Web-based VJ (Visual Jockey) Application with Real-time Audio-reactive Visuals",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00ccff",
+  "orientation": "landscape-primary",
+  "scope": "/",
+  "categories": ["music", "entertainment", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "VJ Control Panel with Audio-reactive Visuals"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile VJ Controller"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "VJ App",
+      "short_name": "VJ",
+      "description": "Launch VJ Application",
+      "url": "/vj-app",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Display Mode",
+      "short_name": "Display",
+      "description": "Launch Display-only Mode",
+      "url": "/?mode=display",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+v1z3r",
+      "url": "/preset?id=%s"
+    }
+  ]
+}
