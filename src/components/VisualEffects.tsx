@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo, memo } from '
 import styles from '@/styles/VisualEffects.module.css';
 import { EffectType } from '@/store/visualizerStore';
 import { startMeasure, endMeasure, throttle } from '@/utils/performance';
+import { validateAudioData, ValidationError } from '@/utils/validation';
 
 interface VisualEffectsProps {
   audioData?: Uint8Array;
@@ -329,18 +330,33 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
     
     // オーディオデータに基づく描画
     if (audioData && audioData.length > 0 && offscreenCanvas && offscreenCtx) {
-      // オフスクリーンキャンバスに描画
-      switch (effectType) {
-        case 'waveform':
-          drawWaveform(offscreenCtx, offscreenCanvas, audioData, colorTheme);
-          break;
-        case 'particles':
-          drawParticles(offscreenCtx, offscreenCanvas, audioData, colorTheme);
-          break;
-        case 'spectrum':
-        default:
-          drawSpectrum(offscreenCtx, offscreenCanvas, audioData, colorTheme);
-          break;
+      // Validate audio data before rendering
+      try {
+        const validatedAudioData = validateAudioData(audioData);
+        
+        // オフスクリーンキャンバスに描画
+        switch (effectType) {
+          case 'waveform':
+            drawWaveform(offscreenCtx, offscreenCanvas, validatedAudioData, colorTheme);
+            break;
+          case 'particles':
+            drawParticles(offscreenCtx, offscreenCanvas, validatedAudioData, colorTheme);
+            break;
+          case 'spectrum':
+          default:
+            drawSpectrum(offscreenCtx, offscreenCanvas, validatedAudioData, colorTheme);
+            break;
+        }
+      } catch (validationError) {
+        if (validationError instanceof ValidationError) {
+          console.warn('Audio data validation failed in VisualEffects:', validationError.message);
+          // Fall back to demo display for invalid data
+          if (offscreenCanvas && offscreenCtx) {
+            drawDemo(offscreenCtx, offscreenCanvas, colorTheme);
+          }
+        } else {
+          throw validationError;
+        }
       }
     } else if (offscreenCanvas && offscreenCtx) {
       // データがない場合はデモ表示

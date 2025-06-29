@@ -3,6 +3,7 @@
  * 
  * This module provides comprehensive error handling, logging, and monitoring
  * capabilities for the VJ application in production environments.
+ * Includes data sanitization to prevent sensitive information exposure.
  */
 
 // ログレベルの定義
@@ -48,6 +49,130 @@ interface LogConfig {
   remoteEndpoint?: string
   enablePerformanceMetrics: boolean
   enableUserTracking: boolean
+  sanitizeData: boolean
+}
+
+// Sensitive data patterns to sanitize
+const SENSITIVE_PATTERNS = [
+  // API Keys and tokens
+  /(?:api[_-]?key|token|secret|password|pwd|auth)["\s]*[:=]["\s]*[a-zA-Z0-9+/=]{8,}/gi,
+  // Email addresses
+  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi,
+  // Credit card numbers
+  /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3[0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/gi,
+  // Social security numbers
+  /\b\d{3}-?\d{2}-?\d{4}\b/gi,
+  // IP addresses (internal networks)
+  /\b(?:10\.|172\.(?:1[6-9]|2[0-9]|3[01])\.|192\.168\.)\d{1,3}\.\d{1,3}\b/gi,
+  // URLs with credentials
+  /https?:\/\/[^:\/\s]+:[^@\/\s]+@[^\s\/]+/gi,
+  // Phone numbers
+  /\b(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b/gi,
+  // AWS credentials patterns
+  /AKIA[0-9A-Z]{16}/gi,
+  /aws_secret_access_key["\s]*[:=]["\s]*[a-zA-Z0-9+/=]{40}/gi,
+];
+
+// Sensitive field names to redact
+const SENSITIVE_FIELDS = [
+  'password',
+  'pwd',
+  'secret',
+  'token',
+  'key',
+  'apiKey',
+  'api_key',
+  'accessToken',
+  'access_token',
+  'refreshToken',
+  'refresh_token',
+  'authorization',
+  'auth',
+  'sessionId',
+  'session_id',
+  'userId',
+  'user_id',
+  'email',
+  'phone',
+  'ssn',
+  'creditCard',
+  'credit_card',
+  'bankAccount',
+  'bank_account',
+];
+
+/**
+ * Sanitize sensitive data from logs
+ */
+function sanitizeData(data: any, depth = 0): any {
+  // Prevent infinite recursion
+  if (depth > 10) return '[MAX_DEPTH_REACHED]';
+  
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  // Handle strings
+  if (typeof data === 'string') {
+    let sanitized = data;
+    
+    // Apply sensitive patterns
+    for (const pattern of SENSITIVE_PATTERNS) {
+      sanitized = sanitized.replace(pattern, '[REDACTED]');
+    }
+    
+    return sanitized;
+  }
+
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item, depth + 1));
+  }
+
+  // Handle objects
+  if (typeof data === 'object') {
+    const sanitized: any = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      const lowerKey = key.toLowerCase();
+      
+      // Check if field name is sensitive
+      if (SENSITIVE_FIELDS.some(field => lowerKey.includes(field))) {
+        sanitized[key] = '[REDACTED]';
+      } else {
+        sanitized[key] = sanitizeData(value, depth + 1);
+      }
+    }
+    
+    return sanitized;
+  }
+
+  // Return primitive values as-is
+  return data;
+}
+
+/**
+ * Sanitize error objects specifically
+ */
+function sanitizeError(error: Error): any {
+  const sanitized: any = {
+    name: error.name,
+    message: typeof error.message === 'string' ? sanitizeData(error.message) : error.message,
+  };
+
+  // Only include stack trace in development
+  if (process.env.NODE_ENV === 'development') {
+    sanitized.stack = error.stack;
+  }
+
+  // Include other enumerable properties but sanitize them
+  for (const key of Object.getOwnPropertyNames(error)) {
+    if (key !== 'name' && key !== 'message' && key !== 'stack') {
+      sanitized[key] = sanitizeData((error as any)[key]);
+    }
+  }
+
+  return sanitized;
 }
 
 class ErrorHandler {
@@ -64,6 +189,7 @@ class ErrorHandler {
       remoteEndpoint: process.env.NEXT_PUBLIC_ERROR_ENDPOINT,
       enablePerformanceMetrics: true,
       enableUserTracking: false,
+      sanitizeData: true, // Always sanitize data by default
       ...config
     }
     
@@ -111,8 +237,20 @@ class ErrorHandler {
   public logError(errorInfo: Omit<ErrorInfo, 'timestamp' | 'userAgent' | 'url' | 'sessionId'>): void {
     if (errorInfo.level < this.config.level) return
 
+    let sanitizedErrorInfo = errorInfo;
+    
+    // Sanitize data if enabled
+    if (this.config.sanitizeData) {
+      sanitizedErrorInfo = {
+        ...errorInfo,
+        message: sanitizeData(errorInfo.message),
+        context: errorInfo.context ? sanitizeData(errorInfo.context) : undefined,
+        error: errorInfo.error ? sanitizeError(errorInfo.error) : undefined,
+      };
+    }
+
     const fullErrorInfo: ErrorInfo = {
-      ...errorInfo,
+      ...sanitizedErrorInfo,
       timestamp: new Date(),
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       url: typeof window !== 'undefined' ? window.location.href : undefined,

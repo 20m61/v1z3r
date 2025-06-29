@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useVisualizerStore } from '@/store/visualizerStore';
 import Button from './ui/Button';
+import { validateAudioData, ValidationError } from '@/utils/validation';
+import { globalRateLimiters } from '@/utils/rateLimiter';
+import { getReusableAudioBuffer, returnAudioBuffer } from '@/utils/memoryManager';
 
 interface AudioAnalyzerProps {
   onAudioData?: (data: Uint8Array) => void;
@@ -13,6 +16,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
   
   const { isMicrophoneEnabled, setMicrophoneEnabled } = useVisualizerStore();
 
@@ -64,17 +68,41 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       setMicrophoneEnabled(true);
       setError(null);
       
-      // 解析データの取得を開始
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      // Get reusable audio buffer for analysis data
+      const dataArray = getReusableAudioBuffer(analyser.frequencyBinCount);
+      dataArrayRef.current = dataArray;
       
       const updateData = () => {
         if (!analyser) return;
         
         try {
           analyser.getByteFrequencyData(dataArray);
-          if (onAudioData) {
-            onAudioData(dataArray);
+          
+          // Rate limit audio data updates
+          const clientId = 'audio-analyzer'; // Could be user-specific in a multi-user context
+          if (!globalRateLimiters.audioData.isAllowed(clientId)) {
+            // Skip this frame if rate limited
+            animationFrameRef.current = requestAnimationFrame(updateData);
+            return;
           }
+          
+          // Validate audio data before passing to callback
+          try {
+            const validatedData = validateAudioData(dataArray);
+            if (onAudioData) {
+              onAudioData(validatedData);
+            }
+            globalRateLimiters.audioData.recordSuccess(clientId);
+          } catch (validationError) {
+            if (validationError instanceof ValidationError) {
+              console.warn('Audio data validation failed:', validationError.message);
+              globalRateLimiters.audioData.recordFailure(clientId);
+              // Continue with animation loop but don't pass invalid data
+            } else {
+              throw validationError;
+            }
+          }
+          
           animationFrameRef.current = requestAnimationFrame(updateData);
         } catch (err) {
           console.error('オーディオデータの取得中にエラーが発生しました:', err);
@@ -118,6 +146,12 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
         console.warn('AudioContextのクローズ中にエラーが発生しました:', e);
       }
       audioContextRef.current = null;
+    }
+
+    // Return the audio buffer to the pool for reuse
+    if (dataArrayRef.current) {
+      returnAudioBuffer(dataArrayRef.current);
+      dataArrayRef.current = null;
     }
     
     setIsAnalyzing(false);
