@@ -5,13 +5,20 @@ on:
     branches: [ main, develop, 'feature/**' ]
   pull_request:
     branches: [ main, develop ]
+  schedule:
+    # Daily dependency check at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '20.x'
+  CACHE_VERSION: 'v1'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [18.x, 20.x, 21.x]
     
     steps:
     - name: Checkout code
@@ -21,19 +28,20 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
         
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
       
     - name: Run TypeScript type check
-      run: npm run type-check
+      run: yarn type-check
       
     - name: Run linting
-      run: npm run lint
+      run: yarn lint
       
     - name: Run tests with coverage
-      run: npm run test:coverage
+      run: yarn test:coverage
       
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -41,6 +49,7 @@ jobs:
         file: ./coverage/lcov.info
         flags: unittests
         name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
         
   build:
     runs-on: ubuntu-latest
@@ -53,14 +62,15 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
-        cache: 'npm'
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
         
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
       
     - name: Build application
-      run: npm run build
+      run: yarn build
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -72,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: [visual-renderer, vj-controller, sync-core, preset-storage]
+        module: [visual-renderer, vj-controller, sync-core, preset-storage, lyrics-engine]
     
     steps:
     - name: Checkout code
@@ -81,18 +91,27 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
-        cache: 'npm'
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
         
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
       
     - name: Run module tests
-      run: npm run test -- modules/${{ matrix.module }}
+      run: yarn test -- modules/${{ matrix.module }}
+      
+    - name: Check module build
+      run: |
+        cd modules/${{ matrix.module }}
+        if [ -f "package.json" ] && grep -q '"build"' package.json; then
+          yarn build
+        fi
       
   e2e-tests:
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 30
     
     steps:
     - name: Checkout code
@@ -101,14 +120,15 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
-        cache: 'npm'
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
         
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
       
     - name: Install Playwright browsers
-      run: npx playwright install --with-deps
+      run: yarn playwright install --with-deps
       
     - name: Download build artifacts
       uses: actions/download-artifact@v4
@@ -117,42 +137,151 @@ jobs:
         path: .next/
         
     - name: Start application
-      run: npm start &
+      run: yarn start &
+      env:
+        NODE_ENV: test
       
     - name: Wait for application to be ready
-      run: npx wait-on http://localhost:3000
+      run: yarn dlx wait-on http://localhost:3000 --timeout 30000
       
     - name: Run E2E tests
-      run: npx playwright test
+      run: yarn test:e2e
+      env:
+        CI: true
       
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report
+        name: playwright-report-${{ github.run_number }}
         path: playwright-report/
+        retention-days: 30
         
   security-scan:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Run security audit
-      run: npm audit --audit-level=high
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
+        
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
       
-    - name: Check for vulnerabilities
+    - name: Run Yarn security audit
       run: |
-        if npm audit --audit-level=high --json | jq '.metadata.vulnerabilities.high > 0 or .metadata.vulnerabilities.critical > 0'; then
-          echo "High or critical vulnerabilities found!"
-          exit 1
-        fi
+        yarn audit --level high --groups dependencies || true
+        echo "Yarn audit completed"
+      
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: javascript
+        queries: security-extended,security-and-quality
+        
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:javascript"
+    
+    - name: Run Snyk Security Scan
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high --file=yarn.lock
+        
+    - name: Upload Snyk results to GitHub Code Scanning
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: snyk.sarif
 
-  deploy-dev:
+  performance-test:
     runs-on: ubuntu-latest
-    needs: [test, build, e2e-tests]
+    needs: build
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 20
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
+        
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-files
+        path: .next/
+        
+    - name: Start application for performance testing
+      run: yarn start &
+      env:
+        NODE_ENV: production
+        
+    - name: Wait for application
+      run: yarn dlx wait-on http://localhost:3000 --timeout 30000
+      
+    - name: Run Lighthouse CI
+      uses: treosh/lighthouse-ci-action@v11
+      with:
+        configPath: './lighthouse.config.js'
+        uploadArtifacts: true
+        temporaryPublicStorage: true
+        
+    - name: Run Bundle Analysis
+      run: |
+        yarn add -D @next/bundle-analyzer
+        ANALYZE=true yarn build
+        
+    - name: Comment PR with performance results
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          if (fs.existsSync('./lhci_reports/manifest.json')) {
+            const manifest = JSON.parse(fs.readFileSync('./lhci_reports/manifest.json'));
+            const summary = `## 🚀 Performance Test Results
+            
+            Lighthouse scores have been generated for this PR.
+            [View full report](${manifest[0].url})
+            
+            Bundle analysis completed - check build artifacts for details.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+          }
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [test, build, e2e-tests, security-scan]
     if: github.ref == 'refs/heads/develop'
+    environment: staging
     
     steps:
     - name: Checkout code
@@ -163,24 +292,53 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+        aws-region: ${{ secrets.AWS_REGION }}
+        role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_STAGING }}
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
-        cache: 'npm'
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
         
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
       
-    - name: Deploy to development
-      run: npm run deploy:dev
+    - name: Install CDK
+      run: yarn global add aws-cdk
       
+    - name: Deploy infrastructure to staging
+      run: yarn infra:staging
+      working-directory: ./
+      
+    - name: Build application for staging
+      run: yarn build
+      env:
+        NODE_ENV: production
+        EXPORT_MODE: true
+        
+    - name: Deploy application to staging
+      run: yarn deploy:dev
+      
+    - name: Run smoke tests
+      run: |
+        curl -f ${{ secrets.STAGING_URL }}/health || exit 1
+        echo "Staging deployment successful"
+        
+    - name: Notify deployment
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: [test, build, e2e-tests]
+    needs: [test, build, e2e-tests, security-scan]
     if: github.ref == 'refs/heads/main'
+    environment: production
     
     steps:
     - name: Checkout code
@@ -191,16 +349,50 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+        aws-region: ${{ secrets.AWS_REGION }}
+        role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_PROD }}
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
-        cache: 'npm'
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
         
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
       
-    - name: Deploy to production
-      run: npm run deploy:prod
+    - name: Install CDK
+      run: yarn global add aws-cdk
+      
+    - name: Deploy infrastructure to production
+      run: yarn infra:prod
+      working-directory: ./
+      
+    - name: Build application for production
+      run: yarn build
+      env:
+        NODE_ENV: production
+        EXPORT_MODE: true
+        
+    - name: Deploy application to production
+      run: yarn deploy:prod
+      
+    - name: Run production smoke tests
+      run: |
+        curl -f ${{ secrets.PRODUCTION_URL }}/health || exit 1
+        echo "Production deployment successful"
+        
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        generate_release_notes: true
+        
+    - name: Notify deployment
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

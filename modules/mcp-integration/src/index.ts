@@ -1,1 +1,0 @@
-export { default as MCPControl } from './components/MCPControl'
