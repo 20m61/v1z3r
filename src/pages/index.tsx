@@ -1,214 +1,134 @@
-import Head from 'next/head';
-import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useVisualizerStore } from '@/store/visualizerStore';
-import ControlPanel from '@/components/ControlPanel';
-import AudioAnalyzer from '@/components/AudioAnalyzer';
-import VisualEffects from '@/components/VisualEffects';
-import LyricsVisualizer from '@/components/LyricsVisualizer';
-import dynamic from 'next/dynamic';
+/**
+ * v1z3r Main Application Page
+ * 
+ * This is the main entry point for the v1z3r VJ application.
+ * It integrates all modules (Visual Renderer, VJ Controller, Sync Core, Preset Storage)
+ * into a unified experience.
+ */
 
-// SpeechRecognizerはクライアントサイドのみで動作するため、dynamicインポートする
-const SpeechRecognizer = dynamic(
-  () => import('@/components/SpeechRecognizer'),
-  { ssr: false }
-);
+import Head from 'next/head'
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import VJApplication from '../VJApplication'
 
 export default function Home() {
-  const [isClient, setIsClient] = useState(false);
-  const [audioData, setAudioData] = useState<Uint8Array | undefined>();
-  const [isAnalysisStarted, setIsAnalysisStarted] = useState(false);
-  const visualizerRef = useRef<HTMLDivElement>(null);
-  
-  // Zustand ストアからステートと関数を取得
-  const {
-    currentEffectType,
-    colorTheme,
-    sensitivity,
-    isAudioAnalyzing,
-    isMicrophoneEnabled,
-    isFullscreen,
-    isLyricsEnabled,
-    layers,
-    setAudioAnalyzing
-  } = useVisualizerStore();
+  const [isStarted, setIsStarted] = useState(false)
 
-  // クライアントサイドレンダリングの確認
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // VJ Application configuration
+  const vjConfig = {
+    canvas: {
+      width: 1920,
+      height: 1080
+    },
+    sync: {
+      enabled: false, // Disabled by default - can be enabled in production
+      serverUrl: 'ws://localhost:8080'
+    },
+    storage: undefined // Disabled by default - can be configured with AWS credentials
+  }
 
-  // オーディオデータの処理
-  const handleAudioData = (data: Uint8Array) => {
-    setAudioData(new Uint8Array(data));
-    if (!isAudioAnalyzing) {
-      setAudioAnalyzing(true);
-    }
-  };
-
-  // 解析の開始/停止を処理
-  const handleStartAnalysis = () => {
-    setIsAnalysisStarted(true);
-  };
-
-  // 全画面表示の処理
-  useEffect(() => {
-    // サーバーサイドレンダリング対策
-    if (typeof window === 'undefined') return;
-    
-    const handleFullscreenChange = () => {
-      // 将来的に実装: Fullscreen API の状態変更監視
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
-  // ソート済みレイヤー（zIndexの降順）
-  const sortedLayers = [...layers].sort((a, b) => b.zIndex - a.zIndex);
-  
-  // アクティブなレイヤーのみをフィルタリング
-  const activeLayersForRender = sortedLayers.filter(layer => layer.active);
-
-  // サーバーサイドレンダリング時の初期表示
-  if (!isClient) {
-    return (
-      <>
-        <Head>
-          <title>v1z3r - インタラクティブ音響視覚化エンジン</title>
-          <meta name="description" content="DJイベントやバンド演奏向けの自動映像生成システム" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
-        <main className="flex flex-col min-h-screen bg-v1z3r-dark text-white">
-          <div className="flex items-center justify-center h-screen">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-v1z3r-primary">v1z3r</h1>
-              <p>読み込み中...</p>
-            </div>
-          </div>
-        </main>
-      </>
-    );
+  const handleStart = () => {
+    setIsStarted(true)
   }
 
   return (
     <>
       <Head>
-        <title>v1z3r - インタラクティブ音響視覚化エンジン</title>
-        <meta name="description" content="DJイベントやバンド演奏向けの自動映像生成システム" />
+        <title>v1z3r - Professional VJ Application</title>
+        <meta name="description" content="Professional VJ application with modular architecture for real-time visual performance" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      
-      <main className="flex flex-col min-h-screen bg-v1z3r-dark text-white">
-        {/* ヘッダー */}
-        <header className="p-4 flex justify-between items-center border-b border-gray-800">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-v1z3r-secondary to-v1z3r-primary bg-clip-text text-transparent">
-              v1z3r
-            </h1>
-            <p className="text-gray-400 text-sm">インタラクティブ音響視覚化エンジン</p>
-          </div>
-          
-          {!isAnalysisStarted && (
-            <motion.button
-              onClick={handleStartAnalysis}
-              className="px-6 py-2 bg-gradient-to-r from-v1z3r-secondary to-v1z3r-primary text-white font-bold rounded-full transition-transform hover:scale-105"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+
+      <main className="w-full h-screen bg-black text-white overflow-hidden">
+        <AnimatePresence mode="wait">
+          {!isStarted ? (
+            <motion.div
+              key="welcome"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center h-full bg-gradient-to-br from-gray-900 to-black"
             >
-              開始
-            </motion.button>
-          )}
-        </header>
-
-        {/* ビジュアライザーエリア */}
-        <div
-          ref={visualizerRef}
-          className="flex-1 w-full relative overflow-hidden bg-v1z3r-darker"
-        >
-          {/* ビジュアルエフェクトレイヤー */}
-          <AnimatePresence>
-            {activeLayersForRender.map((layer) => (
-              <motion.div
-                key={layer.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: layer.opacity }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0"
-              >
-                <VisualEffects
-                  audioData={audioData}
-                  effectType={layer.type}
-                  colorTheme={layer.colorTheme}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {/* 歌詞ビジュアライザー */}
-          {isLyricsEnabled && (
-            <LyricsVisualizer audioData={audioData} />
-          )}
-
-          {/* 音声認識（バックグラウンドで動作） */}
-          {isLyricsEnabled && isAnalysisStarted && (
-            <SpeechRecognizer 
-              lang="ja-JP"
-              continuous={true}
-              autoStart={true}
-              interimResults={true}
-              maxAlternatives={3}
-              noiseFilter={true}
-              minConfidence={0.3}
-            />
-          )}
-
-          {/* オーディオアナライザー（非表示） */}
-          {isAnalysisStarted && (
-            <div className="hidden">
-              <AudioAnalyzer onAudioData={handleAudioData} />
-            </div>
-          )}
-
-          {/* スタートプレースホルダー */}
-          <AnimatePresence>
-            {!isAnalysisStarted && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 flex flex-col items-center justify-center"
-              >
-                <div
-                  className="bg-v1z3r-darker p-6 rounded-lg border border-gray-800 text-center max-w-md"
+              <div className="text-center max-w-2xl px-8">
+                <motion.h1
+                  initial={{ y: -50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-6"
                 >
-                  <h2 className="text-2xl font-bold mb-4">v1z3rへようこそ</h2>
-                  <p className="text-gray-300 mb-6">
-                    音楽に合わせたインタラクティブな視覚エフェクトを生成します。
-                    「開始」ボタンをクリックしてマイクへのアクセスを許可してください。
-                  </p>
-                  <button
-                    onClick={handleStartAnalysis}
-                    className="px-8 py-3 bg-gradient-to-r from-v1z3r-secondary to-v1z3r-primary text-white font-bold rounded-full transition-transform hover:scale-105"
-                  >
-                    開始
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                  v1z3r
+                </motion.h1>
+                
+                <motion.p
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-xl text-gray-300 mb-8"
+                >
+                  Professional VJ Application
+                </motion.p>
+                
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="space-y-4 mb-12"
+                >
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <span className="text-gray-300">Modular Architecture</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                    <span className="text-gray-300">Real-time Visual Effects</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
+                    <span className="text-gray-300">Parameter Control Interface</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
+                    <span className="text-gray-300">Preset Management</span>
+                  </div>
+                </motion.div>
 
-        {/* コントロールパネル */}
-        {isAnalysisStarted && (
-          <ControlPanel />
-        )}
+                <motion.button
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.8, type: "spring", stiffness: 100 }}
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(99, 102, 241, 0.5)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleStart}
+                  className="px-12 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-full text-xl font-semibold transition-all duration-300 shadow-lg"
+                >
+                  Launch VJ Application
+                </motion.button>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.2 }}
+                  className="mt-8 text-sm text-gray-500"
+                >
+                  <p>Built with Next.js • WebGL • WebSockets • AWS</p>
+                  <p className="mt-2">Tested with Jest • Playwright • TDD Architecture</p>
+                </motion.div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="vj-app"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="w-full h-full"
+            >
+              <VJApplication config={vjConfig} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </>
-  );
+  )
 }

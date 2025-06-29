@@ -84,7 +84,15 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       
       updateData();
     } catch (error) {
-      console.error('オーディオの解析中にエラーが発生しました:', error);
+      const errorMessage = 'オーディオの解析中にエラーが発生しました';
+      // エラーハンドラを使用してログ記録
+      const { errorHandler } = await import('@/utils/errorHandler');
+      errorHandler.audioError(errorMessage, error instanceof Error ? error : new Error(String(error)), {
+        isAnalyzing,
+        isMicrophoneEnabled,
+        timestamp: new Date().toISOString()
+      });
+      
       setError('マイクへのアクセスが拒否されたか、エラーが発生しました。');
       setIsAnalyzing(false);
       setMicrophoneEnabled(false);

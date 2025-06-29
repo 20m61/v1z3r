@@ -104,7 +104,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
 
   // 周波数スペクトラムの描画（メモ化）
   const drawSpectrum = useCallback((
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     canvas: HTMLCanvasElement | OffscreenCanvas,
     data: Uint8Array,
     color: string
@@ -157,7 +157,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
 
   // 波形の描画（メモ化）
   const drawWaveform = useCallback((
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     canvas: HTMLCanvasElement | OffscreenCanvas,
     data: Uint8Array,
     color: string
@@ -202,7 +202,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
 
   // パーティクルの描画（メモ化）
   const drawParticles = useCallback((
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     canvas: HTMLCanvasElement | OffscreenCanvas,
     data: Uint8Array,
     color: string
@@ -252,7 +252,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
 
   // デモ表示（メモ化）
   const drawDemo = useCallback((
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     canvas: HTMLCanvasElement | OffscreenCanvas,
     color: string
   ) => {
@@ -328,7 +328,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
     updateFpsCounter();
     
     // オーディオデータに基づく描画
-    if (audioData && audioData.length > 0) {
+    if (audioData && audioData.length > 0 && offscreenCanvas && offscreenCtx) {
       // オフスクリーンキャンバスに描画
       switch (effectType) {
         case 'waveform':
@@ -342,14 +342,16 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
           drawSpectrum(offscreenCtx, offscreenCanvas, audioData, colorTheme);
           break;
       }
-    } else {
+    } else if (offscreenCanvas && offscreenCtx) {
       // データがない場合はデモ表示
       drawDemo(offscreenCtx, offscreenCanvas, colorTheme);
     }
     
     // オフスクリーンキャンバスをメインキャンバスにコピー
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
+    if (offscreenCanvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
+    }
     
     endMeasure('fullRenderCycle');
     

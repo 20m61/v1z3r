@@ -1,0 +1,38 @@
+{
+  "name": "@vj-app/visual-renderer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Visual rendering module for VJ Application",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "^0.158.0",
+    "gl-matrix": "^3.4.3"
+  },
+  "devDependencies": {
+    "@types/three": "^0.158.1",
+    "@types/gl-matrix": "^3.2.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/dom": "^10.4.0",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.3",
+    "jest-canvas-mock": "^2.5.2",
+    "jest-environment-jsdom": "^30.0.2",
+    "typescript": "^5.2.2",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "ts-loader": "^9.5.1",
+    "eslint": "^8.52.0",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "ts-jest": "^29.1.0"
+  }
+}
