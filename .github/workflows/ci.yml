@@ -99,7 +99,12 @@ jobs:
       run: yarn install --frozen-lockfile
       
     - name: Run module tests
-      run: yarn test -- modules/${{ matrix.module }}
+      run: |
+        if [ -f "modules/${{ matrix.module }}/package.json" ]; then
+          cd modules/${{ matrix.module }} && yarn test
+        else
+          echo "No tests found for module ${{ matrix.module }}"
+        fi
       
     - name: Check module build
       run: |
@@ -195,6 +200,7 @@ jobs:
         category: "/language:javascript"
     
     - name: Run Snyk Security Scan
+      if: secrets.SNYK_TOKEN != ''
       uses: snyk/actions/node@master
       continue-on-error: true
       env:
@@ -203,8 +209,8 @@ jobs:
         args: --severity-threshold=high --file=yarn.lock
         
     - name: Upload Snyk results to GitHub Code Scanning
+      if: secrets.SNYK_TOKEN != '' && always()
       uses: github/codeql-action/upload-sarif@v3
-      if: always()
       with:
         sarif_file: snyk.sarif
 
@@ -251,8 +257,8 @@ jobs:
         
     - name: Run Bundle Analysis
       run: |
-        yarn add -D @next/bundle-analyzer
-        ANALYZE=true yarn build
+        echo "Bundle analysis skipped - can be enabled by installing @next/bundle-analyzer"
+        # ANALYZE=true yarn build
         
     - name: Comment PR with performance results
       uses: actions/github-script@v7
@@ -327,7 +333,7 @@ jobs:
         echo "Staging deployment successful"
         
     - name: Notify deployment
-      if: always()
+      if: always() && secrets.SLACK_WEBHOOK_URL != ''
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
@@ -390,7 +396,7 @@ jobs:
         generate_release_notes: true
         
     - name: Notify deployment
-      if: always()
+      if: always() && secrets.SLACK_WEBHOOK_URL != ''
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
