@@ -13,26 +13,26 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "three": "^0.158.0",
-    "gl-matrix": "^3.4.3"
+    "gl-matrix": "^3.4.3",
+    "three": "^0.158.0"
   },
   "devDependencies": {
-    "@types/three": "^0.158.1",
-    "@types/gl-matrix": "^3.2.0",
-    "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@types/gl-matrix": "^3.2.0",
     "@types/jest": "^30.0.0",
+    "@types/three": "^0.158.1",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "eslint": "^8.52.0",
     "jest": "^30.0.3",
     "jest-canvas-mock": "^2.5.2",
     "jest-environment-jsdom": "^30.0.2",
+    "ts-jest": "^29.1.0",
+    "ts-loader": "^9.5.1",
     "typescript": "^5.2.2",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1",
-    "ts-loader": "^9.5.1",
-    "eslint": "^8.52.0",
-    "@typescript-eslint/eslint-plugin": "^6.10.0",
-    "@typescript-eslint/parser": "^6.10.0",
-    "ts-jest": "^29.1.0"
+    "webpack-dev-server": "^5.2.2"
   }
 }
