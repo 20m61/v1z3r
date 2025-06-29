@@ -28,7 +28,8 @@
   },
   "resolutions": {
     "@tensorflow/tfjs-converter": "4.22.0",
-    "@tensorflow/tfjs-core": "4.22.0"
+    "@tensorflow/tfjs-core": "4.22.0",
+    "axios": "^1.8.2"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.11.0",
