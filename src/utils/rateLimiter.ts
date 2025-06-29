@@ -364,8 +364,7 @@ export function getClientIdentifier(req: any): string {
   return req.user?.id || req.ip || req.connection?.remoteAddress || 'anonymous';
 }
 
-// Export rate limiter for specific use cases
-export { RateLimiter };
+// Rate limiter is already exported as class above
 
 // For testing purposes
 export const __testing = {

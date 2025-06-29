@@ -446,4 +446,6 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
   return !!prevProps.audioData === !!nextProps.audioData;
 });
 
+VisualEffects.displayName = 'VisualEffects';
+
 export default VisualEffects;
