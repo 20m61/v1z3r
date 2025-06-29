@@ -30,7 +30,10 @@
     "@tensorflow/tfjs-converter": "4.22.0",
     "@tensorflow/tfjs-core": "4.22.0",
     "axios": "^1.8.2",
-    "d3-color": "^3.1.0"
+    "d3-color": "^3.1.0",
+    "node-fetch": "^2.6.13",
+    "vega": "^5.23.0",
+    "vega-functions": "^5.13.1"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.11.0",
