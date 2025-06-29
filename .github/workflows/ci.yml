@@ -200,7 +200,7 @@ jobs:
         category: "/language:javascript"
     
     - name: Run Snyk Security Scan
-      if: secrets.SNYK_TOKEN != ''
+      if: secrets.SNYK_TOKEN
       uses: snyk/actions/node@master
       continue-on-error: true
       env:
@@ -209,7 +209,7 @@ jobs:
         args: --severity-threshold=high --file=yarn.lock
         
     - name: Upload Snyk results to GitHub Code Scanning
-      if: secrets.SNYK_TOKEN != '' && always()
+      if: secrets.SNYK_TOKEN && always()
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: snyk.sarif
@@ -333,7 +333,7 @@ jobs:
         echo "Staging deployment successful"
         
     - name: Notify deployment
-      if: always() && secrets.SLACK_WEBHOOK_URL != ''
+      if: always() && secrets.SLACK_WEBHOOK_URL
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
@@ -396,7 +396,7 @@ jobs:
         generate_release_notes: true
         
     - name: Notify deployment
-      if: always() && secrets.SLACK_WEBHOOK_URL != ''
+      if: always() && secrets.SLACK_WEBHOOK_URL
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
