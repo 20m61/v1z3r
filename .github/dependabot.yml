@@ -1,0 +1,120 @@
+# Dependabot configuration file
+# See: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # npm/yarn dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "02:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "20m61"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      # セキュリティアップデートは個別に
+      security-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "security"
+      # 開発依存関係はグループ化
+      dev-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      # 本番依存関係は個別に
+      production-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # メジャーバージョンアップは手動で
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "02:00"
+      timezone: "Asia/Tokyo"
+    reviewers:
+      - "20m61"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # モジュールごとの設定
+  - package-ecosystem: "npm"
+    directory: "/modules/visual-renderer"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "module:visual-renderer"
+
+  - package-ecosystem: "npm"
+    directory: "/modules/vj-controller"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "module:vj-controller"
+
+  - package-ecosystem: "npm"
+    directory: "/modules/sync-core"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "module:sync-core"
+
+  - package-ecosystem: "npm"
+    directory: "/modules/preset-storage"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "module:preset-storage"
+
+  - package-ecosystem: "npm"
+    directory: "/modules/lyrics-engine"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "module:lyrics-engine"
+
+  # CDK
+  - package-ecosystem: "npm"
+    directory: "/infra/cdk"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "infrastructure"
+
+# セキュリティアラート設定
+# この設定により、セキュリティ脆弱性が発見された場合は
+# 即座にプルリクエストが作成されます

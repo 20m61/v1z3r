@@ -33,11 +33,11 @@ export class VjConfigStack extends cdk.Stack {
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecovery: config.enableBackup,
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-      tags: {
-        Name: `VJ Config Table - ${stage}`,
-        Purpose: 'Runtime configuration storage',
-      },
     });
+
+    // Add tags after creation
+    cdk.Tags.of(this.configTable).add('Name', `VJ Config Table - ${stage}`);
+    cdk.Tags.of(this.configTable).add('Purpose', 'Runtime configuration storage');
 
     // SSM Parameters for application configuration
     const appConfig = {

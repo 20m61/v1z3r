@@ -120,7 +120,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
       icon: <FiSettings className="w-4 h-4" />,
       content: (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2" data-testid="effect-selector">
             {effectOptions.map((option) => (
               <Button
                 key={option.value}
@@ -180,7 +180,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ className = '' }) => {
       label: 'プリセット',
       icon: <FiSave className="w-4 h-4" />,
       content: (
-        <div className="space-y-4">
+        <div className="space-y-4" data-testid="preset-section">
           <div className="flex justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-300">保存したプリセット</h3>
             <Button

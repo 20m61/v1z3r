@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
@@ -269,7 +270,7 @@ export class VjMonitoringStack extends cdk.Stack {
     });
 
     highErrorRateAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alertTopic)
+      new cloudwatchActions.SnsAction(this.alertTopic)
     );
 
     const highLatencyAlarm = new cloudwatch.Alarm(this, 'HighLatencyAlarm', {
@@ -282,7 +283,7 @@ export class VjMonitoringStack extends cdk.Stack {
     });
 
     highLatencyAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alertTopic)
+      new cloudwatchActions.SnsAction(this.alertTopic)
     );
 
     // Custom metrics Lambda function

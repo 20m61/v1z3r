@@ -285,17 +285,40 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
             <AudioAnalyzer onAudioData={handleAudioData} />
           </div>
         )}
+        
+        {/* Audio Indicator */}
+        {isAnalysisStarted && (
+          <div 
+            data-testid="audio-indicator"
+            style={{
+              position: 'fixed',
+              top: '40px',
+              left: '16px',
+              padding: '4px 8px',
+              backgroundColor: 'rgba(0, 255, 0, 0.2)',
+              color: '#0f0',
+              fontSize: '12px',
+              borderRadius: '4px',
+              zIndex: 1000
+            }}
+          >
+            Audio Active
+          </div>
+        )}
       </div>
 
       {/* Control Panel */}
       {isInitialized && (
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000
-        }}>
+        <div 
+          data-testid="control-panel"
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000
+          }}
+        >
           <ControlPanel />
         </div>
       )}

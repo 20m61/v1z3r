@@ -1,0 +1,8 @@
+{
+  "name": "vj-websocket-functions",
+  "version": "1.0.0", 
+  "description": "VJ Application WebSocket Lambda functions",
+  "dependencies": {
+    "aws-sdk": "^2.1450.0"
+  }
+}

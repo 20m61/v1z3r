@@ -2,44 +2,10 @@
 
 ```yaml
 - main:
-  - text: "VJ Application Rendering: ✓ Sync: ✗ Storage: ✗"
-  - button "マイク":
-    - img
-    - text: マイク
-  - button "カメラ":
-    - img
-    - text: カメラ
-  - button "歌詞":
-    - img
-    - text: 歌詞
-  - button "全画面":
-    - img
-    - text: 全画面
-  - button "パネルを閉じる":
-    - img
-  - tab "エフェクト" [selected]:
-    - img
-    - text: エフェクト
-  - tab "レイヤー":
-    - img
-    - text: レイヤー
-  - tab "歌詞":
-    - img
-    - text: 歌詞
-  - tab "プリセット":
-    - img
-    - text: プリセット
-  - button "スペクトラム"
-  - button "波形"
-  - button "パーティクル"
-  - button "歌詞表示"
-  - button "カメラ"
-  - text: カラーテーマ
-  - button "カラーを選択"
-  - textbox: "#00ccff"
-  - text: 感度 1.0x
-  - slider: "1"
-  - text: "FPS: 60 Frame Time: 16.67ms Memory: 45%"
-- img
-- alert
+  - heading "v1z3r" [level=1]
+  - paragraph: Professional VJ Application
+  - text: Modular Architecture Real-time Visual Effects Parameter Control Interface Preset Management
+  - button "Launch VJ Application"
+  - paragraph: Built with Next.js • WebGL • WebSockets • AWS
+  - paragraph: Tested with Jest • Playwright • TDD Architecture
 ```

@@ -1,0 +1,10 @@
+{
+  "name": "vj-shared-layer",
+  "version": "1.0.0",
+  "description": "Shared dependencies for VJ application Lambda functions",
+  "dependencies": {
+    "aws-sdk": "^2.1450.0",
+    "uuid": "^9.0.0",
+    "joi": "^17.9.0"
+  }
+}

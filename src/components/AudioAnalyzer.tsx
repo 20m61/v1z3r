@@ -161,7 +161,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   // エラーメッセージを表示
   if (error) {
     return (
-      <div className="p-4 bg-red-500 bg-opacity-20 text-red-200 rounded mb-4">
+      <div className="p-4 bg-red-500 bg-opacity-20 text-red-200 rounded mb-4" data-testid="error-message">
         <p className="font-medium">エラー:</p>
         <p>{error}</p>
         <Button 
