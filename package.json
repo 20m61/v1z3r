@@ -41,7 +41,6 @@
     "@types/qrcode.react": "^3.0.0",
     "axios": "^1.8.2",
     "framer-motion": "^12.5.0",
-    "ml5": "^0.12.2",
     "next": "^14.2.30",
     "npm-force-resolutions": "^0.0.10",
     "p5": "^1.7.0",

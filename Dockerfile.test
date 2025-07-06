@@ -1,0 +1,31 @@
+# Test Dockerfile for v1z3r VJ Application with Playwright support
+FROM mcr.microsoft.com/playwright:v1.53.1-focal
+
+# Install Node.js
+RUN apt-get update && apt-get install -y curl
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+RUN apt-get install -y nodejs
+
+# Install Yarn
+RUN npm install -g yarn
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json yarn.lock* ./
+COPY modules/*/package.json ./modules/
+
+# Install dependencies
+RUN yarn install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN yarn build
+
+# Install Playwright browsers
+RUN npx playwright install --with-deps
+
+# Start the server and run tests
+CMD ["sh", "-c", "yarn start & sleep 10 && yarn test:e2e"]
