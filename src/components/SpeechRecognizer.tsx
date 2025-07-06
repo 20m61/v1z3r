@@ -204,6 +204,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
       setError('Failed to initialize speech recognition');
       return false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateCurrentLyrics, updateNextLyrics, isLyricsEnabled]);
 
   // 外部からの手動制御用

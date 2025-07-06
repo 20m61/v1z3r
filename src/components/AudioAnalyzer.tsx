@@ -110,6 +110,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       setIsAnalyzing(false);
       setMicrophoneEnabled(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onAudioData, setMicrophoneEnabled]);
 
   // オーディオ解析を停止
