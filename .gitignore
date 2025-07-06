@@ -77,3 +77,29 @@ playwright-report/
 
 # Environment specific
 bucket-policy.json
+
+# CDK package-lock.json (use yarn.lock instead)
+infra/cdk/package-lock.json
+
+# Binary files and media
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webm
+*.mp4
+*.mov
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Generated documentation
+docs/generated/
