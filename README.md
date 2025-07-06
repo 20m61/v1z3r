@@ -80,6 +80,7 @@ v1z3r is a modern, modular VJ (Visual Jockey) application designed for live even
 
 ### Development
 
+#### Local Development
 1. Start the development server:
    ```bash
    yarn dev
@@ -97,6 +98,20 @@ v1z3r is a modern, modular VJ (Visual Jockey) application designed for live even
    # E2E tests (requires running dev server)
    yarn test:e2e
    ```
+
+#### Docker Development (Recommended)
+For a consistent development environment:
+
+```bash
+# Quick start with Docker
+docker-compose -f docker-compose.simple.yml up -d
+
+# Or use the setup script
+chmod +x scripts/docker-setup.sh
+./scripts/docker-setup.sh dev
+```
+
+See [Docker-README.md](Docker-README.md) for detailed Docker usage.
 
 ### Production Build
 

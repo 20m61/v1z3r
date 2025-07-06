@@ -50,11 +50,11 @@ export class VjStaticHostingStack extends cdk.Stack {
           maxAge: 3000,
         },
       ],
-      tags: {
-        Name: `VJ Frontend Bucket - ${stage}`,
-        Purpose: 'Static website hosting',
-      },
     });
+
+    // Add tags after creation
+    cdk.Tags.of(this.siteBucket).add('Name', `VJ Frontend Bucket - ${stage}`);
+    cdk.Tags.of(this.siteBucket).add('Purpose', 'Static website hosting');
 
     let certificate: acm.Certificate | undefined;
     
@@ -135,17 +135,22 @@ export class VjStaticHostingStack extends cdk.Stack {
           ? cloudfront.PriceClass.PRICE_CLASS_ALL 
           : cloudfront.PriceClass.PRICE_CLASS_100,
         enableLogging: true,
-        logBucket: new s3.Bucket(this, 'LogsBucket', {
-          bucketName: `vj-cloudfront-logs-${stage}-${this.account}`,
-          lifecycleRules: [
-            {
-              id: 'DeleteOldLogs',
-              expiration: cdk.Duration.days(90),
-            },
-          ],
-          removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-          autoDeleteObjects: stage !== 'prod',
-        }),
+        logBucket: (() => {
+          const logsBucket = new s3.Bucket(this, 'LogsBucket', {
+            bucketName: `vj-cloudfront-logs-${stage}-${this.account}`,
+            lifecycleRules: [
+              {
+                id: 'DeleteOldLogs',
+                expiration: cdk.Duration.days(90),
+              },
+            ],
+            removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+            autoDeleteObjects: stage !== 'prod',
+          });
+          cdk.Tags.of(logsBucket).add('Name', `VJ CloudFront Logs - ${stage}`);
+          cdk.Tags.of(logsBucket).add('Purpose', 'CloudFront access logs');
+          return logsBucket;
+        })(),
         logFilePrefix: 'cloudfront-logs/',
         comment: `VJ Application Distribution - ${stage}`,
       });
@@ -187,15 +192,21 @@ export class VjStaticHostingStack extends cdk.Stack {
     };
 
     // Deploy environment configuration
-    new s3deploy.BucketDeployment(this, 'DeployEnvConfig', {
+    const bucketDeploymentProps: any = {
       sources: [
         s3deploy.Source.jsonData('env-config.json', envConfig),
       ],
       destinationBucket: this.siteBucket,
       destinationKeyPrefix: 'config/',
-      distribution: this.distribution,
-      distributionPaths: ['/config/*'],
-    });
+    };
+
+    // Only add distribution settings if CloudFront is enabled
+    if (this.distribution) {
+      bucketDeploymentProps.distribution = this.distribution;
+      bucketDeploymentProps.distributionPaths = ['/config/*'];
+    }
+
+    new s3deploy.BucketDeployment(this, 'DeployEnvConfig', bucketDeploymentProps);
 
     // Build and deployment user (for CI/CD)
     const deployUser = new iam.User(this, 'DeployUser', {

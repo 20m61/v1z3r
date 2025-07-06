@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Simple development environment for quick testing
+  v1z3r-simple:
+    image: node:20-alpine
+    container_name: v1z3r-simple
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    command: >
+      sh -c "
+        apk add --no-cache libc6-compat &&
+        yarn install &&
+        yarn dev
+      "
+    restart: unless-stopped
+
+  # Health check service
+  healthcheck:
+    image: curlimages/curl:latest
+    container_name: v1z3r-healthcheck
+    depends_on:
+      - v1z3r-simple
+    command: >
+      sh -c "
+        sleep 30 &&
+        while true; do
+          curl -f http://v1z3r-simple:3000/api/health || echo 'Health check failed';
+          sleep 30;
+        done
+      "
+    restart: unless-stopped

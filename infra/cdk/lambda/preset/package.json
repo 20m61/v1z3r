@@ -1,0 +1,9 @@
+{
+  "name": "vj-preset-function",
+  "version": "1.0.0",
+  "description": "VJ Application preset management Lambda function",
+  "main": "preset.js",
+  "dependencies": {
+    "aws-sdk": "^2.1450.0"
+  }
+}

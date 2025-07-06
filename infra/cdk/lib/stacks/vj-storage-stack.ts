@@ -43,11 +43,11 @@ export class VjStorageStack extends cdk.Stack {
       pointInTimeRecovery: config.enableBackup,
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      tags: {
-        Name: `VJ Sessions Table - ${stage}`,
-        Purpose: 'Real-time session management',
-      },
     });
+
+    // Add tags after creation
+    cdk.Tags.of(this.sessionTable).add('Name', `VJ Sessions Table - ${stage}`);
+    cdk.Tags.of(this.sessionTable).add('Purpose', 'Real-time session management');
 
     // Add GSI for querying sessions by status
     this.sessionTable.addGlobalSecondaryIndex({
@@ -77,11 +77,11 @@ export class VjStorageStack extends cdk.Stack {
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecovery: config.enableBackup,
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-      tags: {
-        Name: `VJ Presets Table - ${stage}`,
-        Purpose: 'User preset storage and management',
-      },
     });
+
+    // Add tags after creation
+    cdk.Tags.of(this.presetTable).add('Name', `VJ Presets Table - ${stage}`);
+    cdk.Tags.of(this.presetTable).add('Purpose', 'User preset storage and management');
 
     // Add GSI for querying public presets
     this.presetTable.addGlobalSecondaryIndex({
@@ -136,11 +136,11 @@ export class VjStorageStack extends cdk.Stack {
       ],
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: stage !== 'prod',
-      tags: {
-        Name: `VJ Presets Bucket - ${stage}`,
-        Purpose: 'Preset files and media storage',
-      },
     });
+
+    // Add tags after creation
+    cdk.Tags.of(this.presetBucket).add('Name', `VJ Presets Bucket - ${stage}`);
+    cdk.Tags.of(this.presetBucket).add('Purpose', 'Preset files and media storage');
 
     // CORS configuration for direct uploads from browser
     this.presetBucket.addCorsRule({
@@ -175,11 +175,11 @@ export class VjStorageStack extends cdk.Stack {
           },
         ],
         removalPolicy: cdk.RemovalPolicy.RETAIN,
-        tags: {
-          Name: `VJ Backups Bucket - ${stage}`,
-          Purpose: 'Automated backups and disaster recovery',
-        },
       });
+
+      // Add tags after creation
+      cdk.Tags.of(this.backupBucket).add('Name', `VJ Backups Bucket - ${stage}`);
+      cdk.Tags.of(this.backupBucket).add('Purpose', 'Automated backups and disaster recovery');
 
       // Lambda function for automated backups
       const backupFunction = new lambda.Function(this, 'BackupFunction', {
@@ -219,9 +219,22 @@ export class VjStorageStack extends cdk.Stack {
       });
 
       // Grant permissions for backup function
-      this.sessionTable.grantBackupAccess(backupFunction);
-      this.presetTable.grantBackupAccess(backupFunction);
+      this.sessionTable.grantReadData(backupFunction);
+      this.presetTable.grantReadData(backupFunction);
       this.backupBucket.grantWrite(backupFunction);
+      
+      // Grant DynamoDB backup permissions
+      backupFunction.addToRolePolicy(new iam.PolicyStatement({
+        actions: [
+          'dynamodb:CreateBackup',
+          'dynamodb:DescribeBackup',
+          'dynamodb:ListBackups'
+        ],
+        resources: [
+          this.sessionTable.tableArn,
+          this.presetTable.tableArn
+        ]
+      }));
 
       // Schedule daily backups
       const backupRule = new events.Rule(this, 'BackupSchedule', {

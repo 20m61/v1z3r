@@ -411,7 +411,13 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
 
   return (
     <div className={styles.container}>
-      <canvas ref={canvasRef} className={styles.canvas} />
+      <canvas 
+        ref={canvasRef} 
+        className={styles.canvas}
+        width={800}
+        height={600}
+        data-testid="vj-canvas"
+      />
     </div>
   );
 }, (prevProps, nextProps) => {

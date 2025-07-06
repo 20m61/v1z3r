@@ -1,0 +1,24 @@
+# Development Dockerfile for v1z3r VJ Application
+FROM node:20-alpine
+
+# Install dependencies for development
+RUN apk add --no-cache libc6-compat git
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json yarn.lock* ./
+RUN yarn install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Development health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+# Start development server
+CMD ["yarn", "dev"]

@@ -1,10 +1,13 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import { Construct } from 'constructs';
 
 export interface VjApiStackProps extends cdk.StackProps {
@@ -178,18 +181,18 @@ export class VjApiStack extends cdk.Stack {
       ],
     }));
 
-    // WebSocket routes using standard WebSocketIntegration
-    const connectIntegration = new apigatewayv2.WebSocketLambdaIntegration(
+    // WebSocket routes using WebSocketLambdaIntegration
+    const connectIntegration = new apigatewayv2Integrations.WebSocketLambdaIntegration(
       'ConnectIntegration',
       connectionFunction
     );
 
-    const disconnectIntegration = new apigatewayv2.WebSocketLambdaIntegration(
+    const disconnectIntegration = new apigatewayv2Integrations.WebSocketLambdaIntegration(
       'DisconnectIntegration', 
       connectionFunction
     );
 
-    const messageIntegration = new apigatewayv2.WebSocketLambdaIntegration(
+    const messageIntegration = new apigatewayv2Integrations.WebSocketLambdaIntegration(
       'MessageIntegration',
       messageFunction
     );
@@ -250,12 +253,12 @@ export class VjApiStack extends cdk.Stack {
     sessionTable.grantReadWriteData(cleanupFunction);
 
     // Schedule cleanup function to run every hour
-    const cleanupRule = new cdk.aws_events.Rule(this, 'CleanupSchedule', {
-      schedule: cdk.aws_events.Schedule.rate(cdk.Duration.hours(1)),
+    const cleanupRule = new events.Rule(this, 'CleanupSchedule', {
+      schedule: events.Schedule.rate(cdk.Duration.hours(1)),
       description: 'Cleanup expired WebSocket sessions',
     });
 
-    cleanupRule.addTarget(new cdk.aws_events_targets.LambdaFunction(cleanupFunction));
+    cleanupRule.addTarget(new targets.LambdaFunction(cleanupFunction));
 
     // Set API URLs
     this.apiUrl = this.restApi.url;
