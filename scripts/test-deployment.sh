@@ -7,6 +7,10 @@ set -e
 
 echo "🚀 Starting post-deployment testing for V1Z3R..."
 
+# Check prerequisites
+command -v curl >/dev/null 2>&1 || { echo "❌ curl is required but not installed."; exit 1; }
+command -v bc >/dev/null 2>&1 || { echo "❌ bc is required but not installed."; exit 1; }
+
 # Configuration
 DEV_URL="http://localhost:3000"
 STAGING_URL="${STAGING_URL:-https://staging.v1z3r.com}"

@@ -7,6 +7,9 @@ set -e
 
 echo "🎵 Starting VJ functionality testing for V1Z3R..."
 
+# Check prerequisites
+command -v curl >/dev/null 2>&1 || { echo "❌ curl is required but not installed."; exit 1; }
+
 # Configuration
 TARGET_URL="${TARGET_URL:-http://localhost:3000}"
 TEST_TIMEOUT=30

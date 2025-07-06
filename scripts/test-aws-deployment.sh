@@ -7,6 +7,9 @@ set -e
 
 echo "☁️  Starting AWS deployment testing for V1Z3R..."
 
+# Check prerequisites
+command -v aws >/dev/null 2>&1 || { echo "❌ AWS CLI is required but not installed."; exit 1; }
+
 # Configuration
 AWS_REGION="${AWS_REGION:-us-east-1}"
 STACK_PREFIX="${STACK_PREFIX:-Vj}"
@@ -15,11 +18,7 @@ ENVIRONMENT="${ENVIRONMENT:-dev}"
 echo "🎯 Testing AWS environment: $ENVIRONMENT"
 echo "🌍 AWS Region: $AWS_REGION"
 
-# Check if AWS CLI is available
-if ! command -v aws &> /dev/null; then
-    echo "❌ AWS CLI not found. Please install AWS CLI first."
-    exit 1
-fi
+# AWS CLI check is already done in prerequisites
 
 # Test 1: Check CloudFormation Stacks
 echo "📋 Testing CloudFormation stacks..."
