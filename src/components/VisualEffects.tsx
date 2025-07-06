@@ -78,6 +78,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
   }, []);
 
   // キャンバスのリサイズ（スロットリング適用）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleResize = useCallback(throttle(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -87,7 +88,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
     // 解像度設定に基づいてスケーリング
     const scaledWidth = width * renderConfig.resolution;
     const scaledHeight = height * renderConfig.resolution;
-    
+  
     canvas.width = scaledWidth;
     canvas.height = scaledHeight;
     

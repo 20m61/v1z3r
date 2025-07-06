@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useVisualizerStore } from '@/store/visualizerStore';
 import Button from './ui/Button';
 import { validateAudioData, ValidationError } from '@/utils/validation';
@@ -20,23 +20,8 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   
   const { isMicrophoneEnabled, setMicrophoneEnabled } = useVisualizerStore();
 
-  // コンポーネントマウント時に自動的に解析を開始
-  useEffect(() => {
-    // ユーザーによるマイク有効化設定を監視
-    if (isMicrophoneEnabled && !isAnalyzing) {
-      startAnalyzing();
-    } else if (!isMicrophoneEnabled && isAnalyzing) {
-      stopAnalyzing();
-    }
-
-    // コンポーネントのアンマウント時にリソースを解放
-    return () => {
-      stopAnalyzing();
-    };
-  }, [isMicrophoneEnabled]);
-
   // オーディオ解析を開始
-  const startAnalyzing = async () => {
+  const startAnalyzing = useCallback(async () => {
     try {
       // ブラウザがWeb Audio APIをサポートしているか確認
       if (!window.AudioContext) {
@@ -125,10 +110,11 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       setIsAnalyzing(false);
       setMicrophoneEnabled(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onAudioData, setMicrophoneEnabled]);
 
   // オーディオ解析を停止
-  const stopAnalyzing = () => {
+  const stopAnalyzing = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -156,7 +142,22 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
     
     setIsAnalyzing(false);
     setMicrophoneEnabled(false);
-  };
+  }, [setMicrophoneEnabled]);
+
+  // コンポーネントマウント時に自動的に解析を開始
+  useEffect(() => {
+    // ユーザーによるマイク有効化設定を監視
+    if (isMicrophoneEnabled && !isAnalyzing) {
+      startAnalyzing();
+    } else if (!isMicrophoneEnabled && isAnalyzing) {
+      stopAnalyzing();
+    }
+
+    // コンポーネントのアンマウント時にリソースを解放
+    return () => {
+      stopAnalyzing();
+    };
+  }, [isMicrophoneEnabled, isAnalyzing, startAnalyzing, stopAnalyzing]);
 
   // エラーメッセージを表示
   if (error) {

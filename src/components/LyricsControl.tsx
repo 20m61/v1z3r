@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useVisualizerStore, FontType, AnimationType } from '@/store/visualizerStore';
 import Button from './ui/Button';
 import Slider from './ui/Slider';
@@ -39,25 +39,25 @@ const LyricsControl: React.FC<LyricsControlProps> = ({ className = '' }) => {
         setLyricsEnabled(false);
       }
     }
-  }, []);
+  }, [isLyricsEnabled, setLyricsEnabled]);
 
   // フォントオプション
-  const fontOptions: { value: FontType; label: string }[] = [
+  const fontOptions = useMemo<{ value: FontType; label: string }[]>(() => [
     { value: 'teko', label: 'Teko' },
     { value: 'prompt', label: 'Prompt' },
     { value: 'audiowide', label: 'Audiowide' },
     { value: 'russo', label: 'Russo' },
     { value: 'orbitron', label: 'Orbitron' },
-  ];
+  ], []);
 
   // アニメーションオプション
-  const animationOptions: { value: AnimationType; label: string }[] = [
+  const animationOptions = useMemo<{ value: AnimationType; label: string }[]>(() => [
     { value: 'glow', label: '光る' },
     { value: 'pulse', label: '鼓動' },
     { value: 'bounce', label: '跳ねる' },
     { value: 'fade', label: 'フェード' },
     { value: 'none', label: 'なし' },
-  ];
+  ], []);
 
   // 歌詞認識のオン/オフ切り替え
   const toggleLyricsEnabled = () => {
@@ -94,7 +94,7 @@ const LyricsControl: React.FC<LyricsControlProps> = ({ className = '' }) => {
     };
     
     preloadFonts();
-  }, []);
+  }, [fontOptions]);
 
   return (
     <div className={`space-y-4 ${className}`}>
