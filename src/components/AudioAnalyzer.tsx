@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useVisualizerStore } from '@/store/visualizerStore';
 import Button from './ui/Button';
 import { validateAudioData, ValidationError } from '@/utils/validation';
@@ -21,7 +21,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   const { isMicrophoneEnabled, setMicrophoneEnabled } = useVisualizerStore();
 
   // オーディオ解析を開始
-  const startAnalyzing = async () => {
+  const startAnalyzing = useCallback(async () => {
     try {
       // ブラウザがWeb Audio APIをサポートしているか確認
       if (!window.AudioContext) {
@@ -110,10 +110,10 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       setIsAnalyzing(false);
       setMicrophoneEnabled(false);
     }
-  };
+  }, [onAudioData, setMicrophoneEnabled]);
 
   // オーディオ解析を停止
-  const stopAnalyzing = () => {
+  const stopAnalyzing = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -141,7 +141,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
     
     setIsAnalyzing(false);
     setMicrophoneEnabled(false);
-  };
+  }, [setMicrophoneEnabled]);
 
   // コンポーネントマウント時に自動的に解析を開始
   useEffect(() => {
@@ -156,7 +156,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
     return () => {
       stopAnalyzing();
     };
-  }, [isMicrophoneEnabled, isAnalyzing]);
+  }, [isMicrophoneEnabled, isAnalyzing, startAnalyzing, stopAnalyzing]);
 
   // エラーメッセージを表示
   if (error) {

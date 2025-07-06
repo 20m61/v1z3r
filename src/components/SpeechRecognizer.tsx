@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useVisualizerStore } from '@/store/visualizerStore';
 
 // Web Speech API用の型定義
@@ -127,7 +127,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
   };
   
   // Web Speech APIの初期化と設定
-  const initializeRecognition = () => {
+  const initializeRecognition = useCallback(() => {
     if (recognitionInitializedRef.current) return true;
     
     // サーバーサイドレンダリング対策
@@ -204,10 +204,10 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
       setError('Failed to initialize speech recognition');
       return false;
     }
-  };
+  }, [updateCurrentLyrics, updateNextLyrics, isLyricsEnabled]);
 
   // 外部からの手動制御用
-  const startListening = () => {
+  const startListening = useCallback(() => {
     if (!isSupported || isListening) return;
     
     if (!recognitionInitializedRef.current) {
@@ -227,9 +227,9 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
       console.error('Failed to start speech recognition', e);
       setError('Failed to start speech recognition');
     }
-  };
+  }, [isSupported, isListening, initializeRecognition]);
   
-  const stopListening = () => {
+  const stopListening = useCallback(() => {
     if (!isSupported || !isListening || !recognitionRef.current) return;
     
     try {
@@ -238,7 +238,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     } catch (e) {
       console.error('Failed to stop speech recognition', e);
     }
-  };
+  }, [isSupported, isListening]);
   
   // コンポーネントがマウントされたときに初期化
   useEffect(() => {
