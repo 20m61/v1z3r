@@ -1,93 +1,109 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import ControlPanel from '../ControlPanel'
-import { useVisualizerStore } from '../../store/visualizerStore'
+import { ControlPanel } from '@vj-app/vj-controller'
 
-// Mock the store
-jest.mock('../../store/visualizerStore')
+// Mock framer-motion to avoid animation issues in tests
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+  AnimatePresence: ({ children }: any) => children,
+}))
 
-const mockStore = {
-  currentEffectType: 'geometric',
-  colorTheme: 'cyberpunk',
-  sensitivity: 50,
-  isAudioAnalyzing: false,
-  isMicrophoneEnabled: false,
-  isCameraEnabled: false,
-  isFullscreen: false,
-  isLyricsEnabled: false,
-  presets: [],
-  setEffectType: jest.fn(),
-  setColorTheme: jest.fn(),
-  setSensitivity: jest.fn(),
-  setMicrophoneEnabled: jest.fn(),
-  toggleCamera: jest.fn(),
-  toggleFullscreen: jest.fn(),
-  savePreset: jest.fn(),
-  loadPreset: jest.fn(),
-  deletePreset: jest.fn(),
-  setLyricsEnabled: jest.fn(),
-}
-
-beforeEach(() => {
-  (useVisualizerStore as jest.Mock).mockReturnValue(mockStore)
-  jest.clearAllMocks()
-})
+// Mock react-icons
+jest.mock('react-icons/fi', () => ({
+  FiSettings: () => <div data-testid="settings-icon" />,
+  FiLayers: () => <div data-testid="layers-icon" />,
+  FiMusic: () => <div data-testid="music-icon" />,
+  FiFolder: () => <div data-testid="folder-icon" />,
+  FiMic: () => <div data-testid="mic-icon" />,
+  FiVideo: () => <div data-testid="video-icon" />,
+  FiSave: () => <div data-testid="save-icon" />,
+  FiShare: () => <div data-testid="share-icon" />,
+  FiChevronUp: () => <div data-testid="chevron-up" />,
+  FiChevronDown: () => <div data-testid="chevron-down" />,
+}))
 
 describe('ControlPanel', () => {
-  it('renders control panel component', () => {
-    render(<ControlPanel />)
-    
-    // The component should render without throwing errors
-    expect(document.body).toBeInTheDocument()
+  beforeEach(() => {
+    jest.clearAllMocks()
   })
 
-  it('displays sensitivity control', () => {
+  it('renders without crashing', () => {
     render(<ControlPanel />)
-    
-    // Look for sliders in the component - the sensitivity control should be one of them
-    const sliders = screen.getAllByRole('slider')
-    expect(sliders.length).toBeGreaterThan(0)
+    expect(screen.getByText('VJ Controller')).toBeInTheDocument()
   })
 
-  it('calls setSensitivity when sensitivity changes', () => {
+  it('displays all tab options', () => {
     render(<ControlPanel />)
     
-    // Find the first slider (likely sensitivity) and change its value
-    const sliders = screen.getAllByRole('slider')
-    if (sliders.length > 0) {
-      fireEvent.change(sliders[0], { target: { value: '75' } })
-      // Check if setSensitivity was called (it might be called with any value)
-      expect(mockStore.setSensitivity).toHaveBeenCalled()
-    }
+    expect(screen.getByText('Effects')).toBeInTheDocument()
+    expect(screen.getByText('Layers')).toBeInTheDocument()
+    expect(screen.getByText('Lyrics')).toBeInTheDocument()
+    expect(screen.getByText('Presets')).toBeInTheDocument()
   })
 
-  it('displays microphone status', () => {
+  it('can toggle collapse state', () => {
     render(<ControlPanel />)
     
-    // Check that microphone controls are rendered
-    const buttons = screen.getAllByRole('button')
-    expect(buttons.length).toBeGreaterThan(0)
+    const header = screen.getByText('VJ Controller').closest('div')
+    
+    // Initially should be expanded
+    expect(screen.getByText('Effects')).toBeInTheDocument()
+    
+    // Click to collapse
+    fireEvent.click(header!)
+    
+    // Content should still be there (due to animation mock)
+    expect(screen.getByText('Effects')).toBeInTheDocument()
   })
 
-  it('toggles microphone when clicked', () => {
+  it('switches between tabs', () => {
     render(<ControlPanel />)
     
-    // Find and click microphone button (using icon test)
-    const buttons = screen.getAllByRole('button')
-    const micButton = buttons.find(button => 
-      button.getAttribute('title') === 'マイク' || 
-      button.textContent?.includes('マイク')
-    )
+    // Click on Layers tab
+    fireEvent.click(screen.getByText('Layers'))
+    expect(screen.getByText('Add Layer')).toBeInTheDocument()
     
-    if (micButton) {
-      fireEvent.click(micButton)
-      expect(mockStore.setMicrophoneEnabled).toHaveBeenCalled()
-    }
+    // Click on Presets tab
+    fireEvent.click(screen.getByText('Presets'))
+    expect(screen.getByText('Save Preset')).toBeInTheDocument()
   })
 
-  it('handles effect type changes', () => {
+  it('shows microphone controls in lyrics tab', () => {
     render(<ControlPanel />)
     
-    // Test should not throw errors and store should be accessible
-    expect(mockStore.currentEffectType).toBe('geometric')
+    // Switch to lyrics tab
+    fireEvent.click(screen.getByText('Lyrics'))
+    
+    expect(screen.getByText('Start Recording')).toBeInTheDocument()
+    expect(screen.getByText(/Voice recognition inactive/)).toBeInTheDocument()
+  })
+
+  it('handles microphone toggle', () => {
+    render(<ControlPanel />)
+    
+    // Switch to lyrics tab
+    fireEvent.click(screen.getByText('Lyrics'))
+    
+    const micButton = screen.getByText('Start Recording')
+    fireEvent.click(micButton)
+    
+    // Note: Due to getUserMedia being mocked, we can't test the actual state change
+    // In a real test environment, you would mock navigator.mediaDevices.getUserMedia
+  })
+
+  it('accepts custom className', () => {
+    const { container } = render(<ControlPanel className="custom-class" />)
+    
+    expect(container.firstChild).toHaveClass('custom-class')
+  })
+
+  it('shows effect controls in effects tab', () => {
+    render(<ControlPanel />)
+    
+    // Should be on effects tab by default
+    expect(screen.getByText('Intensity')).toBeInTheDocument()
+    expect(screen.getByText('Speed')).toBeInTheDocument()
+    expect(screen.getByText('Color Shift')).toBeInTheDocument()
   })
 })

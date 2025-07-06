@@ -10,7 +10,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import VisualEffects from './components/VisualEffects'
 import AudioAnalyzer from './components/AudioAnalyzer'
-import ControlPanel from './components/ControlPanel'
+import { ControlPanel } from '@vj-app/vj-controller'
 import { useVisualizerStore } from './store/visualizerStore'
 import { startPerformanceMonitoring, getCurrentFps, getCurrentMemoryUsage } from './utils/performance'
 
