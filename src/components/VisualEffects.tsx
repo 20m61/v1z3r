@@ -87,7 +87,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
     // 解像度設定に基づいてスケーリング
     const scaledWidth = width * renderConfig.resolution;
     const scaledHeight = height * renderConfig.resolution;
-    
+  
     canvas.width = scaledWidth;
     canvas.height = scaledHeight;
     

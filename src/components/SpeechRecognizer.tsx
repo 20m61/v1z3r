@@ -265,7 +265,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
         }
       }
     };
-  }, []);
+  }, [autoStart, initializeRecognition, isListening, isLyricsEnabled, startListening]);
   
   // isLyricsEnabledの変更を監視
   useEffect(() => {
@@ -277,7 +277,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     } else if (!isLyricsEnabled && isListening) {
       stopListening();
     }
-  }, [isLyricsEnabled, isListening, isSupported]);
+  }, [isLyricsEnabled, isListening, isSupported, startListening, stopListening]);
   
   // UI表示なし（バックグラウンドで動作）
   return null;

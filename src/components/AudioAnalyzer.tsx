@@ -20,21 +20,6 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   
   const { isMicrophoneEnabled, setMicrophoneEnabled } = useVisualizerStore();
 
-  // コンポーネントマウント時に自動的に解析を開始
-  useEffect(() => {
-    // ユーザーによるマイク有効化設定を監視
-    if (isMicrophoneEnabled && !isAnalyzing) {
-      startAnalyzing();
-    } else if (!isMicrophoneEnabled && isAnalyzing) {
-      stopAnalyzing();
-    }
-
-    // コンポーネントのアンマウント時にリソースを解放
-    return () => {
-      stopAnalyzing();
-    };
-  }, [isMicrophoneEnabled]);
-
   // オーディオ解析を開始
   const startAnalyzing = async () => {
     try {
@@ -157,6 +142,21 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
     setIsAnalyzing(false);
     setMicrophoneEnabled(false);
   };
+
+  // コンポーネントマウント時に自動的に解析を開始
+  useEffect(() => {
+    // ユーザーによるマイク有効化設定を監視
+    if (isMicrophoneEnabled && !isAnalyzing) {
+      startAnalyzing();
+    } else if (!isMicrophoneEnabled && isAnalyzing) {
+      stopAnalyzing();
+    }
+
+    // コンポーネントのアンマウント時にリソースを解放
+    return () => {
+      stopAnalyzing();
+    };
+  }, [isMicrophoneEnabled, isAnalyzing]);
 
   // エラーメッセージを表示
   if (error) {

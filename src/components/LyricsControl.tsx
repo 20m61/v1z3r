@@ -39,7 +39,7 @@ const LyricsControl: React.FC<LyricsControlProps> = ({ className = '' }) => {
         setLyricsEnabled(false);
       }
     }
-  }, []);
+  }, [isLyricsEnabled, setLyricsEnabled]);
 
   // フォントオプション
   const fontOptions: { value: FontType; label: string }[] = [
@@ -94,7 +94,7 @@ const LyricsControl: React.FC<LyricsControlProps> = ({ className = '' }) => {
     };
     
     preloadFonts();
-  }, []);
+  }, [fontOptions]);
 
   return (
     <div className={`space-y-4 ${className}`}>
