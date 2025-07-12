@@ -31,7 +31,9 @@ export class VjConfigStack extends cdk.Stack {
       },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: config.enableBackup,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: config.enableBackup,
+      },
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
