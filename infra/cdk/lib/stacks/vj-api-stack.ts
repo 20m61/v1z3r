@@ -98,7 +98,7 @@ export class VjApiStack extends cdk.Stack {
     // Health check endpoint
     const healthFunction = new lambda.Function(this, 'HealthFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'health.handler',
+      handler: 'index.handler',
       code: lambda.Code.fromInline(`
         exports.handler = async (event) => {
           return {

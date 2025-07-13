@@ -27,19 +27,19 @@ interface StageConfig {
 
 const stageConfigs: Record<string, StageConfig> = {
   dev: {
-    domainName: 'dev.v1z3r.app',
+    domainName: 'localhost:3000',
     enableAuth: false,
     enableCloudFront: false,
     enableBackup: false,
   },
   staging: {
-    domainName: 'staging.v1z3r.app',
+    domainName: 'staging.v1z3r.sc4pe.net',
     enableAuth: true,
     enableCloudFront: true,
-    enableBackup: true,
+    enableBackup: false,
   },
   prod: {
-    domainName: 'v1z3r.app',
+    domainName: 'v1z3r.sc4pe.net',
     enableAuth: true,
     enableCloudFront: true,
     enableBackup: true,

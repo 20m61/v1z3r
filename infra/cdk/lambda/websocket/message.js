@@ -1,14 +1,17 @@
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { ApiGatewayManagementApiClient, PostToConnectionCommand } = require('@aws-sdk/client-apigatewaymanagementapi');
+
+const client = new DynamoDBClient({});
+const dynamodb = DynamoDBDocumentClient.from(client);
 
 exports.handler = async (event) => {
   console.log('WebSocket message event:', JSON.stringify(event, null, 2));
   
   const { connectionId, domainName, stage } = event.requestContext;
   const sessionTableName = process.env.SESSION_TABLE_NAME;
-  const apiGatewayManagementApi = new AWS.ApiGatewayManagementApi({
-    apiVersion: '2018-11-29',
-    endpoint: `${domainName}/${stage}`
+  const apiGatewayManagementApi = new ApiGatewayManagementApiClient({
+    endpoint: `https://${domainName}/${stage}`
   });
   
   try {

@@ -33,7 +33,7 @@ ENVIRONMENT=prod ./scripts/test-deployment.sh
 TARGET_URL=http://localhost:3000 ./scripts/test-vj-functionality.sh
 
 # ステージング環境での VJ機能テスト
-TARGET_URL=https://staging.v1z3r.com ./scripts/test-vj-functionality.sh
+TARGET_URL=https://staging.v1z3r.sc4pe.net ./scripts/test-vj-functionality.sh
 ```
 
 **実行内容:**
@@ -74,8 +74,8 @@ export AWS_PROFILE=your-profile
 export STACK_PREFIX=Vj
 
 # アプリケーション設定
-export STAGING_URL=https://staging.v1z3r.com
-export PROD_URL=https://v1z3r.com
+export STAGING_URL=https://staging.v1z3r.sc4pe.net
+export PROD_URL=https://v1z3r.sc4pe.net
 ```
 
 ### 前提条件

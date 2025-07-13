@@ -1,5 +1,8 @@
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, DeleteCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+
+const client = new DynamoDBClient({});
+const dynamodb = DynamoDBDocumentClient.from(client);
 
 exports.handler = async (event) => {
   console.log('Preset function called:', JSON.stringify(event, null, 2));
@@ -43,13 +46,13 @@ exports.handler = async (event) => {
       case 'GET':
         if (pathParameters && pathParameters.presetId) {
           // Get specific preset
-          const result = await dynamodb.get({
+          const result = await dynamodb.send(new GetCommand({
             TableName: presetTableName,
             Key: {
               userId: userId,
               presetId: pathParameters.presetId
             }
-          }).promise();
+          }));
           
           return {
             statusCode: result.Item ? 200 : 404,
@@ -58,13 +61,13 @@ exports.handler = async (event) => {
           };
         } else {
           // List all presets for user
-          const result = await dynamodb.query({
+          const result = await dynamodb.send(new ScanCommand({
             TableName: presetTableName,
-            KeyConditionExpression: 'userId = :userId',
+            FilterExpression: 'userId = :userId',
             ExpressionAttributeValues: {
               ':userId': userId
             }
-          }).promise();
+          }));
           
           return {
             statusCode: 200,
@@ -88,10 +91,10 @@ exports.handler = async (event) => {
           updatedAt: new Date().toISOString()
         };
         
-        await dynamodb.put({
+        await dynamodb.send(new PutCommand({
           TableName: presetTableName,
           Item: newPreset
-        }).promise();
+        }));
         
         return {
           statusCode: 201,
@@ -111,7 +114,7 @@ exports.handler = async (event) => {
         
         const updateData = JSON.parse(body || '{}');
         
-        await dynamodb.update({
+        await dynamodb.send(new UpdateCommand({
           TableName: presetTableName,
           Key: {
             userId: userId,
@@ -127,7 +130,7 @@ exports.handler = async (event) => {
             ':isPublic': updateData.isPublic || false,
             ':updatedAt': new Date().toISOString()
           }
-        }).promise();
+        }));
         
         return {
           statusCode: 200,
@@ -145,13 +148,13 @@ exports.handler = async (event) => {
           };
         }
         
-        await dynamodb.delete({
+        await dynamodb.send(new DeleteCommand({
           TableName: presetTableName,
           Key: {
             userId: userId,
             presetId: pathParameters.presetId
           }
-        }).promise();
+        }));
         
         return {
           statusCode: 200,
