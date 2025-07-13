@@ -25,6 +25,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [activeTab, setActiveTab] = useState('effects')
   const [isMicrophoneEnabled, setIsMicrophoneEnabled] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [intensity, setIntensity] = useState(50)
+  const [speed, setSpeed] = useState(25)
+  const [colorShift, setColorShift] = useState(0)
 
   // Check for mobile viewport
   useEffect(() => {
@@ -65,8 +68,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             <Slider
               min={0}
               max={100}
-              defaultValue={50}
-              onChange={(value) => console.log('Intensity:', value)}
+              value={intensity}
+              onChange={setIntensity}
             />
           </div>
           <div>
@@ -76,8 +79,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             <Slider
               min={0}
               max={100}
-              defaultValue={25}
-              onChange={(value) => console.log('Speed:', value)}
+              value={speed}
+              onChange={setSpeed}
             />
           </div>
           <div>
@@ -87,8 +90,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             <Slider
               min={0}
               max={100}
-              defaultValue={0}
-              onChange={(value) => console.log('Color Shift:', value)}
+              value={colorShift}
+              onChange={setColorShift}
             />
           </div>
         </div>
@@ -120,7 +123,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <div className="space-y-4">
           <Button
             onClick={handleMicrophoneToggle}
-            variant={isMicrophoneEnabled ? 'danger' : 'primary'}
+            variant={isMicrophoneEnabled ? 'secondary' : 'primary'}
             className="w-full"
           >
             <FiMic className="mr-2" />
@@ -199,8 +202,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             <div className="p-4">
               <Tabs
                 tabs={tabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
+                defaultTabId={activeTab}
+                onChange={setActiveTab}
                 className="w-full"
               />
             </div>

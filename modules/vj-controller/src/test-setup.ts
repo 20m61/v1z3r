@@ -15,7 +15,7 @@ global.matchMedia = global.matchMedia || function (query) {
 }
 
 // Mock Speech Recognition
-global.webkitSpeechRecognition = global.webkitSpeechRecognition || function() {
+(global as any).webkitSpeechRecognition = (global as any).webkitSpeechRecognition || function() {
   return {
     start: jest.fn(),
     stop: jest.fn(),
@@ -40,7 +40,7 @@ Object.defineProperty(global.navigator, 'mediaDevices', {
 })
 
 // Mock ResizeObserver
-global.ResizeObserver = global.ResizeObserver || function(callback) {
+global.ResizeObserver = global.ResizeObserver || function(callback: any) {
   return {
     observe: jest.fn(),
     unobserve: jest.fn(),
@@ -49,7 +49,7 @@ global.ResizeObserver = global.ResizeObserver || function(callback) {
 }
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = global.requestAnimationFrame || function(callback) {
+global.requestAnimationFrame = global.requestAnimationFrame || function(callback: any) {
   return setTimeout(callback, 16)
 }
 
@@ -58,7 +58,7 @@ global.cancelAnimationFrame = global.cancelAnimationFrame || function(id) {
 }
 
 // Mock IntersectionObserver
-global.IntersectionObserver = global.IntersectionObserver || function(callback) {
+global.IntersectionObserver = global.IntersectionObserver || function(callback: any) {
   return {
     observe: jest.fn(),
     unobserve: jest.fn(),
