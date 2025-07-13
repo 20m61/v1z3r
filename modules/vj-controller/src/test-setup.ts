@@ -66,12 +66,16 @@ if (!global.cancelAnimationFrame) {
 
 // Mock IntersectionObserver
 if (!global.IntersectionObserver) {
-  global.IntersectionObserver = class {
+  global.IntersectionObserver = class MockIntersectionObserver {
     constructor(callback: any, options?: any) {}
     observe = jest.fn();
     unobserve = jest.fn();
     disconnect = jest.fn();
-  };
+    root = null;
+    rootMargin = '';
+    thresholds = [];
+    takeRecords = jest.fn().mockReturnValue([]);
+  } as any;
 }
 
 // Mock localStorage

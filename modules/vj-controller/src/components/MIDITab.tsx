@@ -38,6 +38,8 @@ const MIDITab: React.FC = () => {
         const firstInput = inputs[0]
         firstInput.onmidimessage = (event) => {
           const data = event.data
+          if (!data || data.length < 1) return
+          
           const status = data[0]
           const data1 = data[1] || 0
           const data2 = data[2] || 0
