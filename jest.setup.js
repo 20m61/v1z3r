@@ -141,3 +141,18 @@ global.navigator.permissions = global.navigator.permissions || {
 }
 
 // Note: AWS SDK mocks are handled in individual test files to avoid dependency issues
+
+// Mock react-icons for better test readability
+jest.mock('react-icons/fi', () => ({
+  FiChevronUp: () => <span data-testid="icon-chevron-up">▲</span>,
+  FiChevronDown: () => <span data-testid="icon-chevron-down">▼</span>,
+  FiSettings: () => <span data-testid="icon-settings">⚙</span>,
+  FiLayers: () => <span data-testid="icon-layers">📋</span>,
+  FiMusic: () => <span data-testid="icon-music">🎵</span>,
+  FiFolder: () => <span data-testid="icon-folder">📁</span>,
+  FiMic: () => <span data-testid="icon-mic">🎤</span>,
+  FiVideo: () => <span data-testid="icon-video">📹</span>,
+  FiSave: () => <span data-testid="icon-save">💾</span>,
+  FiShare: () => <span data-testid="icon-share">📤</span>,
+  FiSliders: () => <span data-testid="icon-sliders">🎛</span>,
+}))
