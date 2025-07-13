@@ -155,4 +155,9 @@ jest.mock('react-icons/fi', () => ({
   FiSave: () => <span data-testid="icon-save">💾</span>,
   FiShare: () => <span data-testid="icon-share">📤</span>,
   FiSliders: () => <span data-testid="icon-sliders">🎛</span>,
+  FiPlusCircle: () => <span data-testid="icon-plus-circle">➕</span>,
+  FiEye: () => <span data-testid="icon-eye">👁</span>,
+  FiEyeOff: () => <span data-testid="icon-eye-off">🙈</span>,
+  FiTrash2: () => <span data-testid="icon-trash">🗑</span>,
+  FiMove: () => <span data-testid="icon-move">🔄</span>,
 }))
