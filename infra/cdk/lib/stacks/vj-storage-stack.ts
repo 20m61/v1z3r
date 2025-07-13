@@ -40,7 +40,9 @@ export class VjStorageStack extends cdk.Stack {
       timeToLiveAttribute: 'ttl',
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: config.enableBackup,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: config.enableBackup,
+      },
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
     });
@@ -75,7 +77,9 @@ export class VjStorageStack extends cdk.Stack {
       },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: config.enableBackup,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: config.enableBackup,
+      },
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 

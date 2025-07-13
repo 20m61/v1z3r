@@ -39,7 +39,12 @@ export class VjStaticHostingStack extends cdk.Stack {
       publicReadAccess: !config.enableCloudFront, // Only public if not using CloudFront
       blockPublicAccess: config.enableCloudFront 
         ? s3.BlockPublicAccess.BLOCK_ALL 
-        : s3.BlockPublicAccess.BLOCK_ACLS,
+        : new s3.BlockPublicAccess({
+            blockPublicAcls: false,
+            blockPublicPolicy: false,
+            ignorePublicAcls: false,
+            restrictPublicBuckets: false,
+          }),
       removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: stage !== 'prod',
       cors: [
@@ -105,9 +110,9 @@ export class VjStaticHostingStack extends cdk.Stack {
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
           originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
         },
-        additionalBehaviors: {
+        additionalBehaviors: apiUrl ? {
           '/api/*': {
-            origin: new origins.HttpOrigin(apiUrl.replace('https://', '').replace('http://', '')),
+            origin: new origins.HttpOrigin(apiUrl.replace('https://', '').replace('http://', '').split('/')[0]),
             allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
             cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
             viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -130,7 +135,7 @@ export class VjStaticHostingStack extends cdk.Stack {
               cookieBehavior: cloudfront.CacheCookieBehavior.none(),
             }),
           },
-        },
+        } : {},
         priceClass: stage === 'prod' 
           ? cloudfront.PriceClass.PRICE_CLASS_ALL 
           : cloudfront.PriceClass.PRICE_CLASS_100,
@@ -181,7 +186,16 @@ export class VjStaticHostingStack extends cdk.Stack {
     }
 
     // Environment configuration file for the frontend
-    const envConfig = {
+    // For dev environment, use static URLs since we can't reference cross-stack
+    const envConfig = stage === 'dev' ? {
+      NEXT_PUBLIC_API_URL: 'https://jej6yzkbeb.execute-api.ap-northeast-1.amazonaws.com/dev/',
+      NEXT_PUBLIC_WEBSOCKET_URL: 'wss://c3xs5dzz4a.execute-api.ap-northeast-1.amazonaws.com/dev',
+      NEXT_PUBLIC_STAGE: stage,
+      NEXT_PUBLIC_DOMAIN: config.domainName,
+      NEXT_PUBLIC_ENABLE_AUTH: config.enableAuth.toString(),
+      NEXT_PUBLIC_VERSION: '1.0.0',
+      NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+    } : {
       NEXT_PUBLIC_API_URL: apiUrl,
       NEXT_PUBLIC_WEBSOCKET_URL: websocketUrl,
       NEXT_PUBLIC_STAGE: stage,
@@ -192,21 +206,25 @@ export class VjStaticHostingStack extends cdk.Stack {
     };
 
     // Deploy environment configuration
-    const bucketDeploymentProps: any = {
-      sources: [
-        s3deploy.Source.jsonData('env-config.json', envConfig),
-      ],
-      destinationBucket: this.siteBucket,
-      destinationKeyPrefix: 'config/',
-    };
-
-    // Only add distribution settings if CloudFront is enabled
     if (this.distribution) {
-      bucketDeploymentProps.distribution = this.distribution;
-      bucketDeploymentProps.distributionPaths = ['/config/*'];
+      new s3deploy.BucketDeployment(this, 'DeployEnvConfig', {
+        sources: [
+          s3deploy.Source.jsonData('env-config.json', envConfig),
+        ],
+        destinationBucket: this.siteBucket,
+        destinationKeyPrefix: 'config/',
+        distribution: this.distribution,
+        distributionPaths: ['/config/*'],
+      });
+    } else {
+      new s3deploy.BucketDeployment(this, 'DeployEnvConfig', {
+        sources: [
+          s3deploy.Source.jsonData('env-config.json', envConfig),
+        ],
+        destinationBucket: this.siteBucket,
+        destinationKeyPrefix: 'config/',
+      });
     }
-
-    new s3deploy.BucketDeployment(this, 'DeployEnvConfig', bucketDeploymentProps);
 
     // Build and deployment user (for CI/CD)
     const deployUser = new iam.User(this, 'DeployUser', {

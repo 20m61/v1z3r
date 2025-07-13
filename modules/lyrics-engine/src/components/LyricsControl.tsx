@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useVisualizerStore, FontType, AnimationType } from '@/store/visualizerStore';
-import Button from './ui/Button';
-import Slider from './ui/Slider';
-import ColorPicker from './ui/ColorPicker';
+import Button from '@/components/ui/Button';
+import Slider from '@/components/ui/Slider';
+import ColorPicker from '@/components/ui/ColorPicker';
 import { FiType, FiPlayCircle, FiStopCircle, FiRefreshCw, FiInfo } from 'react-icons/fi';
 
 interface LyricsControlProps {
