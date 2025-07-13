@@ -43,19 +43,18 @@ Object.defineProperty(global.navigator, 'mediaDevices', {
 
 // Mock ResizeObserver
 if (!global.ResizeObserver) {
-  global.ResizeObserver = function(callback: any) {
-    return {
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    };
+  global.ResizeObserver = class {
+    constructor(callback: any) {}
+    observe = jest.fn();
+    unobserve = jest.fn();
+    disconnect = jest.fn();
   };
 }
 
 // Mock requestAnimationFrame
 if (!global.requestAnimationFrame) {
-  global.requestAnimationFrame = function(callback: any) {
-    return setTimeout(callback, 16);
+  global.requestAnimationFrame = function(callback: any): number {
+    return setTimeout(callback, 16) as unknown as number;
   };
 }
 
@@ -67,12 +66,11 @@ if (!global.cancelAnimationFrame) {
 
 // Mock IntersectionObserver
 if (!global.IntersectionObserver) {
-  global.IntersectionObserver = function(callback: any) {
-    return {
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    };
+  global.IntersectionObserver = class {
+    constructor(callback: any, options?: any) {}
+    observe = jest.fn();
+    unobserve = jest.fn();
+    disconnect = jest.fn();
   };
 }
 

@@ -37,7 +37,10 @@ const MIDITab: React.FC = () => {
         // Connect to first available device
         const firstInput = inputs[0]
         firstInput.onmidimessage = (event) => {
-          const [status, data1, data2] = event.data
+          const data = event.data
+          const status = data[0]
+          const data1 = data[1] || 0
+          const data2 = data[2] || 0
           const messageType = status & 0xF0
           const channel = status & 0x0F
           
