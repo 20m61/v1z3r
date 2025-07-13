@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, ScanCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand, PutCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { ApiGatewayManagementApiClient, PostToConnectionCommand } = require('@aws-sdk/client-apigatewaymanagementapi');
 
 const client = new DynamoDBClient({});
@@ -55,7 +55,6 @@ exports.handler = async (event) => {
           } catch (error) {
             if (error.statusCode === 410) {
               // Connection is stale, remove it
-              const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
               await dynamodb.send(new DeleteCommand({
                 TableName: sessionTableName,
                 Key: { sessionId: session.sessionId }
@@ -91,7 +90,6 @@ exports.handler = async (event) => {
             }));
           } catch (error) {
             if (error.statusCode === 410) {
-              const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
               await dynamodb.send(new DeleteCommand({
                 TableName: sessionTableName,
                 Key: { sessionId: session.sessionId }
