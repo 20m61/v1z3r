@@ -23,27 +23,27 @@ exports.handler = async (event) => {
     switch (action) {
       case 'ping':
         // Simple ping/pong for heartbeat
-        await apiGatewayManagementApi.postToConnection({
+        await apiGatewayManagementApi.send(new PostToConnectionCommand({
           ConnectionId: connectionId,
           Data: JSON.stringify({ action: 'pong', timestamp: new Date().toISOString() })
-        }).promise();
+        }));
         break;
         
       case 'sync':
         // Sync VJ state with other connected clients
         // Get all connected sessions
-        const sessions = await dynamodb.scan({
+        const sessions = await dynamodb.send(new ScanCommand({
           TableName: sessionTableName,
           FilterExpression: 'attribute_exists(connectionId) AND connectionId <> :currentConnection',
           ExpressionAttributeValues: {
             ':currentConnection': connectionId
           }
-        }).promise();
+        }));
         
         // Broadcast sync data to other connections
         const broadcastPromises = sessions.Items.map(async (session) => {
           try {
-            await apiGatewayManagementApi.postToConnection({
+            await apiGatewayManagementApi.send(new PostToConnectionCommand({
               ConnectionId: session.connectionId,
               Data: JSON.stringify({
                 action: 'sync',
@@ -51,14 +51,15 @@ exports.handler = async (event) => {
                 fromConnection: connectionId,
                 timestamp: new Date().toISOString()
               })
-            }).promise();
+            }));
           } catch (error) {
             if (error.statusCode === 410) {
               // Connection is stale, remove it
-              await dynamodb.delete({
+              const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+              await dynamodb.send(new DeleteCommand({
                 TableName: sessionTableName,
                 Key: { sessionId: session.sessionId }
-              }).promise();
+              }));
             }
             console.error('Error broadcasting to connection:', session.connectionId, error);
           }
@@ -69,17 +70,17 @@ exports.handler = async (event) => {
         
       case 'preset-share':
         // Share preset with other connected clients
-        const allSessions = await dynamodb.scan({
+        const allSessions = await dynamodb.send(new ScanCommand({
           TableName: sessionTableName,
           FilterExpression: 'attribute_exists(connectionId) AND connectionId <> :currentConnection',
           ExpressionAttributeValues: {
             ':currentConnection': connectionId
           }
-        }).promise();
+        }));
         
         const sharePromises = allSessions.Items.map(async (session) => {
           try {
-            await apiGatewayManagementApi.postToConnection({
+            await apiGatewayManagementApi.send(new PostToConnectionCommand({
               ConnectionId: session.connectionId,
               Data: JSON.stringify({
                 action: 'preset-shared',
@@ -87,13 +88,14 @@ exports.handler = async (event) => {
                 fromConnection: connectionId,
                 timestamp: new Date().toISOString()
               })
-            }).promise();
+            }));
           } catch (error) {
             if (error.statusCode === 410) {
-              await dynamodb.delete({
+              const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+              await dynamodb.send(new DeleteCommand({
                 TableName: sessionTableName,
                 Key: { sessionId: session.sessionId }
-              }).promise();
+              }));
             }
             console.error('Error sharing preset:', error);
           }
@@ -104,14 +106,14 @@ exports.handler = async (event) => {
         
       default:
         console.log('Unknown action:', action);
-        await apiGatewayManagementApi.postToConnection({
+        await apiGatewayManagementApi.send(new PostToConnectionCommand({
           ConnectionId: connectionId,
           Data: JSON.stringify({
             action: 'error',
             message: 'Unknown action',
             timestamp: new Date().toISOString()
           })
-        }).promise();
+        }));
     }
     
     return {
@@ -123,14 +125,14 @@ exports.handler = async (event) => {
     console.error('Message handler error:', error);
     
     try {
-      await apiGatewayManagementApi.postToConnection({
+      await apiGatewayManagementApi.send(new PostToConnectionCommand({
         ConnectionId: connectionId,
         Data: JSON.stringify({
           action: 'error',
           message: 'Internal server error',
           timestamp: new Date().toISOString()
         })
-      }).promise();
+      }));
     } catch (sendError) {
       console.error('Error sending error message:', sendError);
     }
