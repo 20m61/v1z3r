@@ -44,7 +44,7 @@ export class VjMonitoringStack extends cdk.Stack {
     // Add email subscription for production
     if (stage === 'prod') {
       this.alertTopic.addSubscription(
-        new snsSubscriptions.EmailSubscription('admin@v1z3r.app')
+        new snsSubscriptions.EmailSubscription('admin@sc4pe.net')
       );
     }
 

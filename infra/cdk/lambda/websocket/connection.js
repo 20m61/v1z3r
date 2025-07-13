@@ -1,5 +1,8 @@
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+
+const client = new DynamoDBClient({});
+const dynamodb = DynamoDBDocumentClient.from(client);
 
 exports.handler = async (event) => {
   console.log('WebSocket connection event:', JSON.stringify(event, null, 2));
@@ -20,19 +23,19 @@ exports.handler = async (event) => {
         stage
       };
       
-      await dynamodb.put({
+      await dynamodb.send(new PutCommand({
         TableName: sessionTableName,
         Item: sessionData
-      }).promise();
+      }));
       
       console.log('Connection stored:', connectionId);
       
     } else if (eventType === 'DISCONNECT') {
       // Remove connection from session table
-      await dynamodb.delete({
+      await dynamodb.send(new DeleteCommand({
         TableName: sessionTableName,
         Key: { sessionId: connectionId }
-      }).promise();
+      }));
       
       console.log('Connection removed:', connectionId);
     }

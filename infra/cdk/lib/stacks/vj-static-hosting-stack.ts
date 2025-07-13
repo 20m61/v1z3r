@@ -61,16 +61,30 @@ export class VjStaticHostingStack extends cdk.Stack {
     cdk.Tags.of(this.siteBucket).add('Name', `VJ Frontend Bucket - ${stage}`);
     cdk.Tags.of(this.siteBucket).add('Purpose', 'Static website hosting');
 
-    let certificate: acm.Certificate | undefined;
+    let certificate: acm.ICertificate | undefined;
     
-    // SSL certificate (only for production with custom domain)
-    if (config.enableCloudFront && stage === 'prod' && config.domainName !== 'localhost:3000') {
-      certificate = new acm.Certificate(this, 'SiteCertificate', {
-        domainName: config.domainName,
-        subjectAlternativeNames: [`www.${config.domainName}`],
-        validation: acm.CertificateValidation.fromDns(),
-      });
+    // SSL certificate (for production and staging with custom domain)
+    if (config.enableCloudFront && (stage === 'prod' || stage === 'staging') && config.domainName !== 'localhost:3000') {
+      // Use existing certificate if available
+      const certificateArn = stage === 'staging' 
+        ? 'arn:aws:acm:us-east-1:822063948773:certificate/0343ecfd-6f6d-4ea2-a7e6-0e82766cb0f7'
+        : stage === 'prod'
+        ? 'arn:aws:acm:us-east-1:822063948773:certificate/7038c1fa-8b70-4822-ade0-a325dafffcd3'
+        : undefined;
+      
+      if (certificateArn) {
+        certificate = acm.Certificate.fromCertificateArn(this, 'SiteCertificate', certificateArn);
+      } else {
+        certificate = new acm.Certificate(this, 'SiteCertificate', {
+          domainName: config.domainName,
+          subjectAlternativeNames: [`www.${config.domainName}`],
+          validation: acm.CertificateValidation.fromDns(),
+        });
+      }
     }
+
+    // Use separate API URL for CloudFront configuration to avoid origin conflicts
+    const cfApiUrl = stage === 'staging' ? null : apiUrl;
 
     // CloudFront distribution (optional)
     if (config.enableCloudFront) {
@@ -90,13 +104,13 @@ export class VjStaticHostingStack extends cdk.Stack {
             httpStatus: 404,
             responseHttpStatus: 200,
             responsePagePath: '/index.html',
-            ttl: cdk.Duration.minutes(30),
+            ttl: cdk.Duration.minutes(5),
           },
           {
             httpStatus: 403,
             responseHttpStatus: 200,
             responsePagePath: '/index.html',
-            ttl: cdk.Duration.minutes(30),
+            ttl: cdk.Duration.minutes(5),
           },
         ],
         defaultBehavior: {
@@ -110,9 +124,9 @@ export class VjStaticHostingStack extends cdk.Stack {
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
           originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
         },
-        additionalBehaviors: apiUrl ? {
+        additionalBehaviors: cfApiUrl ? {
           '/api/*': {
-            origin: new origins.HttpOrigin(apiUrl.replace('https://', '').replace('http://', '').split('/')[0]),
+            origin: new origins.HttpOrigin(cfApiUrl.replace('https://', '').replace('http://', '').split('/')[0]),
             allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
             cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
             viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -139,33 +153,16 @@ export class VjStaticHostingStack extends cdk.Stack {
         priceClass: stage === 'prod' 
           ? cloudfront.PriceClass.PRICE_CLASS_ALL 
           : cloudfront.PriceClass.PRICE_CLASS_100,
-        enableLogging: true,
-        logBucket: (() => {
-          const logsBucket = new s3.Bucket(this, 'LogsBucket', {
-            bucketName: `vj-cloudfront-logs-${stage}-${this.account}`,
-            lifecycleRules: [
-              {
-                id: 'DeleteOldLogs',
-                expiration: cdk.Duration.days(90),
-              },
-            ],
-            removalPolicy: stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-            autoDeleteObjects: stage !== 'prod',
-          });
-          cdk.Tags.of(logsBucket).add('Name', `VJ CloudFront Logs - ${stage}`);
-          cdk.Tags.of(logsBucket).add('Purpose', 'CloudFront access logs');
-          return logsBucket;
-        })(),
-        logFilePrefix: 'cloudfront-logs/',
+        enableLogging: stage === 'prod', // Disable logging for non-prod to reduce costs and complexity
         comment: `VJ Application Distribution - ${stage}`,
       });
 
       this.siteUrl = certificate ? `https://${config.domainName}` : `https://${this.distribution.distributionDomainName}`;
 
-      // Route 53 DNS (only for production with custom domain)
-      if (certificate && stage === 'prod') {
+      // Route 53 DNS (for production and staging with custom domain)
+      if (certificate && (stage === 'prod' || stage === 'staging')) {
         const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-          domainName: config.domainName,
+          domainName: 'sc4pe.net',
         });
 
         new route53.ARecord(this, 'SiteAliasRecord', {
@@ -174,11 +171,14 @@ export class VjStaticHostingStack extends cdk.Stack {
           zone,
         });
 
-        new route53.ARecord(this, 'WwwSiteAliasRecord', {
-          recordName: `www.${config.domainName}`,
-          target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(this.distribution)),
-          zone,
-        });
+        // Only create www record for production
+        if (stage === 'prod') {
+          new route53.ARecord(this, 'WwwSiteAliasRecord', {
+            recordName: `www.${config.domainName}`,
+            target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(this.distribution)),
+            zone,
+          });
+        }
       }
     } else {
       // Direct S3 website hosting
@@ -186,8 +186,16 @@ export class VjStaticHostingStack extends cdk.Stack {
     }
 
     // Environment configuration file for the frontend
-    // For dev environment, use static URLs since we can't reference cross-stack
-    const envConfig = stage === 'dev' ? {
+    // Use static URLs for non-prod environments to avoid cross-stack dependencies
+    const envConfig = stage === 'staging' ? {
+      NEXT_PUBLIC_API_URL: 'https://7m5vgfup1a.execute-api.ap-northeast-1.amazonaws.com/staging/',
+      NEXT_PUBLIC_WEBSOCKET_URL: 'wss://r4hqci3z59.execute-api.ap-northeast-1.amazonaws.com/staging',
+      NEXT_PUBLIC_STAGE: stage,
+      NEXT_PUBLIC_DOMAIN: config.domainName,
+      NEXT_PUBLIC_ENABLE_AUTH: config.enableAuth.toString(),
+      NEXT_PUBLIC_VERSION: '1.0.0',
+      NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+    } : stage === 'dev' ? {
       NEXT_PUBLIC_API_URL: 'https://jej6yzkbeb.execute-api.ap-northeast-1.amazonaws.com/dev/',
       NEXT_PUBLIC_WEBSOCKET_URL: 'wss://c3xs5dzz4a.execute-api.ap-northeast-1.amazonaws.com/dev',
       NEXT_PUBLIC_STAGE: stage,
