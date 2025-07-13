@@ -9,10 +9,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiChevronUp, FiChevronDown, FiSettings, FiLayers, FiMusic, FiFolder, FiMic, FiVideo, FiSave, FiShare } from 'react-icons/fi'
+import { FiChevronUp, FiChevronDown, FiSettings, FiLayers, FiMusic, FiFolder, FiMic, FiVideo, FiSave, FiShare, FiSliders } from 'react-icons/fi'
 import Button from './ui/Button'
 import Slider from './ui/Slider'
 import Tabs from './ui/Tabs'
+import MIDITab from './MIDITab'
 
 interface ControlPanelProps {
   className?: string
@@ -134,6 +135,12 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           </div>
         </div>
       )
+    },
+    {
+      id: 'midi',
+      label: 'MIDI',
+      icon: <FiSliders />,
+      content: <MIDITab />
     },
     {
       id: 'presets',

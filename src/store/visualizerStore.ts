@@ -4,6 +4,19 @@ export type EffectType = 'waveform' | 'particles' | 'spectrum' | 'lyrics' | 'cam
 export type FontType = 'teko' | 'prompt' | 'audiowide' | 'russo' | 'orbitron';
 export type AnimationType = 'glow' | 'pulse' | 'bounce' | 'fade' | 'none';
 
+export type MIDIControllerMapping = {
+  id: string;
+  name: string;
+  type: 'note' | 'cc' | 'pitch_bend';
+  midiChannel: number;
+  midiNumber: number;
+  targetParameter: string;
+  minValue: number;
+  maxValue: number;
+  curve: 'linear' | 'exponential' | 'logarithmic';
+  enabled: boolean;
+};
+
 export type PresetType = {
   id: string;
   name: string;
@@ -11,6 +24,8 @@ export type PresetType = {
   colorTheme: string;
   sensitivity: number;
   layers: LayerType[];
+  midiChannel?: number;
+  midiMappings?: MIDIControllerMapping[];
 };
 
 export type LayerType = {
@@ -50,6 +65,18 @@ interface VisualizerState {
   // 機能フラグ
   isCameraEnabled: boolean;
   isFullscreen: boolean;
+  
+  // MIDI関連
+  isMIDIEnabled: boolean;
+  midiMappings: MIDIControllerMapping[];
+  activeMIDIDeviceId: string | null;
+  lastMIDIMessage: {
+    type: number;
+    channel: number;
+    data1: number;
+    data2: number;
+    timestamp: number;
+  } | null;
   
   // 歌詞認識関連
   isLyricsEnabled: boolean;
@@ -92,6 +119,15 @@ interface VisualizerState {
   // その他の機能トグル
   toggleCamera: () => void;
   toggleFullscreen: () => void;
+  
+  // MIDI関連のアクション
+  setMIDIEnabled: (enabled: boolean) => void;
+  setActiveMIDIDevice: (deviceId: string | null) => void;
+  processMIDIMessage: (message: { type: number; channel: number; data1: number; data2: number; timestamp: number }) => void;
+  addMIDIMapping: (mapping: Omit<MIDIControllerMapping, 'id'>) => void;
+  removeMIDIMapping: (id: string) => void;
+  updateMIDIMapping: (id: string, updates: Partial<Omit<MIDIControllerMapping, 'id'>>) => void;
+  toggleMIDIMapping: (id: string) => void;
 }
 
 export const useVisualizerStore = create<VisualizerState>((set, get) => ({
@@ -120,6 +156,12 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   
   isCameraEnabled: false,
   isFullscreen: false,
+  
+  // MIDI関連の初期状態
+  isMIDIEnabled: false,
+  midiMappings: [],
+  activeMIDIDeviceId: null,
+  lastMIDIMessage: null,
   
   // 歌詞認識関連の初期状態
   isLyricsEnabled: false,
@@ -297,5 +339,117 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   // その他の機能トグル
   toggleCamera: () => set(state => ({ isCameraEnabled: !state.isCameraEnabled })),
   
-  toggleFullscreen: () => set(state => ({ isFullscreen: !state.isFullscreen }))
+  toggleFullscreen: () => set(state => ({ isFullscreen: !state.isFullscreen })),
+  
+  // MIDI関連のアクション
+  setMIDIEnabled: (enabled) => set({ isMIDIEnabled: enabled }),
+  
+  setActiveMIDIDevice: (deviceId) => set({ activeMIDIDeviceId: deviceId }),
+  
+  processMIDIMessage: (message) => {
+    const { midiMappings } = get();
+    
+    // Store the last MIDI message
+    set({ lastMIDIMessage: message });
+    
+    // Process active mappings
+    const activeMappings = midiMappings.filter(mapping => 
+      mapping.enabled && 
+      mapping.midiChannel === message.channel
+    );
+    
+    activeMappings.forEach(mapping => {
+      let shouldTrigger = false;
+      let value = 0;
+      
+      switch (mapping.type) {
+        case 'note':
+          shouldTrigger = (message.type === 0x90 || message.type === 0x80) && 
+                         message.data1 === mapping.midiNumber;
+          value = message.type === 0x90 ? message.data2 / 127 : 0; // Note velocity or 0 for note off
+          break;
+          
+        case 'cc':
+          shouldTrigger = message.type === 0xB0 && message.data1 === mapping.midiNumber;
+          value = message.data2 / 127;
+          break;
+          
+        case 'pitch_bend':
+          shouldTrigger = message.type === 0xE0;
+          value = ((message.data2 << 7) + message.data1 - 8192) / 8192; // Convert 14-bit to -1 to 1
+          break;
+      }
+      
+      if (shouldTrigger) {
+        // Apply curve transformation
+        let transformedValue = value;
+        switch (mapping.curve) {
+          case 'exponential':
+            transformedValue = Math.pow(value, 2);
+            break;
+          case 'logarithmic':
+            transformedValue = Math.sqrt(value);
+            break;
+          // 'linear' uses value as-is
+        }
+        
+        // Scale to target range
+        const scaledValue = mapping.minValue + 
+          (transformedValue * (mapping.maxValue - mapping.minValue));
+        
+        // Apply to target parameter
+        const { setColorTheme, setSensitivity, updateLayer } = get();
+        
+        switch (mapping.targetParameter) {
+          case 'sensitivity':
+            setSensitivity(scaledValue);
+            break;
+          case 'hue':
+            // Convert to hex color (simple hue rotation)
+            const hue = Math.floor(scaledValue * 360);
+            setColorTheme(`hsl(${hue}, 70%, 50%)`);
+            break;
+          case 'layer_opacity':
+            const activeLayerId = get().activeLayerId;
+            if (activeLayerId) {
+              updateLayer(activeLayerId, { opacity: scaledValue });
+            }
+            break;
+        }
+      }
+    });
+  },
+  
+  addMIDIMapping: (mapping) => {
+    const newMapping = {
+      ...mapping,
+      id: `midi-mapping-${Date.now()}`,
+    };
+    
+    set(state => ({
+      midiMappings: [...state.midiMappings, newMapping]
+    }));
+  },
+  
+  removeMIDIMapping: (id) => {
+    set(state => ({
+      midiMappings: state.midiMappings.filter(mapping => mapping.id !== id)
+    }));
+  },
+  
+  updateMIDIMapping: (id, updates) => {
+    set(state => ({
+      midiMappings: state.midiMappings.map(mapping =>
+        mapping.id === id ? { ...mapping, ...updates } : mapping
+      )
+    }));
+  },
+  
+  toggleMIDIMapping: (id) => {
+    set(state => ({
+      midiMappings: state.midiMappings.map(mapping =>
+        mapping.id === id ? { ...mapping, enabled: !mapping.enabled } : mapping
+      )
+    }));
+  }
 }));

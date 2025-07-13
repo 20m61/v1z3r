@@ -15,18 +15,20 @@ global.matchMedia = global.matchMedia || function (query) {
 }
 
 // Mock Speech Recognition
-(global as any).webkitSpeechRecognition = (global as any).webkitSpeechRecognition || function() {
-  return {
-    start: jest.fn(),
-    stop: jest.fn(),
-    abort: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    continuous: false,
-    interimResults: false,
-    lang: 'en-US',
-    maxAlternatives: 1,
-  }
+if (!(global as any).webkitSpeechRecognition) {
+  (global as any).webkitSpeechRecognition = function() {
+    return {
+      start: jest.fn(),
+      stop: jest.fn(),
+      abort: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      continuous: false,
+      interimResults: false,
+      lang: 'en-US',
+      maxAlternatives: 1,
+    };
+  };
 }
 
 // Mock getUserMedia for microphone
@@ -40,30 +42,38 @@ Object.defineProperty(global.navigator, 'mediaDevices', {
 })
 
 // Mock ResizeObserver
-global.ResizeObserver = global.ResizeObserver || function(callback: any) {
-  return {
-    observe: jest.fn(),
-    unobserve: jest.fn(),
-    disconnect: jest.fn(),
-  }
+if (!global.ResizeObserver) {
+  global.ResizeObserver = function(callback: any) {
+    return {
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn(),
+    };
+  };
 }
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = global.requestAnimationFrame || function(callback: any) {
-  return setTimeout(callback, 16)
+if (!global.requestAnimationFrame) {
+  global.requestAnimationFrame = function(callback: any) {
+    return setTimeout(callback, 16);
+  };
 }
 
-global.cancelAnimationFrame = global.cancelAnimationFrame || function(id) {
-  clearTimeout(id)
+if (!global.cancelAnimationFrame) {
+  global.cancelAnimationFrame = function(id) {
+    clearTimeout(id);
+  };
 }
 
 // Mock IntersectionObserver
-global.IntersectionObserver = global.IntersectionObserver || function(callback: any) {
-  return {
-    observe: jest.fn(),
-    unobserve: jest.fn(),
-    disconnect: jest.fn(),
-  }
+if (!global.IntersectionObserver) {
+  global.IntersectionObserver = function(callback: any) {
+    return {
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn(),
+    };
+  };
 }
 
 // Mock localStorage
