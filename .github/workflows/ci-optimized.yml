@@ -1,0 +1,231 @@
+name: Optimized CI/CD
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**' ]
+  pull_request:
+    branches: [ main, develop ]
+
+# Cancel previous runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20.x'
+  CACHE_VERSION: v1
+
+jobs:
+  # Fast checks that can fail early
+  quick-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-skip: ${{ steps.skip-check.outputs.should_skip }}
+    steps:
+      - name: Skip duplicate runs
+        id: skip-check
+        uses: fkirc/skip-duplicate-actions@v5
+        with:
+          concurrent_skipping: 'same_content'
+          skip_after_successful_duplicate: 'true'
+          
+      - name: Checkout
+        if: steps.skip-check.outputs.should_skip != 'true'
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        if: steps.skip-check.outputs.should_skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
+          
+      - name: Install dependencies
+        if: steps.skip-check.outputs.should_skip != 'true'
+        run: yarn install --frozen-lockfile --prefer-offline
+        
+      - name: TypeScript check
+        if: steps.skip-check.outputs.should_skip != 'true'
+        run: yarn type-check
+        
+      - name: Lint check
+        if: steps.skip-check.outputs.should_skip != 'true'
+        run: yarn lint
+
+  # Main test suite
+  test:
+    needs: quick-checks
+    if: needs.quick-checks.outputs.should-skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        test-type: ['unit', 'modules']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
+          
+      - name: Restore dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: ${{ runner.os }}-${{ env.CACHE_VERSION }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --prefer-offline
+        
+      - name: Run unit tests
+        if: matrix.test-type == 'unit'
+        run: yarn test --coverage --watchAll=false --maxWorkers=2
+        
+      - name: Run module tests
+        if: matrix.test-type == 'modules'
+        run: yarn test:modules
+        
+      - name: Upload coverage
+        if: matrix.test-type == 'unit'
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+  # Build verification
+  build:
+    needs: quick-checks
+    if: needs.quick-checks.outputs.should-skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
+          
+      - name: Restore dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: ${{ runner.os }}-${{ env.CACHE_VERSION }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --prefer-offline
+        
+      - name: Build modules
+        run: yarn build:modules
+        
+      - name: Build application
+        run: yarn build
+        
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next
+            out
+            modules/*/dist
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+  # E2E tests (only on main/develop)
+  e2e:
+    needs: [quick-checks, build]
+    if: |
+      needs.quick-checks.outputs.should-skip != 'true' && 
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
+          
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next
+            out
+            modules/*/dist
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --prefer-offline
+        
+      - name: Install Playwright browsers
+        run: yarn playwright install --with-deps chromium
+        
+      - name: Run E2E tests
+        run: yarn test:e2e
+        
+      - name: Upload E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: test-results/
+
+  # Deployment (only on main)
+  deploy:
+    needs: [test, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next
+            out
+            modules/*/dist
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
+          
+  # Manual CI fallback
+  manual-ci:
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Run manual CI script
+        run: |
+          chmod +x scripts/manual-ci-check.sh
+          ./scripts/manual-ci-check.sh
