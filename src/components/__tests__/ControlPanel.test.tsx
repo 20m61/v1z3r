@@ -19,6 +19,7 @@ jest.mock('react-icons/fi', () => ({
   FiVideo: () => <div data-testid="video-icon" />,
   FiSave: () => <div data-testid="save-icon" />,
   FiShare: () => <div data-testid="share-icon" />,
+  FiSliders: () => <div data-testid="sliders-icon" />,
   FiChevronUp: () => <div data-testid="chevron-up" />,
   FiChevronDown: () => <div data-testid="chevron-down" />,
 }))

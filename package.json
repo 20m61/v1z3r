@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "dev:auto": "next dev",
+    "prebuild": "rm -rf .next",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
