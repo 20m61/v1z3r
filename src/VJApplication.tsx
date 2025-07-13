@@ -10,6 +10,8 @@ import React, { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import VisualEffects from './components/VisualEffects'
 import AudioAnalyzer from './components/AudioAnalyzer'
+import MIDIAnalyzer from './components/MIDIAnalyzer'
+import MIDIControls from './components/MIDIControls'
 import { ControlPanel } from '@vj-app/vj-controller'
 import { useVisualizerStore } from './store/visualizerStore'
 import { startPerformanceMonitoring, getCurrentFps, getCurrentMemoryUsage } from './utils/performance'
@@ -38,7 +40,9 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
   const {
     layers,
     isAudioAnalyzing,
-    setAudioAnalyzing
+    setAudioAnalyzing,
+    isMIDIEnabled,
+    processMIDIMessage
   } = useVisualizerStore()
 
   // Status for different modules
@@ -115,6 +119,16 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
     if (!isAnalysisStarted) {
       setIsAnalysisStarted(true)
     }
+  }
+
+  // Handle MIDI messages from analyzer
+  const handleMIDIMessage = (message: { type: number; channel: number; data1: number; data2: number; timestamp: number }) => {
+    processMIDIMessage(message)
+  }
+
+  // Handle MIDI device changes
+  const handleMIDIDeviceChange = (devices: WebMidi.MIDIInput[]) => {
+    console.log('MIDI devices updated:', devices.map(d => d.name))
   }
 
   // Handle parameter changes from control panel
@@ -283,6 +297,11 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
         {isInitialized && (
           <div style={{ display: 'none' }}>
             <AudioAnalyzer onAudioData={handleAudioData} />
+            {/* MIDI Analyzer (Hidden) */}
+            <MIDIAnalyzer 
+              onMIDIMessage={handleMIDIMessage}
+              onMIDIDeviceChange={handleMIDIDeviceChange}
+            />
           </div>
         )}
         

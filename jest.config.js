@@ -45,8 +45,19 @@ const customJestConfig = {
     '<rootDir>/tests/e2e/',
     '<rootDir>/e2e/',
     '<rootDir>/e2e-simple.spec.ts',
+    '<rootDir>/infra/cdk/cdk.out/',
+    '<rootDir>/infra/cdk/lambda/',
+    '<rootDir>/infra/cdk/lambda-layers/',
   ],
   moduleDirectories: ['node_modules', '<rootDir>/'],
+  haste: {
+    retainAllFiles: false,
+  },
+  modulePathIgnorePatterns: [
+    '<rootDir>/infra/cdk/cdk.out/',
+    '<rootDir>/infra/cdk/lambda/',
+    '<rootDir>/infra/cdk/lambda-layers/',
+  ],
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
