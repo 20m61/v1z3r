@@ -291,28 +291,32 @@ export class VjMonitoringStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'metrics.handler',
       code: lambda.Code.fromInline(`
-        const AWS = require('aws-sdk');
-        const cloudwatch = new AWS.CloudWatch();
-        const dynamodb = new AWS.DynamoDB.DocumentClient();
+        const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
+        const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+        const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+        
+        const cloudwatch = new CloudWatchClient({});
+        const dynamodbClient = new DynamoDBClient({});
+        const dynamodb = DynamoDBDocumentClient.from(dynamodbClient);
         
         exports.handler = async (event) => {
           const timestamp = new Date();
           
           try {
             // Get session count
-            const sessionCount = await dynamodb.scan({
+            const sessionCount = await dynamodb.send(new ScanCommand({
               TableName: process.env.SESSION_TABLE_NAME,
               Select: 'COUNT'
-            }).promise();
+            }));
             
             // Get preset count
-            const presetCount = await dynamodb.scan({
+            const presetCount = await dynamodb.send(new ScanCommand({
               TableName: process.env.PRESET_TABLE_NAME,
               Select: 'COUNT'
-            }).promise();
+            }));
             
             // Send custom metrics
-            await cloudwatch.putMetricData({
+            await cloudwatch.send(new PutMetricDataCommand({
               Namespace: 'VJ/Application',
               MetricData: [
                 {
@@ -328,7 +332,7 @@ export class VjMonitoringStack extends cdk.Stack {
                   Timestamp: timestamp,
                 },
               ],
-            }).promise();
+            }));
             
             console.log('Custom metrics published successfully');
             return { statusCode: 200 };

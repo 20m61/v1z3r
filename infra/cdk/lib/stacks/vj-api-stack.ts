@@ -214,8 +214,11 @@ export class VjApiStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'cleanup.handler',
       code: lambda.Code.fromInline(`
-        const AWS = require('aws-sdk');
-        const dynamodb = new AWS.DynamoDB.DocumentClient();
+        const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+        const { DynamoDBDocumentClient, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+        
+        const dynamodbClient = new DynamoDBClient({});
+        const dynamodb = DynamoDBDocumentClient.from(dynamodbClient);
         
         exports.handler = async (event) => {
           const tableName = process.env.SESSION_TABLE_NAME;
@@ -223,19 +226,19 @@ export class VjApiStack extends cdk.Stack {
           
           try {
             // Scan for expired sessions
-            const result = await dynamodb.scan({
+            const result = await dynamodb.send(new ScanCommand({
               TableName: tableName,
               FilterExpression: 'attribute_exists(#ttl) AND #ttl < :now',
               ExpressionAttributeNames: { '#ttl': 'ttl' },
               ExpressionAttributeValues: { ':now': now },
-            }).promise();
+            }));
             
             // Delete expired sessions
             for (const item of result.Items || []) {
-              await dynamodb.delete({
+              await dynamodb.send(new DeleteCommand({
                 TableName: tableName,
                 Key: { sessionId: item.sessionId },
-              }).promise();
+              }));
             }
             
             console.log(\`Cleaned up \${result.Items?.length || 0} expired sessions\`);
