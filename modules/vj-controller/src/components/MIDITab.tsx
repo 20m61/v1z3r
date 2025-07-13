@@ -5,6 +5,8 @@ const MIDITab: React.FC = () => {
   const [isMIDIEnabled, setIsMIDIEnabled] = useState(false)
   const [selectedDevice, setSelectedDevice] = useState<string>('')
   const [lastMessage, setLastMessage] = useState<string>('No MIDI messages')
+  const [isLearning, setIsLearning] = useState(false)
+  const [learningTimeout, setLearningTimeout] = useState<NodeJS.Timeout | null>(null)
   const [mappings, setMappings] = useState<Array<{
     id: string
     name: string
@@ -40,6 +42,23 @@ const MIDITab: React.FC = () => {
           const channel = status & 0x0F
           
           setLastMessage(`Type: 0x${messageType.toString(16)}, CH: ${channel}, Data: ${data1}, ${data2}`)
+          
+          // Handle MIDI Learn
+          if (isLearning && messageType === 0xB0) { // Control Change only
+            const newMapping = {
+              id: `mapping-${Date.now()}`,
+              name: `Learned CC ${data1}`,
+              cc: data1,
+              parameter: 'intensity'
+            }
+            setMappings([...mappings, newMapping])
+            setIsLearning(false)
+            if (learningTimeout) {
+              clearTimeout(learningTimeout)
+              setLearningTimeout(null)
+            }
+            alert(`Learned CC ${data1}!`)
+          }
         }
 
         setSelectedDevice(firstInput.name || 'Unknown Device')
@@ -69,6 +88,25 @@ const MIDITab: React.FC = () => {
 
   const removeMapping = (id: string) => {
     setMappings(mappings.filter(m => m.id !== id))
+  }
+
+  const startMIDILearn = () => {
+    setIsLearning(true)
+    // Auto-cancel learning after 10 seconds
+    const timeout = setTimeout(() => {
+      setIsLearning(false)
+      setLearningTimeout(null)
+      alert('MIDI Learn timed out. Please try again.')
+    }, 10000)
+    setLearningTimeout(timeout)
+  }
+
+  const cancelMIDILearn = () => {
+    setIsLearning(false)
+    if (learningTimeout) {
+      clearTimeout(learningTimeout)
+      setLearningTimeout(null)
+    }
   }
 
   return (
@@ -146,14 +184,29 @@ const MIDITab: React.FC = () => {
         <label className="block text-sm font-medium text-gray-300">
           MIDI Learn
         </label>
-        <Button
-          onClick={() => alert('MIDI Learn mode activated. Move a control on your MIDI device.')}
-          variant="outline"
-          className="w-full"
-          disabled={!isMIDIEnabled}
-        >
-          Learn Next Control
-        </Button>
+        {!isLearning ? (
+          <Button
+            onClick={startMIDILearn}
+            variant={isMIDIEnabled ? 'primary' : 'outline'}
+            className="w-full"
+            disabled={!isMIDIEnabled}
+          >
+            Learn Next Control
+          </Button>
+        ) : (
+          <div className="space-y-2">
+            <Button
+              onClick={cancelMIDILearn}
+              variant="secondary"
+              className="w-full"
+            >
+              Cancel Learning...
+            </Button>
+            <p className="text-xs text-yellow-400 text-center">
+              Move a control on your MIDI device now!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Preset Controls */}
