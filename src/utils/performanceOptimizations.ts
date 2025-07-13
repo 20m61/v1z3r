@@ -3,7 +3,7 @@
  * Provides memoization, debouncing, and other optimization techniques
  */
 
-import { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 
 /**
  * Debounce hook for expensive operations
@@ -14,15 +14,25 @@ export function useDebounce<T extends (...args: any[]) => any>(
 ): T {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
-  return useCallback((...args: Parameters<T>) => {
+  // クリーンアップを追加してメモリリークを防止
+  const cleanup = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
     }
+  }, []);
+
+  React.useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+
+  return useCallback((...args: Parameters<T>) => {
+    cleanup();
     
     timeoutRef.current = setTimeout(() => {
       callback(...args);
     }, delay);
-  }, [callback, delay]) as T;
+  }, [callback, delay, cleanup]) as T;
 }
 
 /**
@@ -35,6 +45,18 @@ export function useThrottle<T extends (...args: any[]) => any>(
   const lastRunRef = useRef<number>(0);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
+  // クリーンアップを追加してメモリリークを防止
+  const cleanup = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
+    }
+  }, []);
+
+  React.useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+
   return useCallback((...args: Parameters<T>) => {
     const now = Date.now();
     
@@ -42,16 +64,14 @@ export function useThrottle<T extends (...args: any[]) => any>(
       lastRunRef.current = now;
       callback(...args);
     } else {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      cleanup();
       
       timeoutRef.current = setTimeout(() => {
         lastRunRef.current = Date.now();
         callback(...args);
       }, delay - (now - lastRunRef.current));
     }
-  }, [callback, delay]) as T;
+  }, [callback, delay, cleanup]) as T;
 }
 
 /**
@@ -62,19 +82,20 @@ export function useMemoWithComparison<T>(
   deps: React.DependencyList,
   compare?: (prev: React.DependencyList, next: React.DependencyList) => boolean
 ): T {
-  const memoizedValue = useMemo(factory, deps);
+  const prevDepsRef = useRef<React.DependencyList>(deps);
+  const memoizedRef = useRef<T>();
   
-  if (compare) {
-    const prevDepsRef = useRef<React.DependencyList>(deps);
-    const memoizedRef = useRef<T>(memoizedValue);
-    
-    if (!compare(prevDepsRef.current, deps)) {
-      memoizedRef.current = factory();
-      prevDepsRef.current = deps;
+  const memoizedValue = useMemo(() => {
+    if (compare) {
+      if (!memoizedRef.current || !compare(prevDepsRef.current, deps)) {
+        memoizedRef.current = factory();
+        prevDepsRef.current = deps;
+      }
+      return memoizedRef.current;
     }
-    
-    return memoizedRef.current;
-  }
+    return factory();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
   
   return memoizedValue;
 }
@@ -228,9 +249,9 @@ export class MemoryOptimizer {
 /**
  * React component performance optimization HOC
  */
-export function withPerformanceOptimization<P extends object>(
+export function withPerformanceOptimization<P extends Record<string, any>>(
   Component: React.ComponentType<P>
-): React.ComponentType<P> {
+): React.MemoExoticComponent<React.ComponentType<P>> {
   const OptimizedComponent = React.memo(Component, (prevProps, nextProps) => {
     // Custom comparison logic for complex props
     return JSON.stringify(prevProps) === JSON.stringify(nextProps);
