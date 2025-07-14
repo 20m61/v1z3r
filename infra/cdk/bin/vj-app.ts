@@ -9,6 +9,7 @@ import { VjConfigStack } from '../lib/stacks/vj-config-stack';
 import { VjCdnStack } from '../lib/stacks/vj-cdn-stack';
 import { VjXRayStack } from '../lib/stacks/vj-xray-stack';
 import { VjLoggingStack } from '../lib/stacks/vj-logging-stack';
+import { VjAuthStack } from '../lib/stacks/vj-auth-stack';
 
 const app = new cdk.App();
 
@@ -81,6 +82,15 @@ const storageStack = new VjStorageStack(app, `VjStorageStack-${stage}`, {
   configTable: configStack.configTable,
 });
 
+// Auth Stack (optional based on config)
+let authStack: VjAuthStack | undefined;
+if (config.enableAuth) {
+  authStack = new VjAuthStack(app, `VjAuthStack-${stage}`, {
+    ...stackProps,
+    environment: stage as 'dev' | 'staging' | 'prod',
+  });
+}
+
 // API Stack
 const apiStack = new VjApiStack(app, `VjApiStack-${stage}`, {
   ...stackProps,
@@ -89,6 +99,8 @@ const apiStack = new VjApiStack(app, `VjApiStack-${stage}`, {
   sessionTable: storageStack.sessionTable,
   presetTable: storageStack.presetTable,
   configTable: configStack.configTable,
+  userPool: authStack?.userPool,
+  authorizer: authStack?.authorizer,
 });
 
 // Static Hosting Stack
@@ -143,6 +155,10 @@ const monitoringStack = new VjMonitoringStack(app, `VjMonitoringStack-${stage}`,
 
 // Stack dependencies
 storageStack.addDependency(configStack);
+if (authStack) {
+  authStack.addDependency(configStack);
+  apiStack.addDependency(authStack);
+}
 apiStack.addDependency(storageStack);
 hostingStack.addDependency(apiStack);
 
