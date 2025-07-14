@@ -28,6 +28,8 @@ export class VjApiStack extends cdk.Stack {
   public readonly websocketApi: apigatewayv2.WebSocketApi;
   public readonly apiUrl: string;
   public readonly websocketUrl: string;
+  public readonly presetFunction: lambda.Function;
+  public readonly connectionFunction: lambda.Function;
 
   constructor(scope: Construct, id: string, props: VjApiStackProps) {
     super(scope, id, props);
@@ -70,7 +72,7 @@ export class VjApiStack extends cdk.Stack {
     });
 
     // Preset management Lambda function
-    const presetFunction = new lambda.Function(this, 'PresetFunction', {
+    this.presetFunction = new lambda.Function(this, 'PresetFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'preset.handler',
       code: lambda.Code.fromAsset('lambda/preset'),
@@ -82,18 +84,18 @@ export class VjApiStack extends cdk.Stack {
     });
 
     // Grant DynamoDB permissions
-    presetTable.grantReadWriteData(presetFunction);
-    configTable.grantReadData(presetFunction);
+    presetTable.grantReadWriteData(this.presetFunction);
+    configTable.grantReadData(this.presetFunction);
 
     // Preset API endpoints
     const presetResource = this.restApi.root.addResource('presets');
-    presetResource.addMethod('GET', new apigateway.LambdaIntegration(presetFunction));
-    presetResource.addMethod('POST', new apigateway.LambdaIntegration(presetFunction));
+    presetResource.addMethod('GET', new apigateway.LambdaIntegration(this.presetFunction));
+    presetResource.addMethod('POST', new apigateway.LambdaIntegration(this.presetFunction));
 
     const presetItemResource = presetResource.addResource('{presetId}');
-    presetItemResource.addMethod('GET', new apigateway.LambdaIntegration(presetFunction));
-    presetItemResource.addMethod('PUT', new apigateway.LambdaIntegration(presetFunction));
-    presetItemResource.addMethod('DELETE', new apigateway.LambdaIntegration(presetFunction));
+    presetItemResource.addMethod('GET', new apigateway.LambdaIntegration(this.presetFunction));
+    presetItemResource.addMethod('PUT', new apigateway.LambdaIntegration(this.presetFunction));
+    presetItemResource.addMethod('DELETE', new apigateway.LambdaIntegration(this.presetFunction));
 
     // Health check endpoint
     const healthFunction = new lambda.Function(this, 'HealthFunction', {
@@ -130,7 +132,7 @@ export class VjApiStack extends cdk.Stack {
     });
 
     // WebSocket connection handler
-    const connectionFunction = new lambda.Function(this, 'ConnectionFunction', {
+    this.connectionFunction = new lambda.Function(this, 'ConnectionFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'connection.handler',
       code: lambda.Code.fromAsset('lambda/websocket'),
@@ -145,11 +147,11 @@ export class VjApiStack extends cdk.Stack {
     });
 
     // Grant DynamoDB permissions for connection management
-    sessionTable.grantReadWriteData(connectionFunction);
-    configTable.grantReadData(connectionFunction);
+    sessionTable.grantReadWriteData(this.connectionFunction);
+    configTable.grantReadData(this.connectionFunction);
 
     // Grant API Gateway management permissions
-    connectionFunction.addToRolePolicy(new iam.PolicyStatement({
+    this.connectionFunction.addToRolePolicy(new iam.PolicyStatement({
       actions: ['execute-api:ManageConnections'],
       resources: [
         `arn:aws:execute-api:${this.region}:${this.account}:${this.websocketApi.apiId}/*`
@@ -184,12 +186,12 @@ export class VjApiStack extends cdk.Stack {
     // WebSocket routes using WebSocketLambdaIntegration
     const connectIntegration = new apigatewayv2Integrations.WebSocketLambdaIntegration(
       'ConnectIntegration',
-      connectionFunction
+      this.connectionFunction
     );
 
     const disconnectIntegration = new apigatewayv2Integrations.WebSocketLambdaIntegration(
       'DisconnectIntegration', 
-      connectionFunction
+      this.connectionFunction
     );
 
     const messageIntegration = new apigatewayv2Integrations.WebSocketLambdaIntegration(
