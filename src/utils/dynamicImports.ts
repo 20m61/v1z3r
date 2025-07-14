@@ -9,7 +9,7 @@ import { errorHandler } from './errorHandler';
 export interface DynamicImportOptions {
   timeout?: number;
   retries?: number;
-  fallback?: () => Promise<any>;
+  fallback?: () => Promise<unknown>;
   preload?: boolean;
   priority?: 'high' | 'normal' | 'low';
 }
@@ -79,7 +79,7 @@ export async function dynamicImportWithRetry<T>(
   if (fallback) {
     try {
       errorHandler.info('Attempting fallback import');
-      return await fallback();
+      return await fallback() as T;
     } catch (fallbackError) {
       errorHandler.error('Fallback import also failed', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
     }
@@ -93,12 +93,16 @@ export async function dynamicImportWithRetry<T>(
  */
 export class ProgressiveLoader {
   private loadingStates = new Map<string, LoadingState>();
-  private loadedModules = new Map<string, any>();
-  private preloadQueue: Array<{ key: string; importFn: () => Promise<any>; priority: string }> = [];
+  private loadedModules = new Map<string, unknown>();
+  private preloadQueue: Array<{ key: string; importFn: () => Promise<unknown>; priority: string }> = [];
+  private activeIntervals = new Set<NodeJS.Timeout>();
+  private eventListeners: Array<{ element: EventTarget; event: string; handler: EventListener }> = [];
 
   constructor() {
     // Start processing preload queue
-    this.processPreloadQueue();
+    this.processPreloadQueue().catch(error => {
+      errorHandler.error('Failed to process preload queue', error);
+    });
   }
 
   /**
@@ -137,7 +141,7 @@ export class ProgressiveLoader {
   async load<T>(key: string, importFn?: () => Promise<T>): Promise<T> {
     // Check if already loaded
     if (this.loadedModules.has(key)) {
-      return this.loadedModules.get(key);
+      return this.loadedModules.get(key) as T;
     }
 
     // Check if currently loading
@@ -159,9 +163,11 @@ export class ProgressiveLoader {
       progress: 0
     });
 
+    let progressInterval: NodeJS.Timeout | null = null;
+    
     try {
       // Simulate progress updates
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         const currentState = this.loadingStates.get(key);
         if (currentState && currentState.progress < 90) {
           this.updateLoadingState(key, {
@@ -177,6 +183,7 @@ export class ProgressiveLoader {
       });
 
       clearInterval(progressInterval);
+      progressInterval = null;
 
       // Cache the loaded module
       this.loadedModules.set(key, loadedModule);
@@ -191,6 +198,11 @@ export class ProgressiveLoader {
       return loadedModule;
 
     } catch (error) {
+      // Ensure interval is cleared even on error
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      
       this.updateLoadingState(key, {
         isLoading: false,
         isLoaded: false,
@@ -241,11 +253,17 @@ export class ProgressiveLoader {
           const lowPriority = this.preloadQueue.filter(item => item.priority === 'low');
           lowPriority.forEach(item => this.preloadInBackground(item));
         });
+      } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(() => {
+          const lowPriority = this.preloadQueue.filter(item => item.priority === 'low');
+          lowPriority.forEach(item => this.preloadInBackground(item));
+        }, 5000);
       }
     }
   }
 
-  private preloadInBackground(item: { key: string; importFn: () => Promise<any> }): void {
+  private preloadInBackground(item: { key: string; importFn: () => Promise<unknown> }): void {
     this.load(item.key, item.importFn).catch(error => {
       errorHandler.warn(`Background preload failed for ${item.key}`, error);
     });
@@ -253,19 +271,29 @@ export class ProgressiveLoader {
 
   private waitForLoad<T>(key: string): Promise<T> {
     return new Promise((resolve, reject) => {
+      let checkTimeout: NodeJS.Timeout | null = null;
+      const maxWaitTime = 30000; // 30 seconds max wait
+      const startTime = Date.now();
+      
       const checkState = () => {
         const state = this.loadingStates.get(key);
         if (!state) {
+          if (checkTimeout) clearTimeout(checkTimeout);
           reject(new Error(`Module ${key} not found`));
           return;
         }
 
         if (state.isLoaded) {
-          resolve(this.loadedModules.get(key));
+          if (checkTimeout) clearTimeout(checkTimeout);
+          resolve(this.loadedModules.get(key) as T);
         } else if (state.error) {
+          if (checkTimeout) clearTimeout(checkTimeout);
           reject(state.error);
+        } else if (Date.now() - startTime > maxWaitTime) {
+          if (checkTimeout) clearTimeout(checkTimeout);
+          reject(new Error(`Timeout waiting for module ${key} to load`));
         } else {
-          setTimeout(checkState, 100);
+          checkTimeout = setTimeout(checkState, 100);
         }
       };
 
@@ -287,6 +315,19 @@ export class ProgressiveLoader {
 
 // Global progressive loader instance
 export const progressiveLoader = new ProgressiveLoader();
+
+// Cleanup function for when the module is unloaded
+export function cleanupProgressiveLoader(): void {
+  // Clear all active intervals
+  progressiveLoader['activeIntervals'].forEach(interval => clearInterval(interval));
+  progressiveLoader['activeIntervals'].clear();
+  
+  // Remove all event listeners
+  progressiveLoader['eventListeners'].forEach(({ element, event, handler }) => {
+    element.removeEventListener(event, handler);
+  });
+  progressiveLoader['eventListeners'] = [];
+}
 
 /**
  * HOC for dynamic component loading with loading state

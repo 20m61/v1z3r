@@ -3,6 +3,8 @@
  * Provides WebP/AVIF conversion and responsive image handling
  */
 
+import { errorHandler } from './errorHandler';
+
 export interface ImageOptimizationOptions {
   quality?: number;
   format?: 'webp' | 'avif' | 'auto';
@@ -33,8 +35,17 @@ export function generateResponsiveImages(
     lazy = true
   } = options;
 
+  // Validate input
+  if (!baseSrc || typeof baseSrc !== 'string') {
+    throw new Error('Invalid image source path');
+  }
+
   // Extract file extension and name
   const lastDotIndex = baseSrc.lastIndexOf('.');
+  if (lastDotIndex === -1) {
+    throw new Error('Image source must have a file extension');
+  }
+  
   const baseName = baseSrc.substring(0, lastDotIndex);
   const originalExt = baseSrc.substring(lastDotIndex + 1);
 
@@ -44,18 +55,22 @@ export function generateResponsiveImages(
     
     // Check browser support
     if (typeof window !== 'undefined') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1;
-      canvas.height = 1;
-      
-      // Check AVIF support
-      if (canvas.toDataURL('image/avif').indexOf('data:image/avif') === 0) {
-        return 'avif';
-      }
-      
-      // Check WebP support
-      if (canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0) {
-        return 'webp';
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        
+        // Check AVIF support
+        if (canvas.toDataURL('image/avif').indexOf('data:image/avif') === 0) {
+          return 'avif';
+        }
+        
+        // Check WebP support
+        if (canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0) {
+          return 'webp';
+        }
+      } catch (error) {
+        errorHandler.warn('Failed to detect image format support', error instanceof Error ? error : new Error(String(error)));
       }
     }
     
@@ -112,9 +127,45 @@ export function preloadCriticalImages(images: string[]): void {
 /**
  * Lazy loading observer for images
  */
+// Cache format detection result
+let cachedOptimalFormat: string | null = null;
+
+function getCachedOptimalFormat(originalExt: string): string {
+  if (cachedOptimalFormat !== null) {
+    return cachedOptimalFormat;
+  }
+  
+  if (typeof window !== 'undefined') {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      
+      // Check AVIF support
+      if (canvas.toDataURL('image/avif').indexOf('data:image/avif') === 0) {
+        cachedOptimalFormat = 'avif';
+        return 'avif';
+      }
+      
+      // Check WebP support
+      if (canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0) {
+        cachedOptimalFormat = 'webp';
+        return 'webp';
+      }
+    } catch (error) {
+      errorHandler.warn('Failed to detect image format support', error);
+    }
+  }
+  
+  cachedOptimalFormat = originalExt;
+  return originalExt;
+}
+
 export class ImageLazyLoader {
   private observer: IntersectionObserver | null = null;
   private images: Set<HTMLImageElement> = new Set();
+  private loadHandlers = new Map<HTMLImageElement, () => void>();
+  private errorHandlers = new Map<HTMLImageElement, () => void>();
 
   constructor(options: IntersectionObserverInit = {}) {
     if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
@@ -154,33 +205,80 @@ export class ImageLazyLoader {
   }
 
   private loadImage(img: HTMLImageElement): void {
-    const dataSrc = img.dataset.src;
-    const dataSrcSet = img.dataset.srcset;
+    try {
+      const dataSrc = img.dataset.src;
+      const dataSrcSet = img.dataset.srcset;
 
-    if (dataSrc) {
-      img.src = dataSrc;
-      img.removeAttribute('data-src');
+      // Add load and error handlers
+      const loadHandler = () => {
+        img.classList.remove('lazy');
+        img.classList.add('loaded');
+        this.cleanup(img);
+      };
+      
+      const errorHandlerFn = () => {
+        img.classList.remove('lazy');
+        img.classList.add('error');
+        errorHandler.error('Failed to load lazy image', new Error(`Image failed to load: ${dataSrc}`));
+        this.cleanup(img);
+      };
+      
+      this.loadHandlers.set(img, loadHandler);
+      this.errorHandlers.set(img, errorHandlerFn);
+      
+      img.addEventListener('load', loadHandler, { once: true });
+      img.addEventListener('error', errorHandlerFn, { once: true });
+
+      if (dataSrc) {
+        img.src = dataSrc;
+        img.removeAttribute('data-src');
+      }
+
+      if (dataSrcSet) {
+        img.srcset = dataSrcSet;
+        img.removeAttribute('data-srcset');
+      }
+    } catch (error) {
+      errorHandler.error('Error in loadImage', error instanceof Error ? error : new Error(String(error)));
+      this.cleanup(img);
     }
-
-    if (dataSrcSet) {
-      img.srcset = dataSrcSet;
-      img.removeAttribute('data-srcset');
-    }
-
-    img.classList.remove('lazy');
-    img.classList.add('loaded');
-
+  }
+  
+  private cleanup(img: HTMLImageElement): void {
     if (this.observer) {
       this.observer.unobserve(img);
     }
+    
+    // Remove event handlers
+    const loadHandler = this.loadHandlers.get(img);
+    const errorHandlerFn = this.errorHandlers.get(img);
+    
+    if (loadHandler) {
+      img.removeEventListener('load', loadHandler);
+      this.loadHandlers.delete(img);
+    }
+    
+    if (errorHandlerFn) {
+      img.removeEventListener('error', errorHandlerFn);
+      this.errorHandlers.delete(img);
+    }
+    
     this.images.delete(img);
   }
 
   disconnect(): void {
     if (this.observer) {
       this.observer.disconnect();
-      this.images.clear();
     }
+    
+    // Clean up all event handlers
+    this.images.forEach(img => {
+      this.cleanup(img);
+    });
+    
+    this.images.clear();
+    this.loadHandlers.clear();
+    this.errorHandlers.clear();
   }
 }
 
@@ -193,12 +291,22 @@ export async function canvasToOptimizedBlob(
 ): Promise<Blob | null> {
   const { format = 'webp', quality = 0.8 } = options;
 
-  return new Promise((resolve) => {
-    canvas.toBlob(
-      (blob) => resolve(blob),
-      `image/${format}`,
-      quality
-    );
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to convert canvas to blob'));
+          }
+        },
+        `image/${format}`,
+        quality
+      );
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
@@ -207,9 +315,22 @@ export async function canvasToOptimizedBlob(
  */
 export function getImageDimensions(src: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
+    if (!src || typeof src !== 'string') {
+      reject(new Error('Invalid image source'));
+      return;
+    }
+    
     const img = new Image();
+    let timeout: NodeJS.Timeout;
+    
+    const cleanup = () => {
+      if (timeout) clearTimeout(timeout);
+      img.onload = null;
+      img.onerror = null;
+    };
     
     img.onload = () => {
+      cleanup();
       resolve({
         width: img.naturalWidth,
         height: img.naturalHeight
@@ -217,8 +338,15 @@ export function getImageDimensions(src: string): Promise<{ width: number; height
     };
     
     img.onerror = () => {
+      cleanup();
       reject(new Error(`Failed to load image: ${src}`));
     };
+    
+    // Add timeout
+    timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Image load timeout: ${src}`));
+    }, 10000); // 10 second timeout
     
     img.src = src;
   });

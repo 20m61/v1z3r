@@ -38,7 +38,7 @@ export interface UserAction {
   target: string;
   timestamp: number;
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ErrorReport {
@@ -57,32 +57,84 @@ export interface ErrorReport {
 /**
  * Real User Monitoring class
  */
+export interface RUMConfig {
+  endpoint: string;
+  batchSize?: number;
+  interval?: number;
+  enableTracking?: boolean;
+  privacyMode?: boolean;
+  sanitizePII?: boolean;
+}
+
 export class RealUserMonitoring {
   private metrics: Partial<PerformanceMetrics> = {};
   private userActions: UserAction[] = [];
   private sessionId: string;
   private isInitialized = false;
-  private observer: PerformanceObserver | null = null;
+  private observers: PerformanceObserver[] = [];
+  private eventListeners: Array<{ element: EventTarget; event: string; handler: EventListener }> = [];
   private reportingEndpoint: string;
   private batchSize = 10;
   private reportingInterval = 30000; // 30 seconds
+  private reportingTimer: NodeJS.Timeout | null = null;
+  private actionCheckTimer: NodeJS.Timeout | null = null;
+  private config: RUMConfig;
+  private userConsent = false;
 
-  constructor(config: { endpoint: string; batchSize?: number; interval?: number }) {
+  constructor(config: RUMConfig) {
+    this.config = {
+      enableTracking: false, // Disabled by default for privacy
+      privacyMode: true,
+      sanitizePII: true,
+      ...config
+    };
     this.reportingEndpoint = config.endpoint;
     this.batchSize = config.batchSize || 10;
     this.reportingInterval = config.interval || 30000;
     this.sessionId = this.generateSessionId();
     
+    // Check for user consent before initializing
     if (typeof window !== 'undefined') {
-      this.initialize();
+      this.checkUserConsent();
     }
   }
 
   /**
    * Initialize RUM tracking
    */
+  /**
+   * Check for user consent before tracking
+   */
+  private checkUserConsent(): void {
+    // Check localStorage for consent
+    const consent = localStorage.getItem('rum-consent');
+    this.userConsent = consent === 'true';
+    
+    if (this.userConsent && this.config.enableTracking) {
+      this.initialize();
+    }
+  }
+  
+  /**
+   * Request user consent for tracking
+   */
+  requestConsent(): Promise<boolean> {
+    return new Promise((resolve) => {
+      // In a real implementation, this would show a consent dialog
+      const consent = window.confirm('Allow performance monitoring to improve your experience?');
+      this.userConsent = consent;
+      localStorage.setItem('rum-consent', consent.toString());
+      
+      if (consent && this.config.enableTracking) {
+        this.initialize();
+      }
+      
+      resolve(consent);
+    });
+  }
+  
   private initialize(): void {
-    if (this.isInitialized) return;
+    if (this.isInitialized || !this.userConsent || !this.config.enableTracking) return;
 
     try {
       // Initialize basic metrics
@@ -135,63 +187,80 @@ export class RealUserMonitoring {
 
     try {
       // Largest Contentful Paint (LCP)
-      this.observer = new PerformanceObserver((list) => {
+      const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1] as any;
+        const lastEntry = entries[entries.length - 1] as PerformanceEntry & { startTime: number };
         if (lastEntry) {
           this.metrics.LCP = lastEntry.startTime;
         }
       });
-      this.observer.observe({ entryTypes: ['largest-contentful-paint'] });
+      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+      this.observers.push(lcpObserver);
 
       // First Input Delay (FID)
-      new PerformanceObserver((list) => {
+      const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
+        entries.forEach((entry) => {
+          const fidEntry = entry as PerformanceEntry & { processingStart: number; startTime: number };
           if (entry.name === 'first-input') {
-            this.metrics.FID = entry.processingStart - entry.startTime;
+            this.metrics.FID = fidEntry.processingStart - fidEntry.startTime;
           }
         });
-      }).observe({ entryTypes: ['first-input'] });
+      });
+      fidObserver.observe({ entryTypes: ['first-input'] });
+      this.observers.push(fidObserver);
 
       // Cumulative Layout Shift (CLS)
       let clsValue = 0;
-      new PerformanceObserver((list) => {
+      const clsObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value;
+        entries.forEach((entry) => {
+          const layoutEntry = entry as PerformanceEntry & { hadRecentInput: boolean; value: number };
+          if (!layoutEntry.hadRecentInput) {
+            clsValue += layoutEntry.value;
             this.metrics.CLS = clsValue;
           }
         });
-      }).observe({ entryTypes: ['layout-shift'] });
+      });
+      clsObserver.observe({ entryTypes: ['layout-shift'] });
+      this.observers.push(clsObserver);
 
       // First Contentful Paint (FCP)
-      new PerformanceObserver((list) => {
+      const fcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
+        entries.forEach((entry) => {
+          const paintEntry = entry as PerformanceEntry & { startTime: number };
           if (entry.name === 'first-contentful-paint') {
-            this.metrics.FCP = entry.startTime;
+            this.metrics.FCP = paintEntry.startTime;
           }
         });
-      }).observe({ entryTypes: ['paint'] });
+      });
+      fcpObserver.observe({ entryTypes: ['paint'] });
+      this.observers.push(fcpObserver);
 
       // Long Tasks (for TTI calculation)
-      new PerformanceObserver((list) => {
+      const longTaskObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
+        entries.forEach((entry) => {
+          const taskEntry = entry as PerformanceEntry & { 
+            duration: number; 
+            startTime: number; 
+            attribution?: unknown 
+          };
           this.trackUserAction({
             type: 'long-task',
             target: 'main-thread',
             timestamp: Date.now(),
-            duration: entry.duration,
+            duration: taskEntry.duration,
             metadata: {
-              startTime: entry.startTime,
-              attribution: entry.attribution
+              startTime: taskEntry.startTime,
+              attribution: taskEntry.attribution
             }
           });
         });
-      }).observe({ entryTypes: ['longtask'] });
+      });
+      longTaskObserver.observe({ entryTypes: ['longtask'] });
+      this.observers.push(longTaskObserver);
 
     } catch (error) {
       errorHandler.warn('Failed to setup performance observers', error instanceof Error ? error : new Error(String(error)));
@@ -203,8 +272,8 @@ export class RealUserMonitoring {
    */
   private setupErrorTracking(): void {
     // Global error handler
-    window.addEventListener('error', (event) => {
-      this.reportError({
+    const errorHandler = (event: ErrorEvent) => {
+      const sanitizedError = this.sanitizeError({
         message: event.message,
         stack: event.error?.stack,
         filename: event.filename,
@@ -215,11 +284,15 @@ export class RealUserMonitoring {
         url: window.location.href,
         sessionId: this.sessionId
       });
-    });
+      this.reportError(sanitizedError);
+    };
+    
+    window.addEventListener('error', errorHandler);
+    this.eventListeners.push({ element: window, event: 'error', handler: errorHandler as EventListener });
 
     // Unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      this.reportError({
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
+      const sanitizedError = this.sanitizeError({
         message: `Unhandled Promise Rejection: ${event.reason}`,
         stack: event.reason?.stack,
         timestamp: Date.now(),
@@ -227,7 +300,11 @@ export class RealUserMonitoring {
         url: window.location.href,
         sessionId: this.sessionId
       });
-    });
+      this.reportError(sanitizedError);
+    };
+    
+    window.addEventListener('unhandledrejection', rejectionHandler);
+    this.eventListeners.push({ element: window, event: 'unhandledrejection', handler: rejectionHandler as EventListener });
   }
 
   /**
@@ -235,38 +312,50 @@ export class RealUserMonitoring {
    */
   private setupUserActionTracking(): void {
     // Click tracking
-    document.addEventListener('click', (event) => {
+    const clickHandler = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      this.trackUserAction({
-        type: 'click',
-        target: this.getElementSelector(target),
-        timestamp: Date.now(),
-        metadata: {
-          x: event.clientX,
-          y: event.clientY,
-          button: event.button
-        }
-      });
-    });
-
-    // Key interactions
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
+      const selector = this.getSanitizedElementSelector(target);
+      if (selector) {
         this.trackUserAction({
-          type: 'keydown',
-          target: this.getElementSelector(event.target as HTMLElement),
+          type: 'click',
+          target: selector,
           timestamp: Date.now(),
           metadata: {
-            key: event.key,
-            ctrlKey: event.ctrlKey,
-            shiftKey: event.shiftKey
+            x: event.clientX,
+            y: event.clientY,
+            button: event.button
           }
         });
       }
-    });
+    };
+    
+    document.addEventListener('click', clickHandler);
+    this.eventListeners.push({ element: document, event: 'click', handler: clickHandler as EventListener });
+
+    // Key interactions
+    const keyHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        const selector = this.getSanitizedElementSelector(event.target as HTMLElement);
+        if (selector) {
+          this.trackUserAction({
+            type: 'keydown',
+            target: selector,
+            timestamp: Date.now(),
+            metadata: {
+              key: event.key,
+              ctrlKey: event.ctrlKey,
+              shiftKey: event.shiftKey
+            }
+          });
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', keyHandler);
+    this.eventListeners.push({ element: document, event: 'keydown', handler: keyHandler as EventListener });
 
     // Visibility changes
-    document.addEventListener('visibilitychange', () => {
+    const visibilityHandler = () => {
       this.trackUserAction({
         type: 'visibility-change',
         target: 'document',
@@ -275,7 +364,10 @@ export class RealUserMonitoring {
           hidden: document.hidden
         }
       });
-    });
+    };
+    
+    document.addEventListener('visibilitychange', visibilityHandler);
+    this.eventListeners.push({ element: document, event: 'visibilitychange', handler: visibilityHandler });
   }
 
   /**
@@ -283,17 +375,20 @@ export class RealUserMonitoring {
    */
   private setupReporting(): void {
     // Report on page unload
-    window.addEventListener('beforeunload', () => {
+    const unloadHandler = () => {
       this.sendReport(true);
-    });
+    };
+    
+    window.addEventListener('beforeunload', unloadHandler);
+    this.eventListeners.push({ element: window, event: 'beforeunload', handler: unloadHandler });
 
     // Periodic reporting
-    setInterval(() => {
+    this.reportingTimer = setInterval(() => {
       this.sendReport();
     }, this.reportingInterval);
 
     // Report when user actions reach batch size
-    setInterval(() => {
+    this.actionCheckTimer = setInterval(() => {
       if (this.userActions.length >= this.batchSize) {
         this.sendReport();
       }
@@ -375,7 +470,12 @@ export class RealUserMonitoring {
   /**
    * Send data to reporting endpoint
    */
-  private sendData(data: any, immediate = false): void {
+  private sendData(data: unknown, immediate = false): void {
+    if (!this.isValidEndpoint(this.reportingEndpoint)) {
+      errorHandler.error('Invalid RUM endpoint URL');
+      return;
+    }
+    
     try {
       const payload = JSON.stringify(data);
 
@@ -383,16 +483,27 @@ export class RealUserMonitoring {
         // Use sendBeacon for reliable delivery on page unload
         navigator.sendBeacon(this.reportingEndpoint, payload);
       } else {
-        // Use fetch for regular reporting
+        // Use fetch for regular reporting with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
         fetch(this.reportingEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: payload,
-          keepalive: true
-        }).catch(error => {
-          errorHandler.warn('Failed to send RUM data', error instanceof Error ? error : new Error(String(error)));
+          keepalive: true,
+          signal: controller.signal
+        })
+        .then(() => clearTimeout(timeoutId))
+        .catch(error => {
+          clearTimeout(timeoutId);
+          if (error.name === 'AbortError') {
+            errorHandler.warn('RUM data send timeout');
+          } else {
+            errorHandler.warn('Failed to send RUM data', error instanceof Error ? error : new Error(String(error)));
+          }
         });
       }
     } catch (error) {
@@ -415,14 +526,80 @@ export class RealUserMonitoring {
   }
 
   private getConnectionType(): string {
-    const connection = (navigator as any).connection;
-    return connection?.effectiveType || 'unknown';
+    const nav = navigator as Navigator & { connection?: { effectiveType?: string } };
+    return nav.connection?.effectiveType || 'unknown';
   }
 
+  private getSanitizedElementSelector(element: HTMLElement): string {
+    if (!this.config.sanitizePII) {
+      return this.getElementSelector(element);
+    }
+    
+    // Sanitize potentially sensitive selectors
+    if (element.id && !this.isSensitiveId(element.id)) {
+      return `#${element.id}`;
+    }
+    
+    if (element.className) {
+      const classes = element.className.split(' ');
+      const safeClass = classes.find(cls => !this.isSensitiveClass(cls));
+      if (safeClass) return `.${safeClass}`;
+    }
+    
+    return element.tagName.toLowerCase();
+  }
+  
   private getElementSelector(element: HTMLElement): string {
     if (element.id) return `#${element.id}`;
     if (element.className) return `.${element.className.split(' ')[0]}`;
     return element.tagName.toLowerCase();
+  }
+  
+  private isSensitiveId(id: string): boolean {
+    const sensitivePatterns = ['email', 'password', 'ssn', 'credit', 'phone', 'address'];
+    return sensitivePatterns.some(pattern => id.toLowerCase().includes(pattern));
+  }
+  
+  private isSensitiveClass(className: string): boolean {
+    const sensitivePatterns = ['email', 'password', 'private', 'sensitive', 'personal'];
+    return sensitivePatterns.some(pattern => className.toLowerCase().includes(pattern));
+  }
+  
+  private sanitizeError(error: ErrorReport): ErrorReport {
+    if (!this.config.sanitizePII) {
+      return error;
+    }
+    
+    // Remove potential PII from error messages
+    const sanitized = { ...error };
+    sanitized.message = this.sanitizeString(error.message);
+    if (error.stack) {
+      sanitized.stack = this.sanitizeString(error.stack);
+    }
+    
+    return sanitized;
+  }
+  
+  private sanitizeString(str: string): string {
+    // Remove email addresses
+    str = str.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]');
+    
+    // Remove potential credit card numbers
+    str = str.replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '[CARD]');
+    
+    // Remove potential phone numbers
+    str = str.replace(/\b\d{3}[\s.-]?\d{3}[\s.-]?\d{4}\b/g, '[PHONE]');
+    
+    return str;
+  }
+  
+  private isValidEndpoint(url: string): boolean {
+    try {
+      const parsed = new URL(url, window.location.origin);
+      return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    } catch {
+      return false;
+    }
   }
 
   private checkServiceWorkerCacheHit(): void {
@@ -455,16 +632,40 @@ export class RealUserMonitoring {
    * Clean up resources
    */
   destroy(): void {
-    if (this.observer) {
-      this.observer.disconnect();
+    // Disconnect all observers
+    this.observers.forEach(observer => observer.disconnect());
+    this.observers = [];
+    
+    // Remove all event listeners
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    this.eventListeners = [];
+    
+    // Clear timers
+    if (this.reportingTimer) {
+      clearInterval(this.reportingTimer);
+      this.reportingTimer = null;
     }
+    
+    if (this.actionCheckTimer) {
+      clearInterval(this.actionCheckTimer);
+      this.actionCheckTimer = null;
+    }
+    
+    // Send final report
     this.sendReport(true);
+    
+    this.isInitialized = false;
   }
 }
 
-// Export singleton instance
+// Export singleton instance (disabled by default)
 export const rum = new RealUserMonitoring({
-  endpoint: '/api/rum',
+  endpoint: process.env.NEXT_PUBLIC_RUM_ENDPOINT || '/api/rum',
   batchSize: 10,
-  interval: 30000
+  interval: 30000,
+  enableTracking: process.env.NEXT_PUBLIC_RUM_ENABLED === 'true',
+  privacyMode: true,
+  sanitizePII: true
 });
