@@ -6,6 +6,7 @@ import { VjStorageStack } from '../lib/stacks/vj-storage-stack';
 import { VjStaticHostingStack } from '../lib/stacks/vj-static-hosting-stack';
 import { VjMonitoringStack } from '../lib/stacks/vj-monitoring-stack';
 import { VjConfigStack } from '../lib/stacks/vj-config-stack';
+import { VjCdnStack } from '../lib/stacks/vj-cdn-stack';
 
 const app = new cdk.App();
 
@@ -97,6 +98,17 @@ const hostingStack = new VjStaticHostingStack(app, `VjStaticHostingStack-${stage
   websocketUrl: apiStack.websocketUrl,
 });
 
+// CDN Stack (optional based on config)
+let cdnStack: VjCdnStack | undefined;
+if (config.enableCloudFront) {
+  cdnStack = new VjCdnStack(app, `VjCdnStack-${stage}`, {
+    ...stackProps,
+    stage: stage as 'dev' | 'staging' | 'prod',
+    siteBucket: hostingStack.siteBucket,
+    domainName: config.domainName,
+  });
+}
+
 // Monitoring Stack (depends on all other stacks)
 const monitoringStack = new VjMonitoringStack(app, `VjMonitoringStack-${stage}`, {
   ...stackProps,
@@ -111,6 +123,10 @@ const monitoringStack = new VjMonitoringStack(app, `VjMonitoringStack-${stage}`,
 storageStack.addDependency(configStack);
 apiStack.addDependency(storageStack);
 hostingStack.addDependency(apiStack);
+if (cdnStack) {
+  cdnStack.addDependency(hostingStack);
+  monitoringStack.addDependency(cdnStack);
+}
 monitoringStack.addDependency(apiStack);
 monitoringStack.addDependency(storageStack);
 monitoringStack.addDependency(hostingStack);

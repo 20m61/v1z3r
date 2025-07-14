@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { errorHandler } from '@/utils/errorHandler';
+import { registerServiceWorker } from '@/utils/swRegistration';
 
 export default function App({ Component, pageProps }: AppProps) {
   // アプリケーション初期化とエラーハンドリング
@@ -14,40 +15,20 @@ export default function App({ Component, pageProps }: AppProps) {
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'
     })
 
-    // PWA Service Worker登録
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => {
-          errorHandler.info('Service Worker registered successfully', {
-            scope: registration.scope,
-            hasUpdate: !!registration.installing
-          });
-
-          // Service Worker更新チェック
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // 新しいService Workerが利用可能
-                  errorHandler.info('New Service Worker available - refresh recommended');
-                  
-                  // オプション: ユーザーにリロードを促す通知
-                  if (window.confirm('アプリの新しいバージョンが利用可能です。今すぐ更新しますか？')) {
-                    window.location.reload();
-                  }
-                }
-              });
-            }
-          });
+    // Enhanced Service Worker登録（本番環境のみ）
+    if (process.env.NODE_ENV === 'production') {
+      registerServiceWorker()
+        .then(() => {
+          errorHandler.info('Enhanced Service Worker registered successfully');
         })
         .catch((error) => {
-          errorHandler.warn('Service Worker registration failed', error);
+          errorHandler.warn('Enhanced Service Worker registration failed', error);
         });
+    }
 
-      // PWAインストールプロンプト
-      let deferredPrompt: any;
+    // PWAインストールプロンプト
+    let deferredPrompt: any;
+    if (typeof window !== 'undefined') {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;

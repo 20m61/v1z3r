@@ -1,9 +1,12 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist"
+    "rootDir": "../../",
+    "outDir": "./dist",
+    "paths": {
+      "@/*": ["../../src/*"]
+    }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../src/store/visualizerStore.ts"],
   "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/*"]
 }
