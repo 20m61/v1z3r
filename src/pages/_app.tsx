@@ -4,6 +4,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { errorHandler } from '@/utils/errorHandler';
 import { registerServiceWorker } from '@/utils/swRegistration';
+import { rum } from '@/utils/realUserMonitoring';
 
 export default function App({ Component, pageProps }: AppProps) {
   // アプリケーション初期化とエラーハンドリング
@@ -20,10 +21,22 @@ export default function App({ Component, pageProps }: AppProps) {
       registerServiceWorker()
         .then(() => {
           errorHandler.info('Enhanced Service Worker registered successfully');
+          // Track service worker cache hit
+          rum.trackCustomMetric('serviceWorkerCacheHit', 1);
         })
         .catch((error) => {
           errorHandler.warn('Enhanced Service Worker registration failed', error);
         });
+    }
+
+    // Real User Monitoring setup
+    if (process.env.NODE_ENV === 'production') {
+      // Track audio initialization time
+      const audioStartTime = performance.now();
+      setTimeout(() => {
+        const audioEndTime = performance.now();
+        rum.trackCustomMetric('audioInitTime', audioEndTime - audioStartTime);
+      }, 100);
     }
 
     // PWAインストールプロンプト

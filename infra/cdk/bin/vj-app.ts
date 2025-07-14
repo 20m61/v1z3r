@@ -7,6 +7,8 @@ import { VjStaticHostingStack } from '../lib/stacks/vj-static-hosting-stack';
 import { VjMonitoringStack } from '../lib/stacks/vj-monitoring-stack';
 import { VjConfigStack } from '../lib/stacks/vj-config-stack';
 import { VjCdnStack } from '../lib/stacks/vj-cdn-stack';
+import { VjXRayStack } from '../lib/stacks/vj-xray-stack';
+import { VjLoggingStack } from '../lib/stacks/vj-logging-stack';
 
 const app = new cdk.App();
 
@@ -109,6 +111,26 @@ if (config.enableCloudFront) {
   });
 }
 
+// X-Ray Stack (optional based on stage)
+let xrayStack: VjXRayStack | undefined;
+if (stage !== 'dev') {
+  xrayStack = new VjXRayStack(app, `VjXRayStack-${stage}`, {
+    ...stackProps,
+    stage,
+    lambdaFunctions: [apiStack.presetFunction, apiStack.connectionFunction]
+  });
+}
+
+// Logging Stack (for production monitoring)
+let loggingStack: VjLoggingStack | undefined;
+if (stage === 'prod' || stage === 'staging') {
+  loggingStack = new VjLoggingStack(app, `VjLoggingStack-${stage}`, {
+    ...stackProps,
+    stage,
+    lambdaFunctions: [apiStack.presetFunction, apiStack.connectionFunction]
+  });
+}
+
 // Monitoring Stack (depends on all other stacks)
 const monitoringStack = new VjMonitoringStack(app, `VjMonitoringStack-${stage}`, {
   ...stackProps,
@@ -123,10 +145,29 @@ const monitoringStack = new VjMonitoringStack(app, `VjMonitoringStack-${stage}`,
 storageStack.addDependency(configStack);
 apiStack.addDependency(storageStack);
 hostingStack.addDependency(apiStack);
+
 if (cdnStack) {
   cdnStack.addDependency(hostingStack);
-  monitoringStack.addDependency(cdnStack);
 }
+
+if (xrayStack) {
+  xrayStack.addDependency(apiStack);
+}
+
+if (loggingStack) {
+  loggingStack.addDependency(apiStack);
+}
+
 monitoringStack.addDependency(apiStack);
 monitoringStack.addDependency(storageStack);
 monitoringStack.addDependency(hostingStack);
+
+if (cdnStack) {
+  monitoringStack.addDependency(cdnStack);
+}
+if (xrayStack) {
+  monitoringStack.addDependency(xrayStack);
+}
+if (loggingStack) {
+  monitoringStack.addDependency(loggingStack);
+}
