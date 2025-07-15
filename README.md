@@ -3,7 +3,6 @@
 v1z3r is a cutting-edge, AI-powered VJ (Visual Jockey) application with WebGPU acceleration, designed for professional live performances. It features real-time music analysis, intelligent visual adaptation, and industry-standard MIDI controller support.
 
 📚 **[Documentation](https://20m61.github.io/v1z3r/)** | 🎮 **[Demo](https://v1z3r.sc4pe.net)** | 📦 **[NPM Packages](https://www.npmjs.com/org/vj-app)**
-
 ## 🚀 Advanced Features (NEW)
 
 ### AI & Machine Learning
