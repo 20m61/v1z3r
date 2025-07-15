@@ -104,7 +104,7 @@ export class ProfessionalMIDIManager {
       this.midiAccess = await navigator.requestMIDIAccess({
         sysex: true, // Request system exclusive access for advanced features
         software: false, // Hardware controllers only
-      });
+      }) as unknown as MIDIAccess;
 
       // Setup event handlers
       this.midiAccess.addEventListener('statechange', this.handleDeviceStateChange.bind(this));
@@ -697,6 +697,8 @@ export class ProfessionalMIDIManager {
    * Handle MIDI message
    */
   private handleMIDIMessage(controllerId: string, event: MIDIMessageEvent): void {
+    if (!event.data) return;
+    
     const message = this.parseMIDIMessage(event.data);
     const controller = this.connectedControllers.get(controllerId);
     const state = this.controllerStates.get(controllerId);
@@ -908,6 +910,8 @@ export class ProfessionalMIDIManager {
    */
   private handleDeviceStateChange(event: MIDIConnectionEvent): void {
     const port = event.port;
+    
+    if (!port) return;
     
     if (port.state === 'connected') {
       if (port.type === 'input') {

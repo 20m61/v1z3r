@@ -520,7 +520,7 @@ export class AIBeatDetectionModel {
       }
     }
 
-    const inputTensor = tf.tensor3d([inputData], [1, this.bufferSize, 50]);
+    const inputTensor = tf.tensor3d(Array.from(inputData), [1, this.bufferSize, 50]);
     
     try {
       const prediction = this.model.predict(inputTensor) as tf.Tensor;
@@ -565,18 +565,18 @@ export class AIBeatDetectionModel {
  */
 export class AIBeatDetection {
   private config: BeatDetectionConfig;
-  private odfCalculator: OnsetDetectionFunction;
-  private peakPicker: AdaptivePeakPicker;
-  private tempoTracker: TempoTracker;
-  private aiModel: AIBeatDetectionModel;
-  private syncState: BeatSyncState;
-  private metrics: SyncMetrics;
+  private odfCalculator!: OnsetDetectionFunction;
+  private peakPicker!: AdaptivePeakPicker;
+  private tempoTracker!: TempoTracker;
+  private aiModel!: AIBeatDetectionModel;
+  private syncState!: BeatSyncState;
+  private metrics!: SyncMetrics;
 
   // Audio processing
   private audioContext: AudioContext;
-  private analyser: AnalyserNode;
-  private frequencyData: Float32Array;
-  private timeData: Float32Array;
+  private analyser!: AnalyserNode;
+  private frequencyData!: Float32Array;
+  private timeData!: Float32Array;
   private isProcessing: boolean = false;
 
   // Beat tracking

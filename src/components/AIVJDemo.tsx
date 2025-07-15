@@ -162,7 +162,7 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = vjMasterRef.current.audioContext;
+      const audioContext = vjMasterRef.current.getAudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       
       vjMasterRef.current.connectAudioSource(source);
@@ -178,7 +178,7 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
     if (!vjMasterRef.current) return;
 
     try {
-      const audioContext = vjMasterRef.current.audioContext;
+      const audioContext = vjMasterRef.current.getAudioContext();
       const arrayBuffer = await file.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       

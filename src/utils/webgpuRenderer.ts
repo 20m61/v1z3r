@@ -4,7 +4,21 @@
  */
 
 import * as THREE from 'three';
-import { WebGPURenderer } from 'three/addons/renderers/webgpu/WebGPURenderer.js';
+
+// Conditional WebGPU import based on environment
+let WebGPURenderer: any;
+if (process.env.NEXT_PUBLIC_ENABLE_WEBGPU === 'true') {
+  try {
+    // Dynamic import to avoid build errors when WebGPU is disabled
+    WebGPURenderer = require('three/examples/jsm/renderers/webgpu/WebGPURenderer.js').WebGPURenderer;
+  } catch (error) {
+    console.warn('WebGPU renderer not available:', error);
+    WebGPURenderer = null;
+  }
+} else {
+  WebGPURenderer = null;
+}
+
 import { WebGPUDetector, WebGPUCapabilities } from './webgpuDetection';
 
 export interface RendererConfig {
@@ -44,7 +58,7 @@ export interface AdvancedRenderingFeatures {
  * Enhanced Three.js Renderer with WebGPU Support
  */
 export class V1z3rRenderer {
-  private renderer: THREE.WebGLRenderer | WebGPURenderer | null = null;
+  private renderer: THREE.WebGLRenderer | any | null = null;
   private webgpuDetector: WebGPUDetector;
   private capabilities: WebGPUCapabilities | null = null;
   private config: RendererConfig;
@@ -83,7 +97,7 @@ export class V1z3rRenderer {
   /**
    * Initialize the renderer with optimal configuration
    */
-  async initialize(): Promise<{ renderer: THREE.WebGLRenderer | WebGPURenderer; isWebGPU: boolean }> {
+  async initialize(): Promise<{ renderer: THREE.WebGLRenderer | any; isWebGPU: boolean }> {
     console.log('[V1z3rRenderer] Initializing renderer...');
 
     // Detect WebGPU capabilities
@@ -127,7 +141,7 @@ export class V1z3rRenderer {
   /**
    * Create WebGPU renderer
    */
-  private async createWebGPURenderer(): Promise<WebGPURenderer> {
+  private async createWebGPURenderer(): Promise<any> {
     if (!this.capabilities) {
       throw new Error('WebGPU capabilities not detected');
     }
@@ -215,7 +229,7 @@ export class V1z3rRenderer {
 
     // WebGPU-specific optimizations
     if (this.isWebGPU) {
-      const webgpuRenderer = this.renderer as WebGPURenderer;
+      const webgpuRenderer = this.renderer as any;
       
       // Enable advanced features if available
       if (this.capabilities?.computeShaderSupport) {
@@ -241,7 +255,7 @@ export class V1z3rRenderer {
   /**
    * Setup timestamp queries for performance monitoring
    */
-  private async setupTimestampQueries(renderer: WebGPURenderer): Promise<void> {
+  private async setupTimestampQueries(renderer: any): Promise<void> {
     try {
       // Get the WebGPU device from the renderer
       const device = (renderer as any)._device as GPUDevice;
@@ -272,7 +286,7 @@ export class V1z3rRenderer {
   /**
    * Setup compute pipeline for particle systems
    */
-  private async setupComputePipeline(renderer: WebGPURenderer): Promise<void> {
+  private async setupComputePipeline(renderer: any): Promise<void> {
     try {
       console.log('[V1z3rRenderer] Setting up compute pipeline for particle systems');
       
@@ -440,7 +454,7 @@ export class V1z3rRenderer {
   /**
    * Get the underlying Three.js renderer
    */
-  getThreeRenderer(): THREE.WebGLRenderer | WebGPURenderer | null {
+  getThreeRenderer(): THREE.WebGLRenderer | any | null {
     return this.renderer;
   }
 

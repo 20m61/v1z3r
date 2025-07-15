@@ -239,7 +239,7 @@ export class WebGPUDetector {
 
     // Performance indicators
     const hasHighMemory = limits.maxBufferSize >= 1024 * 1024 * 1024; // 1GB
-    const hasHighTexture = limits.maxTexture2DSize >= 8192;
+    const hasHighTexture = limits.maxTextureDimension2D >= 8192;
     const hasHighWorkgroup = limits.maxComputeWorkgroupSizeX >= 256;
     const hasManyBindings = limits.maxBindGroups >= 8;
 
@@ -280,7 +280,7 @@ export class WebGPUDetector {
       powerPreference: rating === 'excellent' ? 'high-performance' : 'low-power',
       forceFallbackAdapter: false,
       enableComputeShaders: this.capabilities.computeShaderSupport,
-      maxTextureSize: Math.min(limits.maxTexture2DSize, rating === 'excellent' ? 8192 : 4096),
+      maxTextureSize: Math.min(limits.maxTextureDimension2D, rating === 'excellent' ? 8192 : 4096),
       maxBufferSize: Math.min(limits.maxBufferSize, rating === 'excellent' ? 1024 * 1024 * 1024 : 256 * 1024 * 1024),
       maxComputeWorkgroupSize: Math.min(limits.maxComputeWorkgroupSizeX, 256),
       preferredFormat: this.capabilities.preferredFormat || 'bgra8unorm',
@@ -299,8 +299,8 @@ export class WebGPUDetector {
       features.push('timestamp-query');
     }
 
-    if (adapter.features.has('pipeline-statistics-query')) {
-      features.push('pipeline-statistics-query');
+    if (adapter.features.has('pipeline-statistics-query' as GPUFeatureName)) {
+      features.push('pipeline-statistics-query' as GPUFeatureName);
     }
 
     // Texture compression for better performance
@@ -328,7 +328,7 @@ export class WebGPUDetector {
     // Ensure we have sufficient resources for VJ application
     limits.maxBindGroups = Math.min(adapter.limits.maxBindGroups, 8);
     limits.maxBufferSize = Math.min(adapter.limits.maxBufferSize, 512 * 1024 * 1024); // 512MB
-    limits.maxTexture2DSize = Math.min(adapter.limits.maxTexture2DSize, 4096);
+    limits.maxTextureDimension2D = Math.min(adapter.limits.maxTextureDimension2D, 4096);
     limits.maxComputeWorkgroupSizeX = Math.min(adapter.limits.maxComputeWorkgroupSizeX, 256);
 
     return limits;
@@ -364,10 +364,10 @@ export class WebGPUDetector {
     return {
       vendor: info.vendor,
       architecture: info.architecture,
-      driverVersion: info.driverVersion || 'unknown',
+      driverVersion: (info as any).driverVersion || 'unknown',
       memorySize: this.estimateGPUMemory(),
       computeUnits: this.estimateComputeUnits(),
-      maxTextureSize: limits?.maxTexture2DSize || 0,
+      maxTextureSize: limits?.maxTextureDimension2D || 0,
       maxBufferSize: limits?.maxBufferSize || 0,
     };
   }

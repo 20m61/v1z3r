@@ -7,13 +7,15 @@ echo "🔍 Running pre-commit checks..."
 echo "📝 Running ESLint..."
 yarn lint
 
-# Skip other checks for now due to existing issues
-# TODO: Re-enable after fixing TypeScript and test issues
-# echo "🔍 Running TypeScript type checking..."
-# yarn type-check
-# echo "🧪 Running unit tests..."
-# yarn test --passWithNoTests
-# echo "🏗️ Building modules..."
-# yarn build:modules
+# Gradually re-enable comprehensive checks
+echo "🔍 Running TypeScript type checking..."
+yarn type-check || {
+  echo "⚠️  TypeScript errors found, but allowing commit (AI/WebGPU components have known issues)"
+}
 
-echo "✅ Pre-commit checks passed!"
+echo "🧪 Running critical tests..."
+yarn test --testPathPatterns="src/components/ui" --passWithNoTests || {
+  echo "⚠️  Some tests failed, but allowing commit (auth tests have known issues)"
+}
+
+echo "✅ Pre-commit checks completed!"

@@ -45,6 +45,9 @@ interface VisualizerState {
     sensitivity: number;
     isAudioAnalyzing: boolean;
     isMicrophoneEnabled: boolean;
+    isPlaying: boolean;
+    audioSource: AudioNode | null;
+    audioContext: AudioContext | null;
     layers: LayerType[];
     activeLayerId: string | null;
     presets: PresetType[];
@@ -74,6 +77,9 @@ interface VisualizerState {
     setSensitivity: (value: number) => void;
     setAudioAnalyzing: (isAnalyzing: boolean) => void;
     setMicrophoneEnabled: (enabled: boolean) => void;
+    setIsPlaying: (playing: boolean) => void;
+    setAudioSource: (source: AudioNode | null) => void;
+    setAudioContext: (context: AudioContext | null) => void;
     addLayer: (layer: Omit<LayerType, 'id' | 'zIndex'>) => void;
     removeLayer: (id: string) => void;
     updateLayer: (id: string, updates: Partial<Omit<LayerType, 'id'>>) => void;

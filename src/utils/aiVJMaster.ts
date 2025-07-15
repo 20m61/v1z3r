@@ -570,7 +570,7 @@ export class AIVJMaster {
       const projectionMatrix = this.camera.projectionMatrix;
       const viewProjectionMatrix = new THREE.Matrix4().multiplyMatrices(projectionMatrix, viewMatrix);
       
-      this.particleSystem.render(viewProjectionMatrix.elements);
+      this.particleSystem.render(new Float32Array(viewProjectionMatrix.elements));
     }
 
     // Record render timing
@@ -843,6 +843,13 @@ export class AIVJMaster {
    */
   getState(): AIVJState {
     return { ...this.state };
+  }
+
+  /**
+   * Get audio context
+   */
+  getAudioContext(): AudioContext {
+    return this.audioContext;
   }
 
   /**

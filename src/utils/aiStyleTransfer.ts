@@ -815,7 +815,7 @@ export class AIStyleTransferEngine {
   /**
    * Check if model is loaded
    */
-  isModelLoaded(): boolean {
+  getModelLoadStatus(): boolean {
     return this.isModelLoaded;
   }
 

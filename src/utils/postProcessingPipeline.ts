@@ -138,15 +138,16 @@ export class ChromaticAberrationPass extends ShaderPass {
  */
 export class SSAOPass extends ShaderPass {
   constructor(scene: THREE.Scene, camera: THREE.Camera) {
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
     super({
       uniforms: {
         tDiffuse: { value: null },
         tDepth: { value: null },
         tNormal: { value: null },
-        uCameraNear: { value: camera.near },
-        uCameraFar: { value: camera.far },
-        uProjectionMatrix: { value: camera.projectionMatrix },
-        uViewMatrix: { value: camera.matrixWorldInverse },
+        uCameraNear: { value: perspectiveCamera.near },
+        uCameraFar: { value: perspectiveCamera.far },
+        uProjectionMatrix: { value: perspectiveCamera.projectionMatrix },
+        uViewMatrix: { value: perspectiveCamera.matrixWorldInverse },
         uSamples: { value: 16 },
         uRadius: { value: 0.5 },
         uIntensity: { value: 1.0 },
@@ -407,7 +408,7 @@ export class MotionBlurPass extends ShaderPass {
  * Main Post-Processing Pipeline
  */
 export class PostProcessingPipeline {
-  private composer: EffectComposer;
+  private composer!: EffectComposer;
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.Camera;
@@ -415,22 +416,22 @@ export class PostProcessingPipeline {
   private state: PostProcessingState;
 
   // Render targets
-  private renderTarget: THREE.WebGLRenderTarget;
-  private depthTarget: THREE.WebGLRenderTarget;
-  private normalTarget: THREE.WebGLRenderTarget;
-  private previousFrameTarget: THREE.WebGLRenderTarget;
+  private renderTarget!: THREE.WebGLRenderTarget;
+  private depthTarget!: THREE.WebGLRenderTarget;
+  private normalTarget!: THREE.WebGLRenderTarget;
+  private previousFrameTarget!: THREE.WebGLRenderTarget;
 
   // Passes
-  private renderPass: RenderPass;
-  private taaPass: TAARenderPass;
-  private smaaPass: SMAAPass;
-  private bloomPass: AudioReactiveBloomPass;
-  private ssaoPass: SSAOPass;
-  private chromaticAberrationPass: ChromaticAberrationPass;
-  private colorGradingPass: ColorGradingPass;
-  private motionBlurPass: MotionBlurPass;
-  private filmPass: FilmPass;
-  private glitchPass: GlitchPass;
+  private renderPass!: RenderPass;
+  private taaPass!: TAARenderPass;
+  private smaaPass!: SMAAPass;
+  private bloomPass!: AudioReactiveBloomPass;
+  private ssaoPass!: SSAOPass;
+  private chromaticAberrationPass!: ChromaticAberrationPass;
+  private colorGradingPass!: ColorGradingPass;
+  private motionBlurPass!: MotionBlurPass;
+  private filmPass!: FilmPass;
+  private glitchPass!: GlitchPass;
 
   // Performance monitoring
   private performanceMonitor = {
@@ -568,7 +569,7 @@ export class PostProcessingPipeline {
 
     // Film grain pass
     if (this.config.enableFilmGrain) {
-      this.filmPass = new FilmPass(0.5, 0.125, 2048, false);
+      this.filmPass = new FilmPass(0.5, true);
     }
 
     // Glitch pass
@@ -660,7 +661,7 @@ export class PostProcessingPipeline {
     }
 
     if (this.filmPass) {
-      this.filmPass.uniforms.intensity.value = audioReactiveParams.filmGrainIntensity;
+      (this.filmPass.uniforms as any).intensity.value = audioReactiveParams.filmGrainIntensity;
     }
 
     if (this.glitchPass) {

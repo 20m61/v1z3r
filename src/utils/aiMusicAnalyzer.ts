@@ -59,7 +59,7 @@ export interface VisualParameters {
   geometryComplexity: number; // 0-1
   
   // Style parameters
-  visualStyle: 'minimal' | 'organic' | 'geometric' | 'abstract' | 'retro';
+  visualStyle: 'minimal' | 'organic' | 'geometric' | 'abstract' | 'retro' | 'futuristic';
   effectType: 'particles' | 'waves' | 'geometry' | 'fluid' | 'fractals';
   blendMode: 'normal' | 'multiply' | 'screen' | 'overlay' | 'difference';
   
@@ -148,6 +148,30 @@ export class AudioProcessor {
     const emotionalFeatures = this.extractEmotionalFeatures(frequencyFloat);
 
     return {
+      // Provide default values for required fields
+      tempo: 120,
+      beatTimes: [],
+      beatStrength: [],
+      onsetTimes: [],
+      spectralCentroid: 0,
+      spectralRolloff: 0,
+      spectralBandwidth: 0,
+      spectralFlatness: 0,
+      mfcc: new Float32Array(13),
+      chromaticFeatures: new Float32Array(12),
+      key: 'C',
+      mode: 'major' as const,
+      rhythmPattern: new Float32Array(16),
+      syncopation: 0,
+      rhythmComplexity: 0,
+      energy: 0,
+      valence: 0,
+      danceability: 0,
+      acousticness: 0,
+      instrumentalness: 0,
+      liveness: 0,
+      loudness: 0,
+      // Override with extracted features
       ...spectralFeatures,
       ...temporalFeatures,
       ...harmonicFeatures,
@@ -730,7 +754,7 @@ export class AIMusicalAnalyzer {
     const result = await prediction.data();
     
     // Convert prediction to visual parameters
-    const visualParams = this.interpretAIPrediction(result);
+    const visualParams = this.interpretAIPrediction(result as Float32Array);
     
     // Cleanup tensors
     featureVector.dispose();
