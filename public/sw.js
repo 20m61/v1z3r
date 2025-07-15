@@ -1,9 +1,13 @@
-// v1z3r Service Worker
-// Advanced caching strategy for VJ Application
+/**
+ * Production Service Worker for v1z3r
+ * Implements advanced caching strategies and offline support
+ */
 
-const CACHE_NAME = 'v1z3r-cache-v1.0.0';
-const STATIC_CACHE = 'v1z3r-static-v1.0.0';
-const DYNAMIC_CACHE = 'v1z3r-dynamic-v1.0.0';
+const CACHE_VERSION = 'v1z3r-v1.0.0';
+const STATIC_CACHE = `${CACHE_VERSION}-static`;
+const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
+const API_CACHE = `${CACHE_VERSION}-api`;
+const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 
 // Static assets to cache immediately
 const STATIC_ASSETS = [
