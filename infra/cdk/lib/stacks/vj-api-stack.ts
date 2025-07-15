@@ -172,6 +172,14 @@ export class VjApiStack extends cdk.Stack {
         `arn:aws:execute-api:${this.region}:${this.account}:${this.websocketApi.apiId}/*`
       ],
     }));
+    
+    // Grant CloudWatch logs permissions
+    this.connectionFunction.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+      resources: [
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/lambda/*`
+      ],
+    }));
 
     // WebSocket message handler
     const messageFunction = new lambda.Function(this, 'MessageFunction', {
@@ -197,6 +205,14 @@ export class VjApiStack extends cdk.Stack {
         `arn:aws:execute-api:${this.region}:${this.account}:${this.websocketApi.apiId}/*`
       ],
     }));
+    
+    // Grant CloudWatch logs permissions
+    messageFunction.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+      resources: [
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/lambda/*`
+      ],
+    }));
 
     // WebSocket routes using WebSocketLambdaIntegration
     const connectIntegration = new apigatewayv2Integrations.WebSocketLambdaIntegration(
@@ -217,14 +233,56 @@ export class VjApiStack extends cdk.Stack {
     this.websocketApi.addRoute('$connect', { integration: connectIntegration });
     this.websocketApi.addRoute('$disconnect', { integration: disconnectIntegration });
     this.websocketApi.addRoute('$default', { integration: messageIntegration });
+    
+    // Add specific routes for different message types
+    this.websocketApi.addRoute('ping', { integration: messageIntegration });
+    this.websocketApi.addRoute('sync', { integration: messageIntegration });
     this.websocketApi.addRoute('message', { integration: messageIntegration });
 
-    // WebSocket deployment
+    // Add CloudWatch logging to WebSocket API
+    const websocketLogGroup = new logs.LogGroup(this, 'WebSocketLogGroup', {
+      logGroupName: `/aws/apigateway/${this.websocketApi.apiId}/${stage}`,
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+    
+    // WebSocket deployment with logging
     const websocketStage = new apigatewayv2.WebSocketStage(this, 'WebSocketStage', {
       webSocketApi: this.websocketApi,
       stageName: stage,
       autoDeploy: true,
+      throttle: {
+        rateLimit: 1000,
+        burstLimit: 2000
+      }
     });
+    
+    // Configure access logging via CfnStage
+    const cfnStage = websocketStage.node.defaultChild as apigatewayv2.CfnStage;
+    cfnStage.accessLogSettings = {
+      destinationArn: websocketLogGroup.logGroupArn,
+      format: JSON.stringify({
+        requestId: '$context.requestId',
+        extendedRequestId: '$context.extendedRequestId',
+        ip: '$context.identity.sourceIp',
+        eventType: '$context.eventType',
+        routeKey: '$context.routeKey',
+        status: '$context.status',
+        connectionId: '$context.connectionId',
+        error: '$context.error.message',
+        requestTime: '$context.requestTime'
+      })
+    };
+    
+    // Grant CloudWatch logs permissions to API Gateway
+    const apiGatewayLogRole = new iam.Role(this, 'ApiGatewayLogRole', {
+      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonAPIGatewayPushToCloudWatchLogs')
+      ]
+    });
+    
+    websocketLogGroup.grantWrite(apiGatewayLogRole);
 
     // Session cleanup function (runs periodically to clean expired sessions)
     const cleanupFunction = new lambda.Function(this, 'CleanupFunction', {
