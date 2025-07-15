@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import { errorHandler } from '@/utils/errorHandler';
@@ -347,12 +348,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         <span className="text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
         </span>
-        <a
+        <Link
           href="/auth/login"
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
         >
           Sign in
-        </a>
+        </Link>
       </div>
     </form>
   );

@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import { errorHandler } from '@/utils/errorHandler';
@@ -168,18 +169,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       )}
 
       <div className="flex items-center justify-between">
-        <a
+        <Link 
           href="/auth/forgot-password"
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
         >
           Forgot password?
-        </a>
-        <a
+        </Link>
+        <Link 
           href="/auth/register"
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
         >
           Create account
-        </a>
+        </Link>
       </div>
 
       <Button
