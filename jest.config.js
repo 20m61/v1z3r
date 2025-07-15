@@ -7,7 +7,10 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: [
+    '<rootDir>/jest.setup.js',
+    '<rootDir>/tests/setupTests.ts',
+  ],
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -26,15 +29,20 @@ const customJestConfig = {
     '!modules/**/*.d.ts',
     '!src/pages/_app.tsx',
     '!src/pages/_document.tsx',
+    '!src/**/*.stories.tsx',
+    '!src/**/mock*.{ts,tsx}',
+    '!src/types/**/*',
+    '!modules/**/types/**/*',
   ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
+      branches: 85,
+      functions: 85,
+      lines: 90,
+      statements: 90,
     },
   },
+  coverageReporters: ['html', 'text', 'lcov', 'json-summary'],
   testMatch: [
     '<rootDir>/**/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/**/*.(test|spec).{js,jsx,ts,tsx}',
