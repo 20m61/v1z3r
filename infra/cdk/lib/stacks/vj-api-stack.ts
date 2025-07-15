@@ -8,6 +8,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { Construct } from 'constructs';
 
 export interface VjApiStackProps extends cdk.StackProps {
@@ -21,6 +22,8 @@ export interface VjApiStackProps extends cdk.StackProps {
   sessionTable: dynamodb.Table;
   presetTable: dynamodb.Table;
   configTable: dynamodb.Table;
+  userPool?: cognito.UserPool;
+  authorizer?: apigateway.CognitoUserPoolsAuthorizer;
 }
 
 export class VjApiStack extends cdk.Stack {
@@ -34,7 +37,7 @@ export class VjApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VjApiStackProps) {
     super(scope, id, props);
 
-    const { stage, config, sessionTable, presetTable, configTable } = props;
+    const { stage, config, sessionTable, presetTable, configTable, userPool, authorizer } = props;
 
     // Lambda layer for shared dependencies
     const sharedLayer = new lambda.LayerVersion(this, 'SharedLayer', {
@@ -50,6 +53,8 @@ export class VjApiStack extends cdk.Stack {
       CONFIG_TABLE_NAME: configTable.tableName,
       STAGE: stage,
       CORS_ORIGIN: stage === 'prod' ? `https://${config.domainName}` : '*',
+      USER_POOL_ID: userPool?.userPoolId || '',
+      ENABLE_AUTH: config.enableAuth ? 'true' : 'false',
     };
 
     // REST API for preset management and configuration
@@ -61,7 +66,8 @@ export class VjApiStack extends cdk.Stack {
           ? [`https://${config.domainName}`]
           : apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token'],
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token', 'X-User-Id'],
+        allowCredentials: true,
       },
       deployOptions: {
         stageName: stage,
@@ -89,13 +95,22 @@ export class VjApiStack extends cdk.Stack {
 
     // Preset API endpoints
     const presetResource = this.restApi.root.addResource('presets');
+    
+    // Public endpoints (no auth required)
     presetResource.addMethod('GET', new apigateway.LambdaIntegration(this.presetFunction));
-    presetResource.addMethod('POST', new apigateway.LambdaIntegration(this.presetFunction));
+    
+    // Protected endpoints (auth required)
+    const methodOptions = config.enableAuth && authorizer ? {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    } : undefined;
+    
+    presetResource.addMethod('POST', new apigateway.LambdaIntegration(this.presetFunction), methodOptions);
 
     const presetItemResource = presetResource.addResource('{presetId}');
     presetItemResource.addMethod('GET', new apigateway.LambdaIntegration(this.presetFunction));
-    presetItemResource.addMethod('PUT', new apigateway.LambdaIntegration(this.presetFunction));
-    presetItemResource.addMethod('DELETE', new apigateway.LambdaIntegration(this.presetFunction));
+    presetItemResource.addMethod('PUT', new apigateway.LambdaIntegration(this.presetFunction), methodOptions);
+    presetItemResource.addMethod('DELETE', new apigateway.LambdaIntegration(this.presetFunction), methodOptions);
 
     // Health check endpoint
     const healthFunction = new lambda.Function(this, 'HealthFunction', {

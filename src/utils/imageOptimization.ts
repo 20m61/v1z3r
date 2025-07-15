@@ -153,7 +153,7 @@ function getCachedOptimalFormat(originalExt: string): string {
         return 'webp';
       }
     } catch (error) {
-      errorHandler.warn('Failed to detect image format support', error);
+      errorHandler.warn('Failed to detect image format support', error instanceof Error ? error : new Error(String(error)));
     }
   }
   
