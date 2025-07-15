@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 99 102 241;
+    --color-secondary: 139 92 246;
+    --color-accent: 236 72 153;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-vj-darker text-gray-100;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-vj-dark;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-vj-primary rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-vj-secondary;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-vj-primary via-vj-secondary to-vj-accent bg-clip-text text-transparent;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-r from-vj-primary via-vj-secondary to-vj-accent;
+  }
+
+  .card {
+    @apply bg-vj-dark/50 backdrop-blur-sm border border-gray-800 rounded-xl p-6 hover:border-vj-primary/50 transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-vj-primary hover:bg-vj-secondary text-white font-medium rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-vj-primary/25;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 border border-vj-primary text-vj-primary hover:bg-vj-primary hover:text-white font-medium rounded-lg transition-all duration-300;
+  }
+
+  .code-block {
+    @apply bg-gray-900 rounded-lg p-4 overflow-x-auto;
+  }
+
+  .nav-link {
+    @apply text-gray-300 hover:text-white transition-colors duration-200;
+  }
+
+  .nav-link.active {
+    @apply text-vj-primary;
+  }
+}
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

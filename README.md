@@ -2,6 +2,8 @@
 
 v1z3r is a cutting-edge, AI-powered VJ (Visual Jockey) application with WebGPU acceleration, designed for professional live performances. It features real-time music analysis, intelligent visual adaptation, and industry-standard MIDI controller support.
 
+📚 **[Documentation](https://20m61.github.io/v1z3r/)** | 🎮 **[Demo](https://v1z3r.sc4pe.net)** | 📦 **[NPM Packages](https://www.npmjs.com/org/vj-app)**
+
 ## 🚀 Advanced Features (NEW)
 
 ### AI & Machine Learning
@@ -73,6 +75,8 @@ v1z3r is a cutting-edge, AI-powered VJ (Visual Jockey) application with WebGPU a
 
 ## 🚀 Getting Started
 
+> 📖 **For detailed setup instructions, visit our [Documentation](https://20m61.github.io/v1z3r/getting-started/)**
+
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18 or later)
@@ -83,7 +87,7 @@ v1z3r is a cutting-edge, AI-powered VJ (Visual Jockey) application with WebGPU a
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/v1z3r.git
+   git clone https://github.com/20m61/v1z3r.git
    cd v1z3r
    ```
 
@@ -277,6 +281,17 @@ yarn type-check   # TypeScript validation
 yarn build        # Build for production
 yarn infra:prod   # Deploy AWS infrastructure
 ```
+
+## 📖 Documentation
+
+Visit our comprehensive documentation at **[https://20m61.github.io/v1z3r/](https://20m61.github.io/v1z3r/)**
+
+- 🚀 [Getting Started](https://20m61.github.io/v1z3r/getting-started/) - Setup and installation
+- ⚡ [Features](https://20m61.github.io/v1z3r/features/) - Complete feature overview
+- 📖 [User Manual](https://20m61.github.io/v1z3r/manual/) - Detailed usage guide
+- ⌨️ [Shortcuts](https://20m61.github.io/v1z3r/shortcuts/) - Keyboard and MIDI shortcuts
+- 🔧 [API Reference](https://20m61.github.io/v1z3r/api/) - Developer API documentation
+- 👨‍💻 [Developer Guide](https://20m61.github.io/v1z3r/developer/) - Contributing and development
 
 ## 📄 License
 
