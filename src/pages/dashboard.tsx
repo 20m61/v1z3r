@@ -69,7 +69,7 @@ function DashboardPage() {
               Welcome back, {user?.fullName || 'VJ'}!
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Ready to create amazing visuals? Here's your dashboard overview.
+              Ready to create amazing visuals? Here&apos;s your dashboard overview.
             </p>
           </div>
 
@@ -176,7 +176,7 @@ function DashboardPage() {
               <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    Created new preset "Neon Dreams"
+                    Created new preset &ldquo;Neon Dreams&rdquo;
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     2 hours ago

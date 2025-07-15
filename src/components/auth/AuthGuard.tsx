@@ -58,7 +58,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     };
 
     checkAuth();
-  }, [isAuthenticated, user, requiredRole, router.asPath]);
+  }, [isAuthenticated, user, requiredRole, router.asPath, fallbackUrl, hasRole, isTokenExpired, refreshSession, router]);
 
   if (isChecking) {
     return <>{loadingComponent}</>;
