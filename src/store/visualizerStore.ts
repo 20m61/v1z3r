@@ -54,6 +54,11 @@ interface VisualizerState {
   isAudioAnalyzing: boolean;
   isMicrophoneEnabled: boolean;
   
+  // オーディオ再生状態
+  isPlaying: boolean;
+  audioSource: AudioNode | null;
+  audioContext: AudioContext | null;
+  
   // レイヤー管理
   layers: LayerType[];
   activeLayerId: string | null;
@@ -94,6 +99,11 @@ interface VisualizerState {
   setSensitivity: (value: number) => void;
   setAudioAnalyzing: (isAnalyzing: boolean) => void;
   setMicrophoneEnabled: (enabled: boolean) => void;
+  
+  // オーディオ再生アクション
+  setIsPlaying: (playing: boolean) => void;
+  setAudioSource: (source: AudioNode | null) => void;
+  setAudioContext: (context: AudioContext | null) => void;
   
   // レイヤー操作
   addLayer: (layer: Omit<LayerType, 'id' | 'zIndex'>) => void;
@@ -137,6 +147,11 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   sensitivity: 1.0,
   isAudioAnalyzing: false,
   isMicrophoneEnabled: false,
+  
+  // オーディオ再生状態の初期値
+  isPlaying: false,
+  audioSource: null,
+  audioContext: null,
   
   layers: [
     {
@@ -183,6 +198,13 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   setAudioAnalyzing: (isAnalyzing) => set({ isAudioAnalyzing: isAnalyzing }),
   
   setMicrophoneEnabled: (enabled) => set({ isMicrophoneEnabled: enabled }),
+  
+  // オーディオ再生アクション
+  setIsPlaying: (playing) => set({ isPlaying: playing }),
+  
+  setAudioSource: (source) => set({ audioSource: source }),
+  
+  setAudioContext: (context) => set({ audioContext: context }),
   
   // レイヤー操作
   addLayer: (layer) => {

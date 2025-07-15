@@ -15,6 +15,9 @@ const nextConfig = {
     unoptimized: true,
   },
   
+  // Exclude test files from pages
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'].filter(ext => !ext.includes('test')),
+  
   // Exclude modules and infrastructure from compilation
   webpack: (config, { isServer }) => {
     config.watchOptions = {
@@ -24,20 +27,35 @@ const nextConfig = {
         '**/modules/**',
         '**/infra/**',
         '**/tests/**',
-        '**/.git/**'
+        '**/.git/**',
+        '**/__tests__/**',
+        '**/*.test.ts',
+        '**/*.test.tsx'
       ]
     }
     
-    // Exclude modules from compilation
+    // Exclude modules and test files from compilation
     config.module.rules.push({
       test: /\.(ts|tsx|js|jsx)$/,
       exclude: [
         /node_modules/,
         /modules/,
         /infra/,
-        /tests/
+        /tests/,
+        /__tests__/,
+        /\.test\.(ts|tsx|js|jsx)$/
       ]
     })
+    
+    // Conditionally exclude WebGPU files if WebGPU is disabled
+    if (process.env.NEXT_PUBLIC_ENABLE_WEBGPU === 'false') {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        './webgpuRenderer': false,
+        './webgpuDetection': false,
+        'three/addons/renderers/webgpu/WebGPURenderer.js': false,
+      }
+    }
     
     // Production bundle optimization
     if (process.env.NODE_ENV === 'production') {

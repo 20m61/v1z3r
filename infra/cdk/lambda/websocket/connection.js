@@ -10,6 +10,14 @@ exports.handler = async (event) => {
   const { eventType, connectionId, domainName, stage } = event.requestContext;
   const sessionTableName = process.env.SESSION_TABLE_NAME;
   
+  if (!sessionTableName) {
+    console.error('SESSION_TABLE_NAME environment variable not set');
+    return {
+      statusCode: 500,
+      body: 'Configuration error'
+    };
+  }
+  
   try {
     if (eventType === 'CONNECT') {
       // Store connection in session table
@@ -20,7 +28,9 @@ exports.handler = async (event) => {
         createdAt: new Date().toISOString(),
         ttl: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hour TTL
         domainName,
-        stage
+        stage,
+        userAgent: event.headers?.['User-Agent'] || 'Unknown',
+        sourceIp: event.headers?.['X-Forwarded-For']?.split(',')[0] || event.requestContext.identity?.sourceIp || 'Unknown'
       };
       
       await dynamodb.send(new PutCommand({
@@ -46,10 +56,14 @@ exports.handler = async (event) => {
     };
     
   } catch (error) {
-    console.error('Connection handler error:', error);
+    console.error('Connection handler error:', {
+      error: error.message,
+      stack: error.stack,
+      event: JSON.stringify(event, null, 2)
+    });
     return {
       statusCode: 500,
-      body: 'Internal Server Error'
+      body: JSON.stringify({ error: 'Internal Server Error', message: error.message })
     };
   }
 };

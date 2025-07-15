@@ -1,16 +1,36 @@
-# v1z3r - Modular VJ Application
+# v1z3r - AI-Powered Professional VJ Application
 
-v1z3r is a modern, modular VJ (Visual Jockey) application designed for live events, enabling real-time audio-visual performances with collaborative features and AWS cloud integration.
+v1z3r is a cutting-edge, AI-powered VJ (Visual Jockey) application with WebGPU acceleration, designed for professional live performances. It features real-time music analysis, intelligent visual adaptation, and industry-standard MIDI controller support.
 
-## ✨ Key Features
+## 🚀 Advanced Features (NEW)
+
+### AI & Machine Learning
+- **AI Music Analysis**: Real-time tempo, key, mood, and structure detection with TensorFlow.js
+- **Neural Style Transfer**: Dynamic visual style adaptation based on music characteristics
+- **AI Beat Detection**: Machine learning-enhanced beat tracking with LSTM models
+- **Intelligent Visual Mapping**: Automatic music-to-visual parameter generation
+
+### WebGPU & Performance
+- **WebGPU Compute Shaders**: Hardware-accelerated particle simulation (100k+ particles)
+- **Advanced Post-Processing**: Real-time bloom, SSAO, motion blur, and chromatic aberration
+- **Automatic Fallback**: Seamless WebGL fallback when WebGPU unavailable
+- **Memory Optimization**: Efficient resource management and pooling
+
+### Professional Integration
+- **MIDI Controller Support**: Pioneer DDJ, Native Instruments Maschine, Ableton Push, Novation Launchpad
+- **Touch-Sensitive Controls**: Velocity and pressure-sensitive pad support
+- **Visual Feedback**: RGB LED feedback on compatible controllers
+- **Professional Workflow**: Industry-standard parameter mapping
+
+## ✨ Core Features
 
 - **Modular Architecture**: Six independent modules for visual rendering, control, synchronization, storage, lyrics, and MCP integration
-- **Real-time Audio Analysis**: FFT analysis, microphone integration, and speech recognition
-- **WebGL Visual Effects**: Hardware-accelerated graphics with Three.js and custom shaders
+- **Real-time Audio Analysis**: Advanced FFT analysis, onset detection, and spectral features
+- **WebGPU/WebGL Visual Effects**: Hardware-accelerated graphics with Three.js and compute shaders
 - **Collaborative Sessions**: Real-time multi-device synchronization via WebSocket
 - **Cloud Storage**: AWS-powered preset management with DynamoDB and S3
 - **Production-Ready Error Handling**: Comprehensive logging, monitoring, and error reporting
-- **Comprehensive Testing**: 96+ Jest tests with full UI component coverage
+- **Comprehensive Testing**: 240+ tests including AI/WebGPU feature coverage
 - **TypeScript**: Full type safety across all modules
 
 ## 🏗️ Architecture
@@ -86,6 +106,18 @@ v1z3r is a modern, modular VJ (Visual Jockey) application designed for live even
    yarn dev
    ```
    Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+2. **Try the AI VJ Demo** (NEW):
+   ```bash
+   # Visit the AI VJ demo page
+   http://localhost:3000/demo/ai-vj
+   ```
+   This showcases all advanced AI and WebGPU features including:
+   - Real-time music analysis and visualization
+   - WebGPU particle systems
+   - AI style transfer
+   - MIDI controller integration
+   - Professional post-processing effects
 
 2. Run tests:
    ```bash

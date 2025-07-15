@@ -9,6 +9,10 @@ exports.useVisualizerStore = (0, zustand_1.create)((set, get) => ({
     sensitivity: 1.0,
     isAudioAnalyzing: false,
     isMicrophoneEnabled: false,
+    // オーディオ再生状態の初期値
+    isPlaying: false,
+    audioSource: null,
+    audioContext: null,
     layers: [
         {
             id: 'default-layer',
@@ -45,6 +49,10 @@ exports.useVisualizerStore = (0, zustand_1.create)((set, get) => ({
     setSensitivity: (value) => set({ sensitivity: value }),
     setAudioAnalyzing: (isAnalyzing) => set({ isAudioAnalyzing: isAnalyzing }),
     setMicrophoneEnabled: (enabled) => set({ isMicrophoneEnabled: enabled }),
+    // オーディオ再生アクション
+    setIsPlaying: (playing) => set({ isPlaying: playing }),
+    setAudioSource: (source) => set({ audioSource: source }),
+    setAudioContext: (context) => set({ audioContext: context }),
     // レイヤー操作
     addLayer: (layer) => {
         const layers = get().layers;

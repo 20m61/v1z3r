@@ -14,22 +14,40 @@ exports.handler = async (event) => {
     endpoint: `https://${domainName}/${stage}`
   });
   
+  // Enhanced logging
+  console.log('WebSocket API Management endpoint:', `https://${domainName}/${stage}`);
+  console.log('Connection ID:', connectionId);
+  console.log('Full event:', JSON.stringify(event, null, 2));
+  
   try {
     const body = JSON.parse(event.body || '{}');
-    const { action, data } = body;
+    const { type, action, data } = body;
     
-    console.log('Message action:', action, 'data:', data);
+    // Support both old 'action' format and new 'type' format
+    const messageType = type || action;
+    console.log('Message type:', messageType, 'data:', data);
     
-    switch (action) {
+    switch (messageType) {
       case 'ping':
         // Simple ping/pong for heartbeat
         await apiGatewayManagementApi.send(new PostToConnectionCommand({
           ConnectionId: connectionId,
-          Data: JSON.stringify({ action: 'pong', timestamp: new Date().toISOString() })
+          Data: JSON.stringify({ 
+            id: body.id || 'pong-' + Date.now(),
+            type: 'pong', 
+            timestamp: Date.now(),
+            source: 'server',
+            data: { timestamp: new Date().toISOString() }
+          })
         }));
         break;
         
       case 'sync':
+      case 'sync_state':
+      case 'parameter_update':
+      case 'layer_update':
+      case 'preset_update':
+      case 'broadcast':
         // Sync VJ state with other connected clients
         // Get all connected sessions
         const sessions = await dynamodb.send(new ScanCommand({
@@ -46,10 +64,15 @@ exports.handler = async (event) => {
             await apiGatewayManagementApi.send(new PostToConnectionCommand({
               ConnectionId: session.connectionId,
               Data: JSON.stringify({
-                action: 'sync',
+                id: 'sync-' + Date.now(),
+                type: messageType,
+                timestamp: Date.now(),
+                source: connectionId,
                 data: data,
-                fromConnection: connectionId,
-                timestamp: new Date().toISOString()
+                metadata: {
+                  fromConnection: connectionId,
+                  serverTimestamp: new Date().toISOString()
+                }
               })
             }));
           } catch (error) {
@@ -68,6 +91,9 @@ exports.handler = async (event) => {
         break;
         
       case 'preset-share':
+      case 'join_room':
+      case 'leave_room':
+      case 'direct_message':
         // Share preset with other connected clients
         const allSessions = await dynamodb.send(new ScanCommand({
           TableName: sessionTableName,
@@ -82,10 +108,15 @@ exports.handler = async (event) => {
             await apiGatewayManagementApi.send(new PostToConnectionCommand({
               ConnectionId: session.connectionId,
               Data: JSON.stringify({
-                action: 'preset-shared',
-                preset: data,
-                fromConnection: connectionId,
-                timestamp: new Date().toISOString()
+                id: 'share-' + Date.now(),
+                type: messageType === 'preset-share' ? 'preset_shared' : messageType,
+                timestamp: Date.now(),
+                source: connectionId,
+                data: data,
+                metadata: {
+                  fromConnection: connectionId,
+                  serverTimestamp: new Date().toISOString()
+                }
               })
             }));
           } catch (error) {
@@ -103,13 +134,18 @@ exports.handler = async (event) => {
         break;
         
       default:
-        console.log('Unknown action:', action);
+        console.log('Unknown message type:', messageType);
         await apiGatewayManagementApi.send(new PostToConnectionCommand({
           ConnectionId: connectionId,
           Data: JSON.stringify({
-            action: 'error',
-            message: 'Unknown action',
-            timestamp: new Date().toISOString()
+            id: 'error-' + Date.now(),
+            type: 'error',
+            timestamp: Date.now(),
+            source: 'server',
+            data: {
+              message: 'Unknown message type: ' + messageType,
+              originalMessage: body
+            }
           })
         }));
     }
@@ -126,9 +162,14 @@ exports.handler = async (event) => {
       await apiGatewayManagementApi.send(new PostToConnectionCommand({
         ConnectionId: connectionId,
         Data: JSON.stringify({
-          action: 'error',
-          message: 'Internal server error',
-          timestamp: new Date().toISOString()
+          id: 'error-' + Date.now(),
+          type: 'error',
+          timestamp: Date.now(),
+          source: 'server',
+          data: {
+            message: 'Internal server error',
+            error: error.message
+          }
         })
       }));
     } catch (sendError) {
