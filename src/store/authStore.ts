@@ -66,9 +66,22 @@ interface AuthState {
   hasRole: (role: string) => boolean;
 }
 
-// Mock implementation for development
-// Replace with actual AWS Amplify Auth calls in production
-const mockAuth = {
+// Authentication implementation
+// Uses mock for development, AWS Amplify for production
+const getAuthImplementation = () => {
+  // Check if running in production with proper AWS configuration
+  if (process.env.NODE_ENV === 'production' && 
+      process.env.NEXT_PUBLIC_USER_POOL_ID && 
+      process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID) {
+    // Return AWS Amplify implementation
+    return createAmplifyAuth();
+  }
+  
+  // Return mock implementation for development
+  return createMockAuth();
+};
+
+const createMockAuth = () => ({
   signIn: async (email: string, password: string) => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -111,7 +124,31 @@ const mockAuth = {
     await new Promise(resolve => setTimeout(resolve, 500));
     return true;
   },
-};
+});
+
+const createAmplifyAuth = () => ({
+  signIn: async (email: string, password: string) => {
+    // TODO: Implement AWS Amplify Auth.signIn
+    throw new Error('AWS Amplify Auth not yet implemented');
+  },
+  
+  signUp: async (params: any) => {
+    // TODO: Implement AWS Amplify Auth.signUp
+    throw new Error('AWS Amplify Auth not yet implemented');
+  },
+  
+  signOut: async () => {
+    // TODO: Implement AWS Amplify Auth.signOut
+    throw new Error('AWS Amplify Auth not yet implemented');
+  },
+  
+  refreshSession: async () => {
+    // TODO: Implement AWS Amplify Auth.currentSession
+    throw new Error('AWS Amplify Auth not yet implemented');
+  },
+});
+
+const authImplementation = getAuthImplementation();
 
 export const useAuthStore = create<AuthState>()(
   devtools(
@@ -154,7 +191,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
           
           try {
-            const result = await mockAuth.signIn(email, password);
+            const result = await authImplementation.signIn(email, password);
             
             if (result.success && result.user && result.tokens) {
               get().setUser(result.user);
@@ -181,7 +218,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
           
           try {
-            const result = await mockAuth.signUp(params);
+            const result = await authImplementation.signUp(params);
             errorHandler.info('User signed up', { email: params.username });
             return result;
           } catch (error) {
@@ -196,7 +233,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
           
           try {
-            await mockAuth.signOut();
+            await authImplementation.signOut();
             get().clearAuth();
             errorHandler.info('User signed out');
           } catch (error) {
@@ -212,7 +249,7 @@ export const useAuthStore = create<AuthState>()(
           if (!refreshToken) return false;
           
           try {
-            const result = await mockAuth.refreshSession();
+            const result = await authImplementation.refreshSession();
             if (result) {
               // Update tokens with new values
               // In production, this would come from the refresh response
@@ -335,9 +372,11 @@ export const useAuthStore = create<AuthState>()(
         name: 'auth-storage',
         partialize: (state) => ({
           user: state.user,
-          accessToken: state.accessToken,
-          idToken: state.idToken,
-          refreshToken: state.refreshToken,
+          // セキュリティ向上: トークンをlocalStorageに保存しない
+          // 本番環境ではhttpOnly cookieまたはsecure sessionStorageを使用
+          // accessToken: state.accessToken,
+          // idToken: state.idToken,
+          // refreshToken: state.refreshToken,
           tokenExpiry: state.tokenExpiry,
         }),
       }
@@ -345,12 +384,36 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-// Auto-refresh token before expiry
+// Auto-refresh token before expiry with cleanup
+let tokenRefreshInterval: NodeJS.Timeout | null = null;
+
 if (typeof window !== 'undefined') {
-  setInterval(() => {
+  // Clear any existing interval
+  if (tokenRefreshInterval) {
+    clearInterval(tokenRefreshInterval);
+  }
+  
+  // Set up new interval with longer, more reasonable frequency
+  tokenRefreshInterval = setInterval(() => {
     const store = useAuthStore.getState();
     if (store.isAuthenticated && store.isTokenExpired()) {
       store.refreshSession();
     }
-  }, 60000); // Check every minute
+  }, 300000); // Check every 5 minutes instead of 1 minute
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    if (tokenRefreshInterval) {
+      clearInterval(tokenRefreshInterval);
+      tokenRefreshInterval = null;
+    }
+  });
 }
+
+// Export cleanup function
+export const cleanupAuthStore = () => {
+  if (tokenRefreshInterval) {
+    clearInterval(tokenRefreshInterval);
+    tokenRefreshInterval = null;
+  }
+};
