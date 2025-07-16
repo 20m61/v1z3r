@@ -108,9 +108,10 @@ export default function WebGPUParticleSystem({
       if (deviceRef.current) {
         deviceRef.current.destroy();
       }
-      const monitor = perfMonitor.current;
-      if (monitor) {
-        monitor.dispose();
+      // Capture perfMonitor ref value to avoid stale closure
+      const currentMonitor = perfMonitor.current;
+      if (currentMonitor) {
+        currentMonitor.dispose();
       }
     };
   }, [enabled, count]);
