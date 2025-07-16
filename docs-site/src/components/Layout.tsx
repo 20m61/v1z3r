@@ -45,7 +45,7 @@ export default function Layout({ children }: LayoutProps) {
                 </Link>
               ))}
               <a
-                href="https://github.com/your-username/v1z3r"
+                href="https://github.com/20m61/v1z3r"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="nav-link"
@@ -96,7 +96,7 @@ export default function Layout({ children }: LayoutProps) {
             <div>
               <h3 className="text-lg font-semibold mb-4">Resources</h3>
               <ul className="space-y-2">
-                <li><a href="https://github.com/your-username/v1z3r" className="text-gray-400 hover:text-white">GitHub</a></li>
+                <li><a href="https://github.com/20m61/v1z3r" className="text-gray-400 hover:text-white">GitHub</a></li>
                 <li><Link href="/api" className="text-gray-400 hover:text-white">API Reference</Link></li>
                 <li><Link href="/developer" className="text-gray-400 hover:text-white">Developer Guide</Link></li>
               </ul>

@@ -167,7 +167,7 @@ export default function Home() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Install Dependencies</h3>
                   <div className="code-block">
-                    <code className="text-green-400">$ git clone https://github.com/your-username/v1z3r.git</code><br/>
+                    <code className="text-green-400">$ git clone https://github.com/20m61/v1z3r.git</code><br/>
                     <code className="text-green-400">$ cd v1z3r &amp;&amp; yarn install</code>
                   </div>
                 </div>

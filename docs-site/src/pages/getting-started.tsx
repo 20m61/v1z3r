@@ -64,7 +64,7 @@ export default function GettingStarted() {
               <div>
                 <h3 className="text-lg font-medium mb-3">1. Clone the Repository</h3>
                 <SyntaxHighlighter language="bash" style={vscDarkPlus} className="rounded-lg">
-{`git clone https://github.com/your-username/v1z3r.git
+{`git clone https://github.com/20m61/v1z3r.git
 cd v1z3r`}
                 </SyntaxHighlighter>
               </div>
