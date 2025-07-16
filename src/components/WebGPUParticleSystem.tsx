@@ -44,6 +44,9 @@ export default function WebGPUParticleSystem({
   useEffect(() => {
     if (!enabled || !navigator.gpu) return;
     
+    // Capture ref values at effect creation time
+    const perfMonitorRef = perfMonitor.current;
+    
     const initWebGPU = async () => {
       try {
         const adapter = await navigator.gpu.requestAdapter({
@@ -108,10 +111,9 @@ export default function WebGPUParticleSystem({
       if (deviceRef.current) {
         deviceRef.current.destroy();
       }
-      // Capture perfMonitor ref value to avoid stale closure
-      const currentMonitor = perfMonitor.current;
-      if (currentMonitor) {
-        currentMonitor.dispose();
+      // Use captured ref value to avoid stale closure warning
+      if (perfMonitorRef) {
+        perfMonitorRef.dispose();
       }
     };
   }, [enabled, count]);
