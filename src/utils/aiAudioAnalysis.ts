@@ -600,7 +600,7 @@ export class AIAudioAnalysis {
     this.stopAnalysis();
     
     if (this.audioContext) {
-      this.audioContext.close();
+      this.audioContext.close().catch(console.error);
       this.audioContext = null;
     }
     
@@ -610,6 +610,11 @@ export class AIAudioAnalysis {
     this.frequencyData = null;
     this.timeData = null;
     this.analysisCallback = undefined;
+    
+    // メモリリーク防止のため履歴をクリア
+    this.spectralHistory = [];
+    this.bpmBuffer = [];
+    this.bpmHistory = [];
   }
 }
 

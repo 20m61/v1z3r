@@ -722,6 +722,11 @@ export class AIGestureRecognition {
     this.onGestureCallback = undefined;
     this.onVJActionCallback = undefined;
     this.onErrorCallback = undefined;
+    
+    // メモリリーク防止
+    this.gestureHistory = [];
+    this.lastGestureTime.clear();
+    this.gestureBuffer.clear();
   }
 }
 

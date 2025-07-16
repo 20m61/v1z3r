@@ -501,15 +501,18 @@ export function useAISpeechRecognition(config?: Partial<SpeechRecognitionConfig>
   React.useEffect(() => {
     const speechRecognition = getAISpeechRecognition(config);
     
-    speechRecognition.onCommand((command) => {
+    const handleCommand = (command: VoiceCommand) => {
       setLastCommand(command);
       setError(null);
-    });
+    };
     
-    speechRecognition.onError((err) => {
+    const handleError = (err: SpeechRecognitionError) => {
       setError(err.error);
       setIsListening(false);
-    });
+    };
+    
+    speechRecognition.onCommand(handleCommand);
+    speechRecognition.onError(handleError);
     
     return () => {
       speechRecognition.dispose();
