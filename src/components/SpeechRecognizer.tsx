@@ -33,8 +33,8 @@ interface SpeechRecognitionType {
 // Window型を拡張
 declare global {
   interface Window {
-    SpeechRecognition?: SpeechRecognitionType;
-    webkitSpeechRecognition?: SpeechRecognitionType;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
 
