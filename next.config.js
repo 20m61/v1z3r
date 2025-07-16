@@ -57,6 +57,12 @@ const nextConfig = {
       }
     }
     
+    // WebGPU shader loader
+    config.module.rules.push({
+      test: /\.wgsl$/,
+      type: 'asset/source',
+    });
+    
     // Production bundle optimization
     if (process.env.NODE_ENV === 'production') {
       // Optimize code splitting
@@ -86,6 +92,20 @@ const nextConfig = {
             priority: 40,
             reuseExistingChunk: true,
           },
+          // React Three Fiber
+          reactThree: {
+            test: /[\/]node_modules[\/]@react-three[\/]/,
+            name: 'react-three',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          // UI libraries
+          ui: {
+            test: /[\/]node_modules[\/](framer-motion|react-icons)[\/]/,
+            name: 'ui',
+            priority: 25,
+            reuseExistingChunk: true,
+          },
           // Common chunks
           commons: {
             minChunks: 2,
@@ -105,7 +125,7 @@ const nextConfig = {
   // Production performance optimizations
   experimental: {
     optimizeCss: false, // Disabled due to critters dependency issue
-    optimizePackageImports: ['three', '@tensorflow/tfjs', 'zustand'],
+    optimizePackageImports: ['three', '@tensorflow/tfjs', 'zustand', '@react-three/fiber', '@react-three/drei'],
   },
   
   // Headers for caching
