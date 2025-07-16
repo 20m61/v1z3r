@@ -1,422 +1,337 @@
 /**
- * Dynamic Import Utilities with Enhanced Loading Strategies
- * Provides intelligent code splitting and progressive loading
+ * Dynamic Import Manager for v1z3r
+ * Optimizes bundle size with intelligent code splitting
  */
 
-import React from 'react';
-import { errorHandler } from './errorHandler';
+import React, { lazy, ComponentType } from 'react';
 
-export interface DynamicImportOptions {
-  timeout?: number;
-  retries?: number;
-  fallback?: () => Promise<unknown>;
+// Type definitions for dynamic imports
+interface DynamicImportConfig {
+  fallback?: ComponentType;
   preload?: boolean;
-  priority?: 'high' | 'normal' | 'low';
+  retries?: number;
+  timeout?: number;
 }
 
-export interface LoadingState {
-  isLoading: boolean;
-  isLoaded: boolean;
-  error: Error | null;
-  progress: number;
+interface LazyComponentOptions {
+  loading?: ComponentType;
+  error?: ComponentType<{ error: Error; retry: () => void }>;
 }
 
-/**
- * Enhanced dynamic import with retry logic and error handling
- */
-export async function dynamicImportWithRetry<T>(
-  importFn: () => Promise<T>,
-  options: DynamicImportOptions = {}
-): Promise<T> {
-  const {
-    timeout = 30000,
-    retries = 2,
-    fallback
-  } = options;
+// WebGPU feature detection and dynamic import
+export const loadWebGPURenderer = async () => {
+  // Check WebGPU support first
+  if (!('gpu' in navigator)) {
+    throw new Error('WebGPU not supported');
+  }
+  
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      throw new Error('WebGPU adapter not available');
+    }
+    
+    // Dynamically import WebGPU modules only when supported
+    const [
+      { V1z3rRenderer },
+      { WebGPUDetector },
+      { getWebGPUPerformanceMonitor }
+    ] = await Promise.all([
+      import('@/utils/webgpuRenderer'),
+      import('@/utils/webgpuDetection'),
+      import('@/utils/webgpuPerformanceMonitor')
+    ]);
+    
+    return {
+      V1z3rRenderer,
+      WebGPUDetector,
+      getWebGPUPerformanceMonitor
+    };
+  } catch (error) {
+    console.warn('WebGPU import failed:', error);
+    throw error;
+  }
+};
 
-  let lastError: Error | null = null;
+// Three.js dynamic imports based on feature usage
+export const loadThreeJSFeatures = async (features: string[]) => {
+  const imports: any = {};
+  
+  // Core Three.js (always loaded)
+  imports.THREE = await import('three');
+  
+  // Optional features loaded on demand
+  if (features.includes('controls')) {
+    const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js');
+    imports.OrbitControls = OrbitControls;
+  }
+  
+  if (features.includes('postprocessing')) {
+    const [
+      { EffectComposer },
+      { RenderPass },
+      { BloomPass }
+    ] = await Promise.all([
+      import('three/examples/jsm/postprocessing/EffectComposer.js'),
+      import('three/examples/jsm/postprocessing/RenderPass.js'),
+      import('three/examples/jsm/postprocessing/BloomPass.js')
+    ]);
+    
+    imports.EffectComposer = EffectComposer;
+    imports.RenderPass = RenderPass;
+    imports.BloomPass = BloomPass;
+  }
+  
+  if (features.includes('loaders')) {
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+    imports.GLTFLoader = GLTFLoader;
+  }
+  
+  return imports;
+};
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
+// TensorFlow.js conditional loading
+export const loadTensorFlow = async (features: string[] = []) => {
+  // Check if AI features are needed
+  const needsAI = features.some(f => 
+    ['speech', 'vision', 'pose-detection'].includes(f)
+  );
+  
+  if (!needsAI) {
+    return null;
+  }
+  
+  try {
+    // Load TensorFlow.js with specific backends
+    const tf = await import('@tensorflow/tfjs');
+    
+    // Load specific models based on features
+    const models: any = {};
+    
+    // Load models based on features (commented out due to missing dependencies)
+    // if (features.includes('speech')) {
+    //   const speechCommands = await import('@tensorflow-models/speech-commands');
+    //   models.speechCommands = speechCommands;
+    // }
+    // 
+    // if (features.includes('pose-detection')) {
+    //   const poseDetection = await import('@tensorflow-models/pose-detection');
+    //   models.poseDetection = poseDetection;
+    // }
+    
+    return { tf, models };
+  } catch (error) {
+    console.warn('TensorFlow.js import failed:', error);
+    return null;
+  }
+};
+
+// React Three Fiber dynamic loading
+export const loadReactThree = async () => {
+  try {
+    const [
+      { Canvas, useFrame, useThree },
+      { Stats, OrbitControls }
+    ] = await Promise.all([
+      import('@react-three/fiber'),
+      import('@react-three/drei')
+    ]);
+    
+    return {
+      Canvas,
+      useFrame,
+      useThree,
+      Stats,
+      OrbitControls
+    };
+  } catch (error) {
+    console.warn('React Three Fiber import failed:', error);
+    throw error;
+  }
+};
+
+// Lazy component factory with error handling
+export function createLazyComponent<P = {}>(
+  importFunc: () => Promise<{ default: ComponentType<P> }>,
+  options: LazyComponentOptions = {}
+) {
+  const LazyComponent = lazy(async () => {
     try {
-      // Create timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Dynamic import timeout after ${timeout}ms`));
-        }, timeout);
-      });
-
-      // Race between import and timeout
-      const result = await Promise.race([
-        importFn(),
-        timeoutPromise
-      ]);
-
-      errorHandler.info('Dynamic import successful', {
-        attempt: attempt + 1,
-        totalAttempts: retries + 1
-      });
-
-      return result;
-
+      return await importFunc();
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error('Lazy component import failed:', error);
       
-      errorHandler.warn(`Dynamic import attempt ${attempt + 1} failed`, lastError, {
-        attempt: attempt + 1,
-        totalAttempts: retries + 1,
-        willRetry: attempt < retries
-      });
-
-      // Wait before retry (exponential backoff)
-      if (attempt < retries) {
-        const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s...
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+      // Return error boundary component
+      return {
+        default: (props: any) => {
+          if (options.error) {
+            const ErrorComponent = options.error;
+            return React.createElement(ErrorComponent, {
+              error: error as Error,
+              retry: () => window.location.reload(),
+              ...props
+            });
+          }
+          
+          return React.createElement('div', {
+            className: 'p-4 text-center text-red-500'
+          }, [
+            React.createElement('p', { key: 'error' }, 'Failed to load component'),
+            React.createElement('button', {
+              key: 'retry',
+              onClick: () => window.location.reload(),
+              className: 'mt-2 px-4 py-2 bg-red-600 text-white rounded'
+            }, 'Retry')
+          ]);
+        }
+      };
     }
-  }
-
-  // All attempts failed, try fallback
-  if (fallback) {
-    try {
-      errorHandler.info('Attempting fallback import');
-      return await fallback() as T;
-    } catch (fallbackError) {
-      errorHandler.error('Fallback import also failed', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
-    }
-  }
-
-  throw lastError || new Error('Dynamic import failed');
+  });
+  
+  return LazyComponent;
 }
 
-/**
- * Progressive loading manager for heavy components
- */
-export class ProgressiveLoader {
-  private loadingStates = new Map<string, LoadingState>();
-  private loadedModules = new Map<string, unknown>();
-  private preloadQueue: Array<{ key: string; importFn: () => Promise<unknown>; priority: string }> = [];
-  private activeIntervals = new Set<NodeJS.Timeout>();
-  private eventListeners: Array<{ element: EventTarget; event: string; handler: EventListener }> = [];
-
-  constructor() {
-    // Start processing preload queue
-    this.processPreloadQueue().catch(error => {
-      errorHandler.error('Failed to process preload queue', error);
-    });
+// Preload critical components
+export const preloadCriticalComponents = async () => {
+  const promises = [
+    // Preload audio analyzer
+    import('@/components/AudioAnalyzer'),
+    // Preload visual effects
+    import('@/components/VisualEffects'),
+    // Preload performance monitor
+    import('@/utils/performanceMonitor')
+  ];
+  
+  try {
+    await Promise.all(promises);
+    console.log('Critical components preloaded');
+  } catch (error) {
+    console.warn('Some critical components failed to preload:', error);
   }
+};
 
-  /**
-   * Register a module for progressive loading
-   */
-  register<T>(
-    key: string,
-    importFn: () => Promise<T>,
-    options: DynamicImportOptions = {}
-  ): void {
-    this.loadingStates.set(key, {
-      isLoading: false,
-      isLoaded: false,
-      error: null,
-      progress: 0
-    });
-
-    if (options.preload) {
-      this.preloadQueue.push({
-        key,
-        importFn,
-        priority: options.priority || 'normal'
-      });
-      
-      // Sort by priority
-      this.preloadQueue.sort((a, b) => {
-        const priorityOrder = { high: 0, normal: 1, low: 2 };
-        return priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder];
-      });
+// Feature-based module loading
+export class ModuleLoader {
+  private loadedModules = new Map<string, any>();
+  private loadingPromises = new Map<string, Promise<any>>();
+  
+  async loadModule(moduleName: string, config: DynamicImportConfig = {}) {
+    // Return cached module if already loaded
+    if (this.loadedModules.has(moduleName)) {
+      return this.loadedModules.get(moduleName);
     }
-  }
-
-  /**
-   * Load a module with progress tracking
-   */
-  async load<T>(key: string, importFn?: () => Promise<T>): Promise<T> {
-    // Check if already loaded
-    if (this.loadedModules.has(key)) {
-      return this.loadedModules.get(key) as T;
+    
+    // Return existing loading promise
+    if (this.loadingPromises.has(moduleName)) {
+      return this.loadingPromises.get(moduleName);
     }
-
-    // Check if currently loading
-    const state = this.loadingStates.get(key);
-    if (state?.isLoading) {
-      // Wait for existing load to complete
-      return this.waitForLoad<T>(key);
-    }
-
-    if (!importFn) {
-      throw new Error(`Import function not provided for module: ${key}`);
-    }
-
-    // Start loading
-    this.updateLoadingState(key, {
-      isLoading: true,
-      isLoaded: false,
-      error: null,
-      progress: 0
-    });
-
-    let progressInterval: NodeJS.Timeout | null = null;
+    
+    // Create loading promise
+    const loadingPromise = this.loadModuleWithRetry(moduleName, config);
+    this.loadingPromises.set(moduleName, loadingPromise);
     
     try {
-      // Simulate progress updates
-      progressInterval = setInterval(() => {
-        const currentState = this.loadingStates.get(key);
-        if (currentState && currentState.progress < 90) {
-          this.updateLoadingState(key, {
-            ...currentState,
-            progress: Math.min(currentState.progress + 10, 90)
-          });
-        }
-      }, 100);
-
-      const loadedModule = await dynamicImportWithRetry(importFn, {
-        timeout: 30000,
-        retries: 2
-      });
-
-      clearInterval(progressInterval);
-      progressInterval = null;
-
-      // Cache the loaded module
-      this.loadedModules.set(key, loadedModule);
-
-      this.updateLoadingState(key, {
-        isLoading: false,
-        isLoaded: true,
-        error: null,
-        progress: 100
-      });
-
+      const loadedModule = await loadingPromise;
+      this.loadedModules.set(moduleName, loadedModule);
+      this.loadingPromises.delete(moduleName);
       return loadedModule;
-
     } catch (error) {
-      // Ensure interval is cleared even on error
-      if (progressInterval) {
-        clearInterval(progressInterval);
-      }
-      
-      this.updateLoadingState(key, {
-        isLoading: false,
-        isLoaded: false,
-        error: error instanceof Error ? error : new Error(String(error)),
-        progress: 0
-      });
-
+      this.loadingPromises.delete(moduleName);
       throw error;
     }
   }
-
-  /**
-   * Get loading state for a module
-   */
-  getLoadingState(key: string): LoadingState | null {
-    return this.loadingStates.get(key) || null;
-  }
-
-  /**
-   * Preload modules based on priority
-   */
-  private async processPreloadQueue(): Promise<void> {
-    // Wait for initial page load
-    if (typeof window !== 'undefined') {
-      await new Promise(resolve => {
-        if (document.readyState === 'complete') {
-          resolve(void 0);
-        } else {
-          window.addEventListener('load', () => resolve(void 0), { once: true });
-        }
-      });
-
-      // Process high priority items immediately
-      const highPriority = this.preloadQueue.filter(item => item.priority === 'high');
-      for (const item of highPriority) {
-        this.preloadInBackground(item);
-      }
-
-      // Process normal priority items after a delay
-      setTimeout(() => {
-        const normalPriority = this.preloadQueue.filter(item => item.priority === 'normal');
-        normalPriority.forEach(item => this.preloadInBackground(item));
-      }, 2000);
-
-      // Process low priority items when idle
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => {
-          const lowPriority = this.preloadQueue.filter(item => item.priority === 'low');
-          lowPriority.forEach(item => this.preloadInBackground(item));
-        });
-      } else {
-        // Fallback for browsers without requestIdleCallback
-        setTimeout(() => {
-          const lowPriority = this.preloadQueue.filter(item => item.priority === 'low');
-          lowPriority.forEach(item => this.preloadInBackground(item));
-        }, 5000);
-      }
-    }
-  }
-
-  private preloadInBackground(item: { key: string; importFn: () => Promise<unknown> }): void {
-    this.load(item.key, item.importFn).catch(error => {
-      errorHandler.warn(`Background preload failed for ${item.key}`, error);
-    });
-  }
-
-  private waitForLoad<T>(key: string): Promise<T> {
-    return new Promise((resolve, reject) => {
-      let checkTimeout: NodeJS.Timeout | null = null;
-      const maxWaitTime = 30000; // 30 seconds max wait
-      const startTime = Date.now();
-      
-      const checkState = () => {
-        const state = this.loadingStates.get(key);
-        if (!state) {
-          if (checkTimeout) clearTimeout(checkTimeout);
-          reject(new Error(`Module ${key} not found`));
-          return;
-        }
-
-        if (state.isLoaded) {
-          if (checkTimeout) clearTimeout(checkTimeout);
-          resolve(this.loadedModules.get(key) as T);
-        } else if (state.error) {
-          if (checkTimeout) clearTimeout(checkTimeout);
-          reject(state.error);
-        } else if (Date.now() - startTime > maxWaitTime) {
-          if (checkTimeout) clearTimeout(checkTimeout);
-          reject(new Error(`Timeout waiting for module ${key} to load`));
-        } else {
-          checkTimeout = setTimeout(checkState, 100);
-        }
-      };
-
-      checkState();
-    });
-  }
-
-  private updateLoadingState(key: string, newState: Partial<LoadingState>): void {
-    const currentState = this.loadingStates.get(key) || {
-      isLoading: false,
-      isLoaded: false,
-      error: null,
-      progress: 0
-    };
-
-    this.loadingStates.set(key, { ...currentState, ...newState });
-  }
-}
-
-// Global progressive loader instance
-export const progressiveLoader = new ProgressiveLoader();
-
-// Cleanup function for when the module is unloaded
-export function cleanupProgressiveLoader(): void {
-  // Clear all active intervals
-  progressiveLoader['activeIntervals'].forEach(interval => clearInterval(interval));
-  progressiveLoader['activeIntervals'].clear();
   
-  // Remove all event listeners
-  progressiveLoader['eventListeners'].forEach(({ element, event, handler }) => {
-    element.removeEventListener(event, handler);
-  });
-  progressiveLoader['eventListeners'] = [];
-}
-
-/**
- * HOC for dynamic component loading with loading state
- */
-export function withDynamicLoading<P extends Record<string, any>>(
-  key: string,
-  importFn: () => Promise<{ default: React.ComponentType<P> }>,
-  LoadingComponent?: React.ComponentType<{ progress: number }>,
-  ErrorComponent?: React.ComponentType<{ error: Error; retry: () => void }>
-) {
-  return function DynamicComponent(props: P) {
-    const [state, setState] = React.useState<LoadingState>({
-      isLoading: true,
-      isLoaded: false,
-      error: null,
-      progress: 0
-    });
-    const [Component, setComponent] = React.useState<React.ComponentType<P> | null>(null);
-
-    React.useEffect(() => {
-      let mounted = true;
-
-      const loadComponent = async () => {
-        try {
-          const loadedModule = await progressiveLoader.load(key, importFn);
-          if (mounted) {
-            setComponent(() => loadedModule.default);
-            setState({
-              isLoading: false,
-              isLoaded: true,
-              error: null,
-              progress: 100
-            });
-          }
-        } catch (error) {
-          if (mounted) {
-            setState({
-              isLoading: false,
-              isLoaded: false,
-              error: error instanceof Error ? error : new Error(String(error)),
-              progress: 0
-            });
-          }
+  private async loadModuleWithRetry(
+    moduleName: string, 
+    config: DynamicImportConfig
+  ): Promise<any> {
+    const { retries = 3, timeout = 10000 } = config;
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Module load timeout')), timeout);
+        });
+        
+        const modulePromise = this.getModuleImport(moduleName);
+        
+        return await Promise.race([modulePromise, timeoutPromise]);
+      } catch (error) {
+        if (attempt === retries) {
+          throw error;
         }
-      };
-
-      // Update state based on progressive loader
-      const interval = setInterval(() => {
-        if (mounted) {
-          const loaderState = progressiveLoader.getLoadingState(key);
-          if (loaderState) {
-            setState(loaderState);
-          }
-        }
-      }, 100);
-
-      loadComponent();
-
-      return () => {
-        mounted = false;
-        clearInterval(interval);
-      };
-    }, []);
-
-    if (state.error && ErrorComponent) {
-      return React.createElement(ErrorComponent, {
-        error: state.error,
-        retry: () => {
-          setState({
-            isLoading: true,
-            isLoaded: false,
-            error: null,
-            progress: 0
-          });
-          progressiveLoader.load(key, importFn);
-        }
+        
+        // Exponential backoff
+        await new Promise(resolve => 
+          setTimeout(resolve, Math.pow(2, attempt) * 1000)
+        );
+      }
+    }
+  }
+  
+  private getModuleImport(moduleName: string): Promise<any> {
+    switch (moduleName) {
+      case 'webgpu':
+        return loadWebGPURenderer();
+      
+      case 'tensorflow':
+        return loadTensorFlow();
+      
+      case 'react-three':
+        return loadReactThree();
+      
+      case 'three-postprocessing':
+        return loadThreeJSFeatures(['postprocessing']);
+      
+      case 'three-controls':
+        return loadThreeJSFeatures(['controls']);
+      
+      default:
+        throw new Error(`Unknown module: ${moduleName}`);
+    }
+  }
+  
+  preloadModule(moduleName: string, config: DynamicImportConfig = {}) {
+    if (config.preload) {
+      // Start loading but don't wait
+      this.loadModule(moduleName, config).catch(error => {
+        console.warn(`Preload failed for ${moduleName}:`, error);
       });
     }
-
-    if (state.isLoading && LoadingComponent) {
-      return React.createElement(LoadingComponent, { progress: state.progress });
-    }
-
-    if (Component) {
-      return React.createElement(Component, props);
-    }
-
-    return null;
-  };
+  }
+  
+  isModuleLoaded(moduleName: string): boolean {
+    return this.loadedModules.has(moduleName);
+  }
+  
+  clearCache() {
+    this.loadedModules.clear();
+    this.loadingPromises.clear();
+  }
 }
 
-// React is now imported at the top of the file
+// Global module loader instance
+export const moduleLoader = new ModuleLoader();
+
+// Preload critical modules based on user interaction
+export const preloadOnInteraction = () => {
+  const preloadModules = () => {
+    moduleLoader.preloadModule('webgpu', { preload: true });
+    moduleLoader.preloadModule('react-three', { preload: true });
+  };
+  
+  // Preload on first user interaction
+  const events = ['mousedown', 'touchstart', 'keydown'];
+  const cleanup = () => {
+    events.forEach(event => {
+      document.removeEventListener(event, preloadModules);
+    });
+  };
+  
+  events.forEach(event => {
+    document.addEventListener(event, () => {
+      preloadModules();
+      cleanup();
+    }, { once: true });
+  });
+};
