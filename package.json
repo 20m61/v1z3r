@@ -63,6 +63,7 @@
     "react-dom": "^18.2.0",
     "react-icons": "^4.11.0",
     "seedrandom": "^3.0.5",
+    "socket.io-client": "4.8.1",
     "three": "^0.158.0",
     "zustand": "^4.4.3"
   },
