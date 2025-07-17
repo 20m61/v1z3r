@@ -11,6 +11,12 @@ v1z3r is a cutting-edge, AI-powered VJ (Visual Jockey) application with WebGPU a
 
 📚 **[Documentation](https://20m61.github.io/v1z3r/)** | 🎮 **[Demo](https://v1z3r.sc4pe.net)** | 📦 **[NPM Packages](https://www.npmjs.com/org/vj-app)**
 
+### 🌐 Browser Compatibility
+
+- **WebGPU Features**: Requires Chrome 113+, Edge 113+, or other WebGPU-enabled browsers
+- **WebGL Fallback**: Automatically falls back to WebGL2 for broader compatibility
+- **Recommended**: Latest versions of Chrome, Firefox, Safari, or Edge
+
 ### 🚀 Key Features
 
 #### AI & Machine Learning
@@ -136,6 +142,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 v1z3rは、WebGPUアクセラレーションを搭載した最先端のAI駆動VJ（ビジュアルジョッキー）アプリケーションです。プロフェッショナルなライブパフォーマンス向けに設計され、リアルタイム音楽分析、インテリジェントなビジュアル適応、業界標準のMIDIコントローラーサポートを特徴としています。
 
 📚 **[ドキュメント](https://20m61.github.io/v1z3r/)** | 🎮 **[デモ](https://v1z3r.sc4pe.net)** | 📦 **[NPMパッケージ](https://www.npmjs.com/org/vj-app)**
+
+### 🌐 ブラウザ互換性
+
+- **WebGPU機能**: Chrome 113+、Edge 113+、またはWebGPU対応ブラウザが必要
+- **WebGLフォールバック**: 幅広い互換性のために自動的にWebGL2にフォールバック
+- **推奨**: Chrome、Firefox、Safari、Edgeの最新バージョン
 
 ### 🚀 主な機能
 

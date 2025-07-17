@@ -170,6 +170,14 @@ global.GPUShaderStage = {
   COMPUTE: 0x4,
 }
 
+global.GPUColorWrite = {
+  RED: 0x1,
+  GREEN: 0x2,
+  BLUE: 0x4,
+  ALPHA: 0x8,
+  ALL: 0xF,
+}
+
 // Mock react-icons for better test readability
 jest.mock('react-icons/fi', () => ({
   FiChevronUp: () => <span data-testid="icon-chevron-up">▲</span>,
