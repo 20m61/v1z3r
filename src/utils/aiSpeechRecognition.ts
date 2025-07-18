@@ -491,15 +491,27 @@ export function getAISpeechRecognition(config?: Partial<SpeechRecognitionConfig>
 }
 
 /**
+ * Reset speech recognition instance (for testing)
+ */
+export function resetSpeechRecognitionInstance(): void {
+  if (speechRecognitionInstance) {
+    speechRecognitionInstance.dispose();
+    speechRecognitionInstance = null;
+  }
+}
+
+/**
  * React Hook for AI Speech Recognition
  */
 export function useAISpeechRecognition(config?: Partial<SpeechRecognitionConfig>) {
   const [isListening, setIsListening] = React.useState(false);
   const [lastCommand, setLastCommand] = React.useState<VoiceCommand | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const speechRecognitionRef = React.useRef<AISpeechRecognition | null>(null);
   
   React.useEffect(() => {
-    const speechRecognition = getAISpeechRecognition(config);
+    // Create a new instance for this hook
+    speechRecognitionRef.current = new AISpeechRecognition(config);
     
     const handleCommand = (command: VoiceCommand) => {
       setLastCommand(command);
@@ -507,29 +519,34 @@ export function useAISpeechRecognition(config?: Partial<SpeechRecognitionConfig>
     };
     
     const handleError = (err: SpeechRecognitionError) => {
-      setError(err.error);
+      setError(err.message);
       setIsListening(false);
     };
     
-    speechRecognition.onCommand(handleCommand);
-    speechRecognition.onError(handleError);
+    speechRecognitionRef.current.onCommand(handleCommand);
+    speechRecognitionRef.current.onError(handleError);
     
     return () => {
-      speechRecognition.dispose();
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.dispose();
+        speechRecognitionRef.current = null;
+      }
     };
   }, [config]);
   
   const startListening = React.useCallback(() => {
-    const speechRecognition = getAISpeechRecognition();
-    speechRecognition.startListening();
-    setIsListening(true);
-    setError(null);
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.startListening();
+      setIsListening(true);
+      setError(null);
+    }
   }, []);
   
   const stopListening = React.useCallback(() => {
-    const speechRecognition = getAISpeechRecognition();
-    speechRecognition.stopListening();
-    setIsListening(false);
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.stopListening();
+      setIsListening(false);
+    }
   }, []);
   
   return {

@@ -20,7 +20,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   redirectUrl = '/auth/verify' 
 }) => {
   const router = useRouter();
-  const { signUp, isLoading } = useAuthStore();
+  const { signUp, verifyEmail, resendVerificationCode, isLoading } = useAuthStore();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -33,6 +33,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -57,7 +60,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'passwords do not match';
     }
     
     // Full name validation
@@ -71,9 +74,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     if (!formData.vjHandle) {
       newErrors.vjHandle = 'VJ handle is required';
     } else if (formData.vjHandle.length < 3) {
-      newErrors.vjHandle = 'VJ handle must be at least 3 characters';
+      newErrors.vjHandle = 'must be at least 3 characters';
     } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.vjHandle)) {
-      newErrors.vjHandle = 'VJ handle can only contain letters, numbers, underscores, and hyphens';
+      newErrors.vjHandle = 'can only contain letters, numbers, underscores, and hyphens';
     }
     
     // Terms agreement validation
@@ -100,19 +103,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         attributes: {
           email: formData.email,
           name: formData.fullName,
-          'custom:vjHandle': formData.vjHandle,
-          'custom:tier': 'free',
+          'custom:vj_handle': formData.vjHandle,
         },
       });
       
       if (result.success) {
         errorHandler.info('Registration successful', { email: formData.email });
-        
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push(`${redirectUrl}?email=${encodeURIComponent(formData.email)}`);
-        }
+        setShowVerification(true);
       }
     } catch (error) {
       errorHandler.error('Registration failed', error instanceof Error ? error : new Error(String(error)));
@@ -121,7 +118,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       
       // Handle specific Cognito errors
       if (errorMessage.includes('UsernameExistsException')) {
-        setErrors({ email: 'An account with this email already exists' });
+        setErrors({ email: 'Email already registered' });
       } else if (errorMessage.includes('InvalidPasswordException')) {
         setErrors({ password: 'Password does not meet requirements' });
       } else if (errorMessage.includes('InvalidParameterException')) {
@@ -148,23 +145,156 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     }
   };
 
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate verification code
+    if (!verificationCode) {
+      setErrors({ verificationCode: 'Verification code is required' });
+      return;
+    }
+    
+    if (!/^\d{6}$/.test(verificationCode)) {
+      setErrors({ verificationCode: 'Verification code must be 6 digits' });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setErrors({});
+    
+    try {
+      const result = await verifyEmail(formData.email, verificationCode);
+      
+      if (result.success) {
+        errorHandler.info('Email verified successfully', { email: formData.email });
+        
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push('/auth/login?verified=true');
+        }
+      }
+    } catch (error) {
+      errorHandler.error('Email verification failed', error instanceof Error ? error : new Error(String(error)));
+      setErrors({ verificationCode: 'Invalid verification code' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    try {
+      await resendVerificationCode(formData.email);
+      errorHandler.info('Verification code resent', { email: formData.email });
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 3000); // Hide message after 3 seconds
+    } catch (error) {
+      errorHandler.error('Failed to resend verification code', error instanceof Error ? error : new Error(String(error)));
+      setErrors({ form: 'Failed to resend verification code' });
+    }
+  };
+
   const getPasswordStrength = (password: string): { strength: number; label: string; color: string } => {
     let strength = 0;
     
-    if (password.length >= 8) strength++;
-    if (password.length >= 12) strength++;
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
     if (/[@$!%*?&]/.test(password)) strength++;
     
     if (strength <= 1) return { strength: 20, label: 'Weak', color: 'bg-red-500' };
-    if (strength <= 2) return { strength: 40, label: 'Fair', color: 'bg-orange-500' };
-    if (strength <= 3) return { strength: 60, label: 'Good', color: 'bg-yellow-500' };
-    if (strength <= 4) return { strength: 80, label: 'Strong', color: 'bg-green-500' };
+    if (strength <= 3) return { strength: 40, label: 'Medium', color: 'bg-yellow-500' };
+    if (strength <= 4) return { strength: 60, label: 'Good', color: 'bg-blue-500' };
+    if (strength <= 5) return { strength: 80, label: 'Strong', color: 'bg-green-500' };
     return { strength: 100, label: 'Very Strong', color: 'bg-green-600' };
   };
 
+  const getPasswordValidationMessages = (password: string): string[] => {
+    const messages: string[] = [];
+    
+    if (password.length > 0 && password.length < 12) {
+      messages.push('Must be at least 12 characters');
+    }
+    
+    if (password.length > 0 && !/[A-Z]/.test(password)) {
+      messages.push('Must contain an uppercase letter');
+    }
+    
+    if (password.length > 0 && !/[@$!%*?&]/.test(password)) {
+      messages.push('Must contain a special character');
+    }
+    
+    return messages;
+  };
+
   const passwordStrength = getPasswordStrength(formData.password);
+  const passwordValidationMessages = getPasswordValidationMessages(formData.password);
+
+  if (showVerification) {
+    return (
+      <form onSubmit={handleVerification} className="space-y-6 w-full max-w-md">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Verify Your Email</h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            We&apos;ve sent a verification code to {formData.email}
+          </p>
+        </div>
+        
+        <div>
+          <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Verification Code
+          </label>
+          <input
+            id="verificationCode"
+            name="verificationCode"
+            type="text"
+            required
+            value={verificationCode}
+            onChange={(e) => setVerificationCode(e.target.value)}
+            className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.verificationCode 
+                ? 'border-red-500 focus:border-red-500' 
+                : 'border-gray-300 dark:border-gray-600'
+            } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
+            placeholder="123456"
+            maxLength={6}
+          />
+          {errors.verificationCode && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.verificationCode}</p>
+          )}
+        </div>
+
+        {errors.form && (
+          <p className="text-sm text-red-600 dark:text-red-400">{errors.form}</p>
+        )}
+
+        {resendSuccess && (
+          <p className="text-sm text-green-600 dark:text-green-400">Verification code sent</p>
+        )}
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Verifying...' : 'Verify Email'}
+        </Button>
+
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={handleResendCode}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Resend code
+          </button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-md">
@@ -180,6 +310,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           required
           value={formData.fullName}
           onChange={handleInputChange}
+          disabled={isSubmitting || isLoading}
           className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.fullName 
               ? 'border-red-500 focus:border-red-500' 
@@ -204,6 +335,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           required
           value={formData.vjHandle}
           onChange={handleInputChange}
+          disabled={isSubmitting || isLoading}
           className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.vjHandle 
               ? 'border-red-500 focus:border-red-500' 
@@ -228,6 +360,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           required
           value={formData.email}
           onChange={handleInputChange}
+          disabled={isSubmitting || isLoading}
           className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.email 
               ? 'border-red-500 focus:border-red-500' 
@@ -252,6 +385,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           required
           value={formData.password}
           onChange={handleInputChange}
+          disabled={isSubmitting || isLoading}
           className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.password 
               ? 'border-red-500 focus:border-red-500' 
@@ -275,6 +409,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             </div>
           </div>
         )}
+        {passwordValidationMessages.map((message, index) => (
+          <p key={index} className="mt-1 text-sm text-red-600 dark:text-red-400">{message}</p>
+        ))}
         {errors.password && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
         )}
@@ -292,6 +429,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           required
           value={formData.confirmPassword}
           onChange={handleInputChange}
+          disabled={isSubmitting || isLoading}
           className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.confirmPassword 
               ? 'border-red-500 focus:border-red-500' 
@@ -311,6 +449,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           type="checkbox"
           checked={agreedToTerms}
           onChange={(e) => setAgreedToTerms(e.target.checked)}
+          disabled={isSubmitting || isLoading}
           className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
         <label htmlFor="terms" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
@@ -341,7 +480,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         className="w-full"
         disabled={isSubmitting || isLoading}
       >
-        {isSubmitting ? 'Creating account...' : 'Create Account'}
+        {(isSubmitting || isLoading) ? 'Creating account' : 'Create Account'}
       </Button>
 
       <div className="text-center">

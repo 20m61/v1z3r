@@ -197,3 +197,22 @@ jest.mock('react-icons/fi', () => ({
   FiTrash2: () => <span data-testid="icon-trash">🗑</span>,
   FiMove: () => <span data-testid="icon-move">🔄</span>,
 }))
+
+// Suppress specific warnings from TensorFlow.js and Three.js
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  const message = args[0];
+  
+  // Suppress TensorFlow.js warnings
+  if (typeof message === 'string') {
+    if (message.includes('Platform browser has already been set') ||
+        message.includes('backend was already registered') ||
+        message.includes('kernel') && message.includes('already registered') ||
+        message.includes('Multiple instances of Three.js being imported')) {
+      return;
+    }
+  }
+  
+  // Call original console.warn for other warnings
+  originalWarn.call(console, ...args);
+};

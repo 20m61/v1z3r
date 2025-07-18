@@ -5,11 +5,18 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { useRouter } from 'next/router';
-import LoginPage from '../login';
+import LoginPage from '@/pages/auth/login';
 
 // Mock Next.js router
 jest.mock('next/router', () => ({
   useRouter: jest.fn(),
+}));
+
+// Mock auth store
+jest.mock('@/store/authStore', () => ({
+  useAuthStore: jest.fn(() => ({
+    isAuthenticated: false,
+  })),
 }));
 
 // Mock components
@@ -21,10 +28,7 @@ jest.mock('@/components/auth/LoginForm', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/Logo', () => ({
-  __esModule: true,
-  default: () => <div data-testid="logo">Logo</div>,
-}));
+// No need to mock Logo since it's inline
 
 jest.mock('next/link', () => ({
   __esModule: true,
@@ -46,9 +50,9 @@ describe('LoginPage', () => {
   it('renders login page with all components', () => {
     render(<LoginPage />);
     
-    expect(screen.getByTestId('logo')).toBeInTheDocument();
+    expect(screen.getByText('v1z3r')).toBeInTheDocument(); // Logo text
     expect(screen.getByTestId('login-form')).toBeInTheDocument();
-    expect(screen.getByText(/sign in to v1z3r/i)).toBeInTheDocument();
+    expect(screen.getByText(/sign in to your account/i)).toBeInTheDocument();
   });
 
   it('passes default redirect URL to login form', () => {
@@ -57,10 +61,8 @@ describe('LoginPage', () => {
     expect(screen.getByText(/redirectUrl: \/dashboard/)).toBeInTheDocument();
   });
 
-  it('passes query param redirect URL to login form', () => {
-    mockRouter.query = { returnUrl: '/visualizer' };
-    
-    render(<LoginPage />);
+  it('passes redirect prop to login form', () => {
+    render(<LoginPage redirect="/visualizer" />);
     
     expect(screen.getByText(/redirectUrl: \/visualizer/)).toBeInTheDocument();
   });

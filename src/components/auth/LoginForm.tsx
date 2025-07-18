@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import { errorHandler } from '@/utils/errorHandler';
+import { MFAVerification } from './MFAVerification';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -29,6 +30,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mfaSession, setMfaSession] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -73,7 +75,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         switch (result.challengeName) {
           case 'SMS_MFA':
           case 'SOFTWARE_TOKEN_MFA':
-            router.push(`/auth/mfa?session=${result.session}`);
+            setMfaSession(result.session || '');
             break;
           case 'NEW_PASSWORD_REQUIRED':
             router.push(`/auth/new-password?session=${result.session}`);
@@ -111,6 +113,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
+
+  // Show MFA verification if session exists
+  if (mfaSession) {
+    return (
+      <MFAVerification
+        session={mfaSession}
+        onSuccess={() => {
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push(redirectUrl);
+          }
+        }}
+        onCancel={() => setMfaSession(null)}
+        redirectUrl={redirectUrl}
+      />
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-md">
