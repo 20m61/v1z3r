@@ -114,6 +114,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
     // Monitor feature health every 30 seconds
     const healthInterval = setInterval(updateFeatureHealth, 30000);
     return () => clearInterval(healthInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateFeatureHealth = useCallback(() => {
@@ -146,6 +147,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
     } catch (error) {
       errorHandler.error('Failed to initialize audio context', error as Error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleParameterChange = (path: string, value: number) => {

@@ -53,6 +53,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
     return () => {
       midiController.dispose();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeMidi = useCallback(async () => {
@@ -94,6 +95,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
       errorHandler.error('Failed to initialize MIDI', error as Error);
       setConnectionStatus('disconnected');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateMapping = (parameterPath: string, parameterName: string) => {

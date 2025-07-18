@@ -98,6 +98,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
     return () => {
       clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sceneService]);
 
   const updateSceneObjects = useCallback(() => {
