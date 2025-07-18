@@ -452,12 +452,10 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const userAgent = context.req.headers['user-agent'] || '';
-  
+export const getStaticProps = async () => {
   return {
     props: {
-      userAgent,
+      userAgent: '',
     },
   };
 };

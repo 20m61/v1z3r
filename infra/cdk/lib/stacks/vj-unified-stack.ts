@@ -14,6 +14,10 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as path from 'path';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 
 export interface VjUnifiedStackProps extends cdk.StackProps {
   stage: string;
@@ -50,6 +54,10 @@ export class VjUnifiedStack extends cdk.Stack {
   // CloudWatch
   public readonly logGroup: logs.LogGroup;
   public readonly dashboard: cloudwatch.Dashboard;
+  
+  // CloudFront
+  public readonly distribution: cloudfront.Distribution;
+  public readonly certificate?: acm.Certificate;
   
   // URLs
   public readonly apiUrl: string;
@@ -534,18 +542,55 @@ export class VjUnifiedStack extends cdk.Stack {
     });
 
     // =====================================
-    // Static Website Deployment
+    // CloudFront Distribution
     // =====================================
     
-    // Deploy static website (skip for now, will be handled by CI/CD)
-    // if (stage !== 'dev') {
-    //   new s3deploy.BucketDeployment(this, 'DeployWebsite', {
-    //     sources: [s3deploy.Source.asset('../../../out')],
-    //     destinationBucket: this.siteBucket,
-    //     prune: true,
-    //     retainOnDelete: false,
+    // SSL Certificate (disabled for now - requires manual domain setup)
+    // if (enableCloudFront && stage === 'prod') {
+    //   this.certificate = new acm.Certificate(this, 'SslCertificate', {
+    //     domainName: 'v1z3r.sc4pe.net',
+    //     subjectAlternativeNames: ['*.v1z3r.sc4pe.net'],
+    //     validation: acm.CertificateValidation.fromDns(),
     //   });
     // }
+
+    // CloudFront Distribution
+    this.distribution = new cloudfront.Distribution(this, 'Distribution', {
+      defaultBehavior: {
+        origin: new origins.S3Origin(this.siteBucket),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        compress: true,
+      },
+      additionalBehaviors: {
+        '/api/*': {
+          origin: new origins.RestApiOrigin(this.api),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+        },
+      },
+      errorResponses: [
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: '/index.html',
+        },
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: '/index.html',
+        },
+      ],
+      defaultRootObject: 'index.html',
+      // domainNames: enableCloudFront && stage === 'prod' ? ['v1z3r.sc4pe.net'] : undefined,
+      // certificate: this.certificate,
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+      comment: `VJ Application CloudFront Distribution - ${stage}`,
+    });
 
     // =====================================
     // Outputs
@@ -553,7 +598,7 @@ export class VjUnifiedStack extends cdk.Stack {
     
     this.apiUrl = this.api.url;
     this.websocketUrl = this.api.url; // Would be different for WebSocket API
-    this.frontendUrl = `https://${this.siteBucket.bucketWebsiteUrl}`;
+    this.frontendUrl = `https://${this.distribution.distributionDomainName}`;
 
     // Update SSM parameters with actual values
     new ssm.StringParameter(this, 'UpdatedAppConfig', {
@@ -604,6 +649,177 @@ export class VjUnifiedStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'SessionTableName', {
       value: this.sessionTable.tableName,
       description: 'Session table name',
+    });
+
+    new cdk.CfnOutput(this, 'CloudFrontDistributionId', {
+      value: this.distribution.distributionId,
+      description: 'CloudFront Distribution ID',
+    });
+
+    new cdk.CfnOutput(this, 'CloudFrontDistributionDomainName', {
+      value: this.distribution.distributionDomainName,
+      description: 'CloudFront Distribution Domain Name',
+    });
+
+    // =====================================
+    // CloudWatch Alarms and Monitoring
+    // =====================================
+    
+    // Create SNS topic for alerts
+    const alertTopic = new sns.Topic(this, 'AlertTopic', {
+      topicName: `vj-app-alerts-${stage}`,
+      displayName: `VJ Application Alerts - ${stage}`,
+    });
+
+    // API Gateway Alarms
+    const apiErrorAlarm = new cloudwatch.Alarm(this, 'ApiErrorAlarm', {
+      metric: this.api.metricServerError({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Sum',
+      }),
+      threshold: 10,
+      evaluationPeriods: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: 'API Gateway server errors',
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    
+    apiErrorAlarm.addAlarmAction(new cloudwatch_actions.SnsAction(alertTopic));
+
+    const apiLatencyAlarm = new cloudwatch.Alarm(this, 'ApiLatencyAlarm', {
+      metric: this.api.metricLatency({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Average',
+      }),
+      threshold: 5000, // 5 seconds
+      evaluationPeriods: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: 'API Gateway high latency',
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    
+    apiLatencyAlarm.addAlarmAction(new cloudwatch_actions.SnsAction(alertTopic));
+
+    // Lambda Function Alarms
+    const lambdaErrorAlarm = new cloudwatch.Alarm(this, 'LambdaErrorAlarm', {
+      metric: new cloudwatch.MathExpression({
+        expression: 'e1 + e2 + e3 + e4',
+        usingMetrics: {
+          e1: this.presetFunction.metricErrors({ period: cdk.Duration.minutes(5) }),
+          e2: this.connectionFunction.metricErrors({ period: cdk.Duration.minutes(5) }),
+          e3: this.messageFunction.metricErrors({ period: cdk.Duration.minutes(5) }),
+          e4: this.healthFunction.metricErrors({ period: cdk.Duration.minutes(5) }),
+        },
+      }),
+      threshold: 5,
+      evaluationPeriods: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: 'Lambda function errors',
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    
+    lambdaErrorAlarm.addAlarmAction(new cloudwatch_actions.SnsAction(alertTopic));
+
+    // DynamoDB Alarms
+    const dynamoDbThrottleAlarm = new cloudwatch.Alarm(this, 'DynamoDbThrottleAlarm', {
+      metric: new cloudwatch.MathExpression({
+        expression: 't1 + t2 + t3',
+        usingMetrics: {
+          t1: this.configTable.metricThrottledRequests({ period: cdk.Duration.minutes(5) }),
+          t2: this.presetTable.metricThrottledRequests({ period: cdk.Duration.minutes(5) }),
+          t3: this.sessionTable.metricThrottledRequests({ period: cdk.Duration.minutes(5) }),
+        },
+      }),
+      threshold: 1,
+      evaluationPeriods: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: 'DynamoDB throttling detected',
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    
+    dynamoDbThrottleAlarm.addAlarmAction(new cloudwatch_actions.SnsAction(alertTopic));
+
+    // CloudFront Alarms
+    const cloudfrontErrorAlarm = new cloudwatch.Alarm(this, 'CloudFrontErrorAlarm', {
+      metric: this.distribution.metric4xxErrorRate({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Average',
+      }),
+      threshold: 5, // 5%
+      evaluationPeriods: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: 'CloudFront high error rate',
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    
+    cloudfrontErrorAlarm.addAlarmAction(new cloudwatch_actions.SnsAction(alertTopic));
+
+    // Custom Metrics Dashboard
+    const customDashboard = new cloudwatch.Dashboard(this, 'CustomDashboard', {
+      dashboardName: `vj-app-custom-${stage}`,
+      widgets: [
+        [
+          new cloudwatch.GraphWidget({
+            title: 'Application Health Overview',
+            left: [
+              this.api.metricCount({ label: 'API Requests' }),
+              this.api.metricServerError({ label: 'API Errors' }),
+            ],
+            right: [
+              this.api.metricLatency({ label: 'API Latency' }),
+            ],
+            width: 12,
+            height: 6,
+          }),
+          new cloudwatch.GraphWidget({
+            title: 'CloudFront Performance',
+            left: [
+              this.distribution.metricRequests({ label: 'CloudFront Requests' }),
+              this.distribution.metricBytesDownloaded({ label: 'Bytes Downloaded' }),
+            ],
+            right: [
+              this.distribution.metric4xxErrorRate({ label: 'Error Rate' }),
+            ],
+            width: 12,
+            height: 6,
+          }),
+        ],
+        [
+          new cloudwatch.SingleValueWidget({
+            title: 'Current Active Sessions',
+            metrics: [
+              this.sessionTable.metricConsumedReadCapacityUnits({ label: 'Session Reads' }),
+            ],
+            width: 6,
+            height: 6,
+          }),
+          new cloudwatch.SingleValueWidget({
+            title: 'Total Presets',
+            metrics: [
+              this.presetTable.metricConsumedWriteCapacityUnits({ label: 'Preset Writes' }),
+            ],
+            width: 6,
+            height: 6,
+          }),
+          new cloudwatch.SingleValueWidget({
+            title: 'Lambda Invocations',
+            metrics: [
+              this.presetFunction.metricInvocations({ label: 'Preset Function' }),
+              this.connectionFunction.metricInvocations({ label: 'Connection Function' }),
+            ],
+            width: 6,
+            height: 6,
+          }),
+          new cloudwatch.SingleValueWidget({
+            title: 'System Health',
+            metrics: [
+              this.healthFunction.metricInvocations({ label: 'Health Checks' }),
+            ],
+            width: 6,
+            height: 6,
+          }),
+        ],
+      ],
     });
 
     // =====================================
