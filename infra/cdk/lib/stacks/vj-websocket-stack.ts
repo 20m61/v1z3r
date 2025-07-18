@@ -104,10 +104,6 @@ export class VjWebSocketStack extends cdk.Stack {
         rateLimit: stage === 'prod' ? 1000 : 100,
         burstLimit: stage === 'prod' ? 2000 : 200,
       },
-      defaultRouteThrottleSettings: {
-        rateLimit: stage === 'prod' ? 100 : 10,
-        burstLimit: stage === 'prod' ? 200 : 20,
-      },
     });
 
     // Create CloudWatch Log Group for WebSocket API

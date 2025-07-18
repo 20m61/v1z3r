@@ -57,7 +57,7 @@ export class VjUnifiedStack extends cdk.Stack {
   
   // CloudFront
   public readonly distribution: cloudfront.Distribution;
-  public readonly certificate?: acm.Certificate;
+  public readonly certificate?: acm.ICertificate;
   
   // URLs
   public readonly apiUrl: string;
@@ -545,14 +545,15 @@ export class VjUnifiedStack extends cdk.Stack {
     // CloudFront Distribution
     // =====================================
     
-    // SSL Certificate (disabled for now - requires manual domain setup)
-    // if (enableCloudFront && stage === 'prod') {
-    //   this.certificate = new acm.Certificate(this, 'SslCertificate', {
-    //     domainName: 'v1z3r.sc4pe.net',
-    //     subjectAlternativeNames: ['*.v1z3r.sc4pe.net'],
-    //     validation: acm.CertificateValidation.fromDns(),
-    //   });
-    // }
+    // SSL Certificate
+    if (enableCloudFront && stage === 'prod') {
+      // Use existing certificate from ACM
+      this.certificate = acm.Certificate.fromCertificateArn(
+        this, 
+        'SslCertificate',
+        'arn:aws:acm:us-east-1:822063948773:certificate/40d2858d-424d-4402-bfa7-afcd432310ca'
+      );
+    }
 
     // CloudFront Distribution
     this.distribution = new cloudfront.Distribution(this, 'Distribution', {
@@ -586,8 +587,8 @@ export class VjUnifiedStack extends cdk.Stack {
         },
       ],
       defaultRootObject: 'index.html',
-      // domainNames: enableCloudFront && stage === 'prod' ? ['v1z3r.sc4pe.net'] : undefined,
-      // certificate: this.certificate,
+      domainNames: enableCloudFront && stage === 'prod' ? ['v1z3r.sc4pe.net'] : undefined,
+      certificate: this.certificate,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       comment: `VJ Application CloudFront Distribution - ${stage}`,
     });

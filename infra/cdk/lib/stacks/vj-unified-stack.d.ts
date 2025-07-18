@@ -6,6 +6,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 export interface VjUnifiedStackProps extends cdk.StackProps {
     stage: string;
     enableAuth?: boolean;
@@ -31,6 +33,8 @@ export declare class VjUnifiedStack extends cdk.Stack {
     readonly websocketApi: apigateway.RestApi;
     readonly logGroup: logs.LogGroup;
     readonly dashboard: cloudwatch.Dashboard;
+    readonly distribution: cloudfront.Distribution;
+    readonly certificate?: acm.ICertificate;
     readonly apiUrl: string;
     readonly websocketUrl: string;
     readonly frontendUrl: string;

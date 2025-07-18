@@ -41,20 +41,17 @@
 - **CloudFront ID**: E3QZ8XY9BHCJPJ
 
 ### 本番環境 (prod)
-- **Frontend**: http://vj-unified-frontend-prod-822063948773.s3-website-ap-northeast-1.amazonaws.com/
+- **Frontend**: https://v1z3r.sc4pe.net/
 - **API**: https://izn3rhan4m.execute-api.ap-northeast-1.amazonaws.com/prod/
-- **CloudFront ID**: E1K5HQWP2RJLM7
+- **CloudFront ID**: E15RYO22GZ4JQX
+- **Custom Domain**: v1z3r.sc4pe.net (SSL enabled)
 
 ## 次のステップ（推奨）
 
-### 1. カスタムドメインの設定
-```bash
-# Route 53でホストゾーンを作成
-aws route53 create-hosted-zone --name v1z3r.sc4pe.net --caller-reference $(date +%s)
-
-# ACMで証明書をリクエスト（us-east-1）
-aws acm request-certificate --domain-name v1z3r.sc4pe.net --subject-alternative-names "*.v1z3r.sc4pe.net" --validation-method DNS --region us-east-1
-```
+### 1. ✅ カスタムドメインの設定（完了）
+- SSL証明書: arn:aws:acm:us-east-1:822063948773:certificate/40d2858d-424d-4402-bfa7-afcd432310ca
+- Route 53 Aレコード: v1z3r.sc4pe.net → CloudFront
+- CloudFront配信: カスタムドメイン設定済み
 
 ### 2. Lambda関数のデプロイ
 ```bash
