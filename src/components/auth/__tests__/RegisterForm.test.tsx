@@ -192,7 +192,7 @@ describe('RegisterForm', () => {
   it('handles email verification', async () => {
     const user = userEvent.setup();
     mockAuthStore.signUp.mockResolvedValueOnce({ success: true, userSub: 'user-123' });
-    mockAuthStore.verifyEmail.mockResolvedValueOnce({ success: true });
+    mockAuthStore.verifyEmail.mockResolvedValueOnce(true);
     
     render(<RegisterForm />);
     

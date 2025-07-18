@@ -85,31 +85,36 @@ export class IOSAudioHandler {
         latencyHint: 'interactive',
       });
 
+      const context = this.state.context;
+      if (!context) {
+        throw new Error('Audio context is null');
+      }
+
       // iOS requires user interaction to start audio context
-      if (this.state.context.state === 'suspended') {
+      if (context.state === 'suspended') {
         this.state.userInteractionRequired = true;
         errorHandler.info('Audio context suspended - waiting for user interaction');
       }
 
       // Create analyser node
-      this.state.analyser = this.state.context.createAnalyser();
+      this.state.analyser = context.createAnalyser();
       this.state.analyser.fftSize = this.config.bufferSize * 2;
       this.state.analyser.smoothingTimeConstant = 0.8;
 
       // Create gain node for volume control
-      this.state.gainNode = this.state.context.createGain();
+      this.state.gainNode = context.createGain();
       this.state.gainNode.gain.value = 1.0;
 
       // Connect nodes
       this.state.analyser.connect(this.state.gainNode);
-      this.state.gainNode.connect(this.state.context.destination);
+      this.state.gainNode.connect(context.destination);
 
       this.state.isInitialized = true;
       
       errorHandler.info('iOS audio handler initialized', {
-        sampleRate: this.state.context.sampleRate,
+        sampleRate: context.sampleRate,
         bufferSize: this.config.bufferSize,
-        state: this.state.context.state,
+        state: context.state,
       });
 
     } catch (error) {
