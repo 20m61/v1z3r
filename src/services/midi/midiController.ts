@@ -32,7 +32,7 @@ export interface MidiMapping {
   id: string;
   name: string;
   deviceId: string;
-  messageType: 'note' | 'cc' | 'program' | 'pitchbend' | 'aftertouch';
+  messageType: 'note' | 'cc' | 'program' | 'pitchbend' | 'aftertouch' | 'sysex';
   channel: number;
   control: number;
   parameterPath: string;

@@ -164,7 +164,7 @@ export class SceneManipulationService {
    */
   private async loadTransformControls(): Promise<void> {
     try {
-      const { TransformControls } = await import('three/addons/controls/TransformControls.js');
+      const { TransformControls } = await import('three/examples/jsm/controls/TransformControls.js');
       
       this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
       this.transformControls.setMode(this.config.transformMode);
@@ -320,8 +320,8 @@ export class SceneManipulationService {
     );
     outlines.forEach(outline => {
       object.remove(outline);
-      outline.geometry?.dispose();
-      (outline.material as THREE.Material)?.dispose();
+      (outline as any).geometry?.dispose();
+      ((outline as any).material as THREE.Material)?.dispose();
     });
   }
 

@@ -3,7 +3,7 @@
  * UI for 3D scene manipulation and object management
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { SceneManipulationService, SceneObject, SceneManipulationConfig } from '@/services/scene/sceneManipulation';
 import { errorHandler } from '@/utils/errorHandler';
@@ -98,17 +98,17 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
     return () => {
       clearInterval(interval);
     };
-  }, [sceneService, updateMetrics, updateSceneObjects, onSceneUpdate]);
+  }, [sceneService]);
 
-  const updateSceneObjects = () => {
+  const updateSceneObjects = useCallback(() => {
     if (!sceneService) return;
     setSceneObjects(sceneService.exportScene());
-  };
+  }, [sceneService]);
 
-  const updateMetrics = () => {
+  const updateMetrics = useCallback(() => {
     if (!sceneService) return;
     setMetrics(sceneService.getMetrics());
-  };
+  }, [sceneService]);
 
   const handleConfigChange = (newConfig: Partial<SceneManipulationConfig>) => {
     if (!sceneService) return;

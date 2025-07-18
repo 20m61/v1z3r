@@ -197,7 +197,7 @@ export class StyleTransferService {
     );
 
     // Convert back to canvas
-    await tf.browser.toPixels(blendedTensor.squeeze(), outputCanvas);
+    await tf.browser.toPixels(blendedTensor.squeeze() as tf.Tensor3D, outputCanvas);
 
     // Cleanup
     inputTensor.dispose();
@@ -226,7 +226,7 @@ export class StyleTransferService {
     outputCtx.filter = filters;
 
     // Apply blend mode
-    outputCtx.globalCompositeOperation = this.currentConfig.blendMode;
+    outputCtx.globalCompositeOperation = this.currentConfig.blendMode as GlobalCompositeOperation;
 
     // Draw with filters applied
     outputCtx.drawImage(inputCanvas, 0, 0);

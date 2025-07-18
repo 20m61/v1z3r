@@ -3,7 +3,7 @@
  * Showcases Phase 7 advanced features with integrated UI
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
@@ -63,7 +63,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
   useEffect(() => {
     checkWebGPUSupport();
     setupAudioContext();
-  }, [setupAudioContext]);
+  }, []);
 
   const checkWebGPUSupport = async () => {
     if (typeof window !== 'undefined' && navigator.gpu) {
@@ -76,7 +76,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
     }
   };
 
-  const setupAudioContext = async () => {
+  const setupAudioContext = useCallback(async () => {
     try {
       const context = new (window.AudioContext || (window as any).webkitAudioContext)();
       setAudioContext(context);
@@ -84,7 +84,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
     } catch (error) {
       errorHandler.error('Failed to initialize audio context', error as Error);
     }
-  };
+  }, []);
 
   const handleParameterChange = (path: string, value: number) => {
     // Map MIDI/external parameter changes to visualizer state
@@ -184,7 +184,6 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
         {/* Main Visualizer */}
         <div className="absolute inset-0">
           <WebGPUVisualizer
-            onCanvasUpdate={handleCanvasUpdate}
             className="w-full h-full"
           />
         </div>

@@ -3,7 +3,7 @@
  * UI for MIDI device management and parameter mapping
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { midiController, MidiDevice, MidiMapping, MidiMessage } from '@/services/midi/midiController';
 import { errorHandler } from '@/utils/errorHandler';
 
@@ -53,9 +53,9 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
     return () => {
       midiController.dispose();
     };
-  }, [initializeMidi]);
+  }, []);
 
-  const initializeMidi = async () => {
+  const initializeMidi = useCallback(async () => {
     try {
       setConnectionStatus('connecting');
       
@@ -94,7 +94,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
       errorHandler.error('Failed to initialize MIDI', error as Error);
       setConnectionStatus('disconnected');
     }
-  };
+  }, []);
 
   const handleCreateMapping = (parameterPath: string, parameterName: string) => {
     if (!selectedDevice) {
