@@ -13,7 +13,7 @@
     "build:deploy": "npm run build && npm run deploy"
   },
   "dependencies": {
-    "next": "14.0.0",
+    "next": "14.2.30",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-syntax-highlighter": "^15.5.0",
