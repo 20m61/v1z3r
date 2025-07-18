@@ -91,19 +91,71 @@ export default function Home() {
                     <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
                     <span className="text-gray-300">Preset Management</span>
                   </div>
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                    <span className="text-gray-300">AI Style Transfer</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-cyan-400 rounded-full"></div>
+                    <span className="text-gray-300">3D Scene Manipulation</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                    <span className="text-gray-300">MIDI 2.0 Control</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                    <span className="text-gray-300">NDI Streaming</span>
+                  </div>
                 </motion.div>
 
-                <motion.button
+                <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.8, type: "spring", stiffness: 100 }}
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(99, 102, 241, 0.5)" }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleStart}
-                  className="px-12 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-full text-xl font-semibold transition-all duration-300 shadow-lg"
+                  className="space-y-4"
                 >
-                  Launch VJ Application
-                </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(99, 102, 241, 0.5)" }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleStart}
+                    className="px-12 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-full text-xl font-semibold transition-all duration-300 shadow-lg"
+                  >
+                    Launch VJ Application
+                  </motion.button>
+                  
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.0 }}
+                    className="flex justify-center space-x-4"
+                  >
+                    <motion.a
+                      href="/advanced-features"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm font-medium transition-colors"
+                    >
+                      Advanced Features
+                    </motion.a>
+                    <motion.a
+                      href="/mobile-demo"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm font-medium transition-colors"
+                    >
+                      Mobile Demo
+                    </motion.a>
+                    <motion.a
+                      href="/webgpu-demo"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm font-medium transition-colors"
+                    >
+                      WebGPU Demo
+                    </motion.a>
+                  </motion.div>
+                </motion.div>
 
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -111,8 +163,8 @@ export default function Home() {
                   transition={{ delay: 1.2 }}
                   className="mt-8 text-sm text-gray-500"
                 >
-                  <p>Built with Next.js • WebGL • WebSockets • AWS</p>
-                  <p className="mt-2">Tested with Jest • Playwright • TDD Architecture</p>
+                  <p>Built with Next.js • WebGPU • AI • MIDI • NDI</p>
+                  <p className="mt-2">Phase 7: Advanced Features • Production Ready</p>
                 </motion.div>
               </div>
             </motion.div>

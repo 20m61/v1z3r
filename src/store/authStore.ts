@@ -17,6 +17,8 @@ interface User {
   tier: 'free' | 'premium' | 'admin';
   emailVerified: boolean;
   groups?: string[];
+  mfaEnabled?: boolean;
+  passwordLastChanged?: string;
 }
 
 interface AuthState {
@@ -146,7 +148,14 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
           
           try {
-            const result = await cognitoAuth.signUp(params);
+            const result = await cognitoAuth.signUp({
+              username: params.username,
+              password: params.password,
+              attributes: {
+                email: params.attributes.email || params.username,
+                ...params.attributes
+              }
+            });
             errorHandler.info('User signed up', { email: params.username });
             return result;
           } catch (error) {

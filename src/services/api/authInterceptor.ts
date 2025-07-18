@@ -106,7 +106,7 @@ class AuthInterceptor {
         : tokenManager.getAccessToken();
       
       if (token) {
-        requestHeaders['Authorization'] = `Bearer ${token}`;
+        (requestHeaders as Record<string, string>)['Authorization'] = `Bearer ${token}`;
       }
     }
 
@@ -233,5 +233,4 @@ class AuthInterceptor {
 // Export singleton instance
 export const apiClient = new AuthInterceptor();
 
-// Export types
-export type { ApiRequestConfig, ApiResponse };
+// Export types are already exported above with the interface declarations

@@ -371,5 +371,4 @@ class CognitoAuthService {
 // Export singleton instance
 export const cognitoAuth = new CognitoAuthService();
 
-// Export types
-export type { AuthTokens, UserAttributes };
+// Export types are already exported above with the interface declarations

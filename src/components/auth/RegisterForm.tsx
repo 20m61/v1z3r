@@ -165,7 +165,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     try {
       const result = await verifyEmail(formData.email, verificationCode);
       
-      if (result.success) {
+      if (result) {
         errorHandler.info('Email verified successfully', { email: formData.email });
         
         if (onSuccess) {

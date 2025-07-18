@@ -113,7 +113,7 @@ export class AuthMiddleware {
 
     // Check tier requirements
     if (config.requireTier) {
-      const tierHierarchy = { free: 0, premium: 1, admin: 2 };
+      const tierHierarchy: Record<string, number> = { free: 0, premium: 1, admin: 2 };
       const userTierLevel = tierHierarchy[userInfo.tier || 'free'];
       const requiredTierLevel = tierHierarchy[config.requireTier];
 
@@ -211,5 +211,4 @@ export function authMiddleware(request: NextRequest): NextResponse | null {
   return null;
 }
 
-// Export types
-export type { RouteConfig };
+// Export types are already exported above with the interface declaration
