@@ -297,11 +297,18 @@ const deletePreset = async (presetId) => {
 
 // Lambda handler
 exports.handler = async (event) => {
-  console.log('Event:', JSON.stringify(event, null, 2));
+  // Add request ID for tracing
+  const requestId = event.requestContext?.requestId || 'unknown';
+  console.log(`[${requestId}] Event:`, JSON.stringify(event, null, 2));
   
   const { httpMethod, path, pathParameters, body, queryStringParameters } = event;
   
   try {
+    // Validate request
+    if (!httpMethod || !path) {
+      return response(400, { error: 'Invalid request format' });
+    }
+    
     // Handle CORS preflight
     if (httpMethod === 'OPTIONS') {
       return response(200, {});

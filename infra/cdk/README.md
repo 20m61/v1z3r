@@ -1,7 +1,7 @@
 # VJ Application Infrastructure (AWS CDK)
 
 ## Overview
-AWS CDK infrastructure configuration for the modular VJ application, organized into separate stacks for maintainability and scalability.
+Production-ready AWS CDK infrastructure for the v1z3r VJ application. This infrastructure supports real-time audio-visual performances with global scalability, high availability, and comprehensive monitoring.
 
 ## Stack Organization
 
@@ -88,4 +88,82 @@ Each environment (dev/staging/prod) has its own configuration file with:
 - Cost optimization settings
 
 ## Getting Started
-TODO: Implementation details to be added during development.
+
+### Prerequisites
+- AWS CLI configured with appropriate credentials
+- Node.js 18.x or higher
+- AWS CDK CLI: `npm install -g aws-cdk`
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/20m61/v1z3r.git
+cd v1z3r/infra/cdk
+
+# Install dependencies
+npm install
+
+# Deploy to development
+cdk deploy VjUnifiedStack-dev
+
+# Deploy to production
+cdk deploy VjUnifiedStack-prod --profile prod
+```
+
+## Current Infrastructure
+
+### Deployed Environments
+
+#### Development
+- Frontend: https://d2nebch0xgucwg.cloudfront.net/
+- API: https://vphbflpav3.execute-api.ap-northeast-1.amazonaws.com/dev/
+
+#### Production  
+- Frontend: http://vj-unified-frontend-prod-822063948773.s3-website-ap-northeast-1.amazonaws.com/
+- API: https://izn3rhan4m.execute-api.ap-northeast-1.amazonaws.com/prod/
+
+### Key Features
+- **Serverless Architecture**: Auto-scaling Lambda functions
+- **Global CDN**: CloudFront distribution for low latency
+- **Real-time Collaboration**: WebSocket API for live sync
+- **Data Persistence**: DynamoDB tables with on-demand billing
+- **Security**: IAM roles with minimal permissions, HTTPS/WSS everywhere
+- **Monitoring**: CloudWatch dashboards and alarms
+
+## Testing
+
+### Lambda Function Tests
+```bash
+cd lambda/preset
+npm test
+```
+
+### Infrastructure Tests
+```bash
+npm run test
+```
+
+## Security Considerations
+- All Lambda functions use minimal IAM permissions
+- S3 buckets have appropriate access policies
+- API Gateway configured with throttling
+- CloudFront with security headers
+- Environment-specific configurations
+
+## Cost Optimization
+- DynamoDB on-demand billing
+- S3 lifecycle policies for old data
+- CloudFront caching strategies
+- Lambda reserved capacity for production
+
+## Monitoring and Alerts
+- API error rate and latency monitoring
+- Lambda function errors and throttles
+- DynamoDB capacity and throttling
+- CloudFront cache hit rates
+- Custom metrics dashboard
+
+## Documentation
+- [SSL Certificate Setup](./SSL_CERTIFICATE_SETUP.md)
+- [Implementation Summary](./IMPLEMENTATION_SUMMARY.md)
+- [Environment Variables](./.env.example)
