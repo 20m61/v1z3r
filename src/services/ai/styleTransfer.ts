@@ -5,6 +5,7 @@
 
 import * as tf from '@tensorflow/tfjs';
 import { errorHandler } from '@/utils/errorHandler';
+import { advancedFeaturesErrorHandler } from '@/utils/advancedFeaturesErrorHandler';
 
 export interface StyleTransferConfig {
   styleName: string;
@@ -113,9 +114,11 @@ export class StyleTransferService {
       
       errorHandler.info('Style transfer model loaded successfully');
     } catch (error) {
+      const aiError = advancedFeaturesErrorHandler.handleAIError(error as Error, 'Model initialization');
       errorHandler.error('Failed to load style transfer model', error as Error);
       
-      // Fall back to simple filter-based effects
+      // Execute recovery action (fallback to CSS filters)
+      advancedFeaturesErrorHandler.executeRecovery('AI Style Transfer');
       this.initializeFallbackEffects();
     }
   }
@@ -152,7 +155,15 @@ export class StyleTransferService {
         await this.applyFallbackStyleTransfer(inputCanvas, outputCanvas);
       }
     } catch (error) {
+      const aiError = advancedFeaturesErrorHandler.handleAIError(error as Error, 'Style transfer processing');
       errorHandler.error('Style transfer failed', error as Error);
+      
+      // Check if feature should be disabled due to repeated errors
+      if (advancedFeaturesErrorHandler.hasFeatureCriticalErrors('AI Style Transfer')) {
+        this.currentConfig.enabled = false;
+        errorHandler.warn('AI Style Transfer disabled due to critical errors');
+      }
+      
       this.copyCanvas(inputCanvas, outputCanvas);
     } finally {
       this.isProcessing = false;
@@ -342,6 +353,20 @@ export class StyleTransferService {
    */
   getMetrics(): StyleTransferMetrics {
     return { ...this.metrics };
+  }
+
+  /**
+   * Get feature health status
+   */
+  getHealthStatus(): 'healthy' | 'degraded' | 'unavailable' {
+    return advancedFeaturesErrorHandler.getFeatureHealth('AI Style Transfer');
+  }
+
+  /**
+   * Get user-friendly error message
+   */
+  getErrorMessage(): string {
+    return advancedFeaturesErrorHandler.getUserMessage('AI Style Transfer');
   }
 
   /**
