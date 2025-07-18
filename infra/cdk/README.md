@@ -115,11 +115,11 @@ cdk deploy VjUnifiedStack-prod --profile prod
 ### Deployed Environments
 
 #### Development
-- Frontend: https://d2nebch0xgucwg.cloudfront.net/
+- Frontend: https://v1z3r-dev.sc4pe.net/
 - API: https://vphbflpav3.execute-api.ap-northeast-1.amazonaws.com/dev/
 
 #### Production  
-- Frontend: http://vj-unified-frontend-prod-822063948773.s3-website-ap-northeast-1.amazonaws.com/
+- Frontend: https://v1z3r.sc4pe.net/
 - API: https://izn3rhan4m.execute-api.ap-northeast-1.amazonaws.com/prod/
 
 ### Key Features

@@ -23,9 +23,9 @@ interface StageConfig {
 
 const stageConfigs: Record<string, StageConfig> = {
   dev: {
-    domainName: 'localhost:3000',
+    domainName: 'v1z3r-dev.sc4pe.net',
     enableAuth: false,
-    enableCloudFront: false,
+    enableCloudFront: true,
     enableBackup: false,
   },
   staging: {

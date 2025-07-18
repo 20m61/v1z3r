@@ -36,9 +36,10 @@
 ## デプロイ済みのリソース
 
 ### 開発環境 (dev)
-- **Frontend**: https://d2nebch0xgucwg.cloudfront.net/
+- **Frontend**: https://v1z3r-dev.sc4pe.net/
 - **API**: https://vphbflpav3.execute-api.ap-northeast-1.amazonaws.com/dev/
-- **CloudFront ID**: E3QZ8XY9BHCJPJ
+- **CloudFront ID**: EW3P63LZTG4D5
+- **Custom Domain**: v1z3r-dev.sc4pe.net (SSL enabled)
 
 ### 本番環境 (prod)
 - **Frontend**: https://v1z3r.sc4pe.net/
