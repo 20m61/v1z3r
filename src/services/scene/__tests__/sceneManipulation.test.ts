@@ -12,14 +12,24 @@ jest.mock('three', () => ({
   Scene: jest.fn().mockImplementation(() => ({
     add: jest.fn(),
     remove: jest.fn(),
-    traverse: jest.fn(),
-    children: []
+    traverse: jest.fn(function(callback) {
+      this.children.forEach(child => callback(child));
+    }),
+    children: [],
+    userData: {}
   })),
   PerspectiveCamera: jest.fn().mockImplementation(() => ({})),
   WebGLRenderer: jest.fn().mockImplementation(() => ({
     domElement: {
       addEventListener: jest.fn(),
-      tabIndex: 0
+      removeEventListener: jest.fn(),
+      tabIndex: 0,
+      getBoundingClientRect: jest.fn().mockReturnValue({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 600
+      })
     },
     info: {
       render: {
@@ -35,17 +45,21 @@ jest.mock('three', () => ({
     x: 0,
     y: 0
   })),
-  Vector3: jest.fn().mockImplementation(() => ({
-    x: 0,
-    y: 0,
-    z: 0,
-    copy: jest.fn()
+  Vector3: jest.fn().mockImplementation((x = 0, y = 0, z = 0) => ({
+    x,
+    y,
+    z,
+    copy: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    clone: jest.fn().mockReturnValue({ x, y, z, copy: jest.fn(), set: jest.fn() })
   })),
-  Euler: jest.fn().mockImplementation(() => ({
-    x: 0,
-    y: 0,
-    z: 0,
-    copy: jest.fn()
+  Euler: jest.fn().mockImplementation((x = 0, y = 0, z = 0) => ({
+    x,
+    y,
+    z,
+    copy: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    clone: jest.fn().mockReturnValue({ x, y, z, copy: jest.fn(), set: jest.fn() })
   })),
   Clock: jest.fn().mockImplementation(() => ({
     getDelta: jest.fn().mockReturnValue(0.016)
@@ -56,20 +70,39 @@ jest.mock('three', () => ({
         position: {
           count: 36
         }
-      }
+      },
+      dispose: jest.fn()
     },
     material: {
       dispose: jest.fn()
     },
-    position: { x: 0, y: 0, z: 0 },
-    rotation: { x: 0, y: 0, z: 0 },
-    scale: { x: 1, y: 1, z: 1 },
+    position: { 
+      x: 0, y: 0, z: 0,
+      copy: jest.fn(),
+      set: jest.fn()
+    },
+    rotation: { 
+      x: 0, y: 0, z: 0,
+      copy: jest.fn(),
+      set: jest.fn()
+    },
+    scale: { 
+      x: 1, y: 1, z: 1,
+      copy: jest.fn(),
+      set: jest.fn()
+    },
     userData: {},
+    children: [],
+    traverse: jest.fn(function(callback) {
+      callback(this);
+    }),
     clone: jest.fn().mockReturnValue({
       userData: {},
-      position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1 }
+      position: { x: 0, y: 0, z: 0, copy: jest.fn(), set: jest.fn() },
+      rotation: { x: 0, y: 0, z: 0, copy: jest.fn(), set: jest.fn() },
+      scale: { x: 1, y: 1, z: 1, copy: jest.fn(), set: jest.fn() },
+      children: [],
+      traverse: jest.fn()
     })
   })),
   BoxGeometry: jest.fn().mockImplementation(() => ({

@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { errorHandler } from '@/utils/errorHandler';
+import { advancedFeaturesErrorHandler } from '@/utils/advancedFeaturesErrorHandler';
 
 export interface SceneObject {
   id: string;
@@ -188,7 +189,12 @@ export class SceneManipulationService {
       this.scene.add(this.transformControls);
       errorHandler.info('Transform controls loaded');
     } catch (error) {
+      const sceneError = advancedFeaturesErrorHandler.handleSceneError(error as Error, 'Transform controls loading');
       errorHandler.error('Failed to load transform controls', error as Error);
+      
+      // Disable transform controls but keep basic scene manipulation
+      this.config.enableGizmos = false;
+      errorHandler.info('Transform controls disabled, using basic manipulation');
     }
   }
 
@@ -218,18 +224,23 @@ export class SceneManipulationService {
    * Handle mouse click for object selection
    */
   private handleMouseClick(event: MouseEvent): void {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    try {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.scene.children, true);
 
-    if (intersects.length > 0) {
-      const object = intersects[0].object;
-      this.selectObject(object);
-    } else {
-      this.selectObject(null);
+      if (intersects.length > 0) {
+        const object = intersects[0].object;
+        this.selectObject(object);
+      } else {
+        this.selectObject(null);
+      }
+    } catch (error) {
+      const sceneError = advancedFeaturesErrorHandler.handleSceneError(error as Error, 'Object selection');
+      errorHandler.error('Failed to handle mouse click', error as Error);
     }
   }
 
@@ -541,6 +552,20 @@ export class SceneManipulationService {
    */
   setCallbacks(callbacks: Partial<typeof this.callbacks>): void {
     this.callbacks = { ...this.callbacks, ...callbacks };
+  }
+
+  /**
+   * Get feature health status
+   */
+  getHealthStatus(): 'healthy' | 'degraded' | 'unavailable' {
+    return advancedFeaturesErrorHandler.getFeatureHealth('3D Scene');
+  }
+
+  /**
+   * Get user-friendly error message
+   */
+  getErrorMessage(): string {
+    return advancedFeaturesErrorHandler.getUserMessage('3D Scene');
   }
 
   /**

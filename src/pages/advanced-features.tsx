@@ -3,37 +3,80 @@
  * Showcases Phase 7 advanced features with integrated UI
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import { useVisualizerStore } from '@/store/visualizerStore';
 import { errorHandler } from '@/utils/errorHandler';
+import { advancedFeaturesErrorHandler } from '@/utils/advancedFeaturesErrorHandler';
 
-// Dynamic imports for advanced components
+// Dynamic imports for advanced components with loading states
 const StyleTransferControls = dynamic(
   () => import('@/components/advanced/StyleTransferControls'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-2 text-gray-400">Loading AI Style Transfer...</span>
+      </div>
+    )
+  }
 );
 
 const SceneManipulationPanel = dynamic(
   () => import('@/components/advanced/SceneManipulationPanel'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+        <span className="ml-2 text-gray-400">Loading 3D Scene Controls...</span>
+      </div>
+    )
+  }
 );
 
 const MidiControlPanel = dynamic(
   () => import('@/components/advanced/MidiControlPanel'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+        <span className="ml-2 text-gray-400">Loading MIDI Controller...</span>
+      </div>
+    )
+  }
 );
 
 const NDIStreamingPanel = dynamic(
   () => import('@/components/advanced/NDIStreamingPanel'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        <span className="ml-2 text-gray-400">Loading NDI Streaming...</span>
+      </div>
+    )
+  }
 );
 
 const WebGPUVisualizer = dynamic(
   () => import('@/components/visualizer/WebGPUVisualizer'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center w-full h-full bg-black">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-lg">Initializing WebGPU Visualizer...</p>
+        </div>
+      </div>
+    )
+  }
 );
 
 interface AdvancedFeaturesProps {
@@ -45,6 +88,9 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
   const [isWebGPUSupported, setIsWebGPUSupported] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPanels, setShowPanels] = useState(true);
+  const [featureHealth, setFeatureHealth] = useState<{
+    [key: string]: 'healthy' | 'degraded' | 'unavailable';
+  }>({});
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const {
@@ -63,6 +109,22 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
   useEffect(() => {
     checkWebGPUSupport();
     setupAudioContext();
+    updateFeatureHealth();
+    
+    // Monitor feature health every 30 seconds
+    const healthInterval = setInterval(updateFeatureHealth, 30000);
+    return () => clearInterval(healthInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const updateFeatureHealth = useCallback(() => {
+    setFeatureHealth({
+      'AI Style Transfer': advancedFeaturesErrorHandler.getFeatureHealth('AI Style Transfer'),
+      '3D Scene': advancedFeaturesErrorHandler.getFeatureHealth('3D Scene'),
+      'MIDI': advancedFeaturesErrorHandler.getFeatureHealth('MIDI'),
+      'NDI': advancedFeaturesErrorHandler.getFeatureHealth('NDI'),
+      'WebGPU': advancedFeaturesErrorHandler.getFeatureHealth('WebGPU'),
+    });
   }, []);
 
   const checkWebGPUSupport = async () => {
@@ -71,6 +133,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
         const adapter = await navigator.gpu.requestAdapter();
         setIsWebGPUSupported(!!adapter);
       } catch (error) {
+        const webGPUError = advancedFeaturesErrorHandler.handleWebGPUError(error as Error, 'WebGPU detection');
         setIsWebGPUSupported(false);
       }
     }
@@ -84,6 +147,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
     } catch (error) {
       errorHandler.error('Failed to initialize audio context', error as Error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleParameterChange = (path: string, value: number) => {
@@ -134,42 +198,43 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
   };
 
   const renderActivePanel = () => {
-    switch (activePanel) {
-      case 'style':
-        return (
+    return (
+      <Suspense fallback={
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2 text-gray-400">Loading panel...</span>
+        </div>
+      }>
+        {activePanel === 'style' && (
           <StyleTransferControls
             onConfigChange={(config) => {
               errorHandler.info(`Style transfer config updated: ${config.styleName}`);
             }}
             className="h-full"
           />
-        );
-      case 'scene':
-        return (
+        )}
+        {activePanel === 'scene' && (
           <SceneManipulationPanel
             onSceneUpdate={(scene) => {
               errorHandler.info(`Scene updated: ${scene.children.length} objects`);
             }}
             className="h-full"
           />
-        );
-      case 'midi':
-        return (
+        )}
+        {activePanel === 'midi' && (
           <MidiControlPanel
             onParameterChange={handleParameterChange}
             className="h-full"
           />
-        );
-      case 'ndi':
-        return (
+        )}
+        {activePanel === 'ndi' && (
           <NDIStreamingPanel
             onCanvasUpdate={handleCanvasUpdate}
             className="h-full"
           />
-        );
-      default:
-        return null;
-    }
+        )}
+      </Suspense>
+    );
   };
 
   return (
@@ -183,9 +248,19 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
       <div className="min-h-screen bg-black text-white relative overflow-hidden">
         {/* Main Visualizer */}
         <div className="absolute inset-0">
-          <WebGPUVisualizer
-            className="w-full h-full"
-          />
+          <Suspense fallback={
+            <div className="flex items-center justify-center w-full h-full bg-black">
+              <div className="text-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                <p className="text-lg">Initializing WebGPU Visualizer...</p>
+                <p className="text-sm text-gray-400 mt-2">Loading GPU resources...</p>
+              </div>
+            </div>
+          }>
+            <WebGPUVisualizer
+              className="w-full h-full"
+            />
+          </Suspense>
         </div>
 
         {/* Header */}
@@ -321,19 +396,31 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
           <div className="bg-black/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50">
             <div className="text-xs text-gray-300 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                <span className={`w-2 h-2 rounded-full ${
+                  featureHealth['AI Style Transfer'] === 'healthy' ? 'bg-green-400' :
+                  featureHealth['AI Style Transfer'] === 'degraded' ? 'bg-yellow-400' : 'bg-red-400'
+                }`}></span>
                 <span>AI Style Transfer</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                <span className={`w-2 h-2 rounded-full ${
+                  featureHealth['3D Scene'] === 'healthy' ? 'bg-green-400' :
+                  featureHealth['3D Scene'] === 'degraded' ? 'bg-yellow-400' : 'bg-red-400'
+                }`}></span>
                 <span>3D Scene Manipulation</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                <span className={`w-2 h-2 rounded-full ${
+                  featureHealth['MIDI'] === 'healthy' ? 'bg-green-400' :
+                  featureHealth['MIDI'] === 'degraded' ? 'bg-yellow-400' : 'bg-red-400'
+                }`}></span>
                 <span>MIDI 2.0 Control</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                <span className={`w-2 h-2 rounded-full ${
+                  featureHealth['NDI'] === 'healthy' ? 'bg-green-400' :
+                  featureHealth['NDI'] === 'degraded' ? 'bg-yellow-400' : 'bg-red-400'
+                }`}></span>
                 <span>NDI Streaming</span>
               </div>
             </div>

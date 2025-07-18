@@ -4,6 +4,7 @@
  */
 
 import { errorHandler } from '@/utils/errorHandler';
+import { advancedFeaturesErrorHandler } from '@/utils/advancedFeaturesErrorHandler';
 
 export interface MidiDevice {
   id: string;
@@ -108,6 +109,7 @@ export class MidiController {
 
       // Check for Web MIDI API support
       if (!navigator.requestMIDIAccess) {
+        const compatError = advancedFeaturesErrorHandler.handleCompatibilityError('MIDI', 'Web MIDI API');
         throw new Error('Web MIDI API not supported in this browser');
       }
 
@@ -128,7 +130,11 @@ export class MidiController {
       this.isInitialized = true;
       errorHandler.info('MIDI system initialized successfully');
     } catch (error) {
+      const midiError = advancedFeaturesErrorHandler.handleMIDIError(error as Error, 'MIDI initialization');
       errorHandler.error('Failed to initialize MIDI system', error as Error);
+      
+      // Execute recovery action (disable MIDI features)
+      advancedFeaturesErrorHandler.executeRecovery('MIDI');
       throw error;
     }
   }
@@ -245,6 +251,7 @@ export class MidiController {
       try {
         handler(message);
       } catch (error) {
+        const midiError = advancedFeaturesErrorHandler.handleMIDIError(error as Error, `Message handler ${id}`);
         errorHandler.error(`MIDI message handler error (${id})`, error as Error);
       }
     });
@@ -626,6 +633,20 @@ export class MidiController {
    */
   isInitializedState(): boolean {
     return this.isInitialized;
+  }
+
+  /**
+   * Get feature health status
+   */
+  getHealthStatus(): 'healthy' | 'degraded' | 'unavailable' {
+    return advancedFeaturesErrorHandler.getFeatureHealth('MIDI');
+  }
+
+  /**
+   * Get user-friendly error message
+   */
+  getErrorMessage(): string {
+    return advancedFeaturesErrorHandler.getUserMessage('MIDI');
   }
 
   /**

@@ -4,6 +4,7 @@
  */
 
 import { errorHandler } from '@/utils/errorHandler';
+import { advancedFeaturesErrorHandler } from '@/utils/advancedFeaturesErrorHandler';
 
 export interface NDIConfig {
   enabled: boolean;
@@ -45,6 +46,22 @@ export interface NDIMetrics {
   framesSent: number;
   audioSamplesSent: number;
   uptime: number;
+}
+
+// Export aliases for browser test page compatibility
+export interface StreamConfig extends NDIConfig {
+  width: number;
+  height: number;
+  bitrate: number;
+  protocol: 'ndi' | 'webrtc' | 'rtmp';
+}
+
+export interface StreamMetrics extends NDIMetrics {
+  fps: number;
+  bitrate: number;
+  packetsSent: number;
+  packetsLost: number;
+  activeStreams: number;
 }
 
 export interface NDIReceiver {
@@ -588,9 +605,9 @@ export class NDIStreamingService {
   }
 
   /**
-   * Get configuration
+   * Get NDI configuration
    */
-  getConfig(): NDIConfig {
+  getNDIConfig(): NDIConfig {
     return { ...this.config };
   }
 
@@ -637,6 +654,55 @@ export class NDIStreamingService {
    */
   isStreamingState(): boolean {
     return this.isStreaming;
+  }
+
+  /**
+   * Get health status
+   */
+  getHealthStatus(): 'healthy' | 'degraded' | 'unavailable' {
+    return advancedFeaturesErrorHandler.getFeatureHealth('NDI');
+  }
+
+  /**
+   * Get configuration (browser test page compatibility)
+   */
+  getConfig(): StreamConfig {
+    const { width, height } = this.getResolution();
+    return {
+      ...this.config,
+      width,
+      height,
+      bitrate: this.config.bandwidth * 1000000, // Convert Mbps to bps
+      protocol: 'ndi' as const,
+    };
+  }
+
+  /**
+   * Set canvas for streaming
+   */
+  setCanvas(canvas: HTMLCanvasElement): void {
+    this.canvas = canvas;
+  }
+
+  /**
+   * Start stream (alias for browser test page)
+   */
+  async startStream(canvas: HTMLCanvasElement): Promise<boolean> {
+    try {
+      this.setCanvas(canvas);
+      await this.startStreaming();
+      return true;
+    } catch (error) {
+      errorHandler.error('Failed to start stream', error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Stop stream (alias for browser test page)
+   */
+  async stopStream(): Promise<void> {
+    await this.stopStreaming();
   }
 
   /**
