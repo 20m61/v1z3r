@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import dynamic from 'next/dynamic';
 import { useVisualizerStore } from '@/store/visualizerStore';
-import { useWebGPUCapabilities } from '@/components/webgpu/WebGPUCompatibilityChecker';
+// Remove SSR-incompatible import
 import { errorHandler } from '@/utils/errorHandler';
 
 // Dynamically import WebGPU components to avoid SSR issues
@@ -23,6 +23,18 @@ const WebGPUVisualizer = dynamic(
   }
 );
 
+const WebGPUCompatibilityChecker = dynamic(
+  () => import('@/components/webgpu/WebGPUCompatibilityChecker').then(mod => ({ default: mod.WebGPUCompatibilityChecker })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+      </div>
+    ),
+  }
+);
+
 interface WebGPUDemoProps {
   isWebGPUSupported: boolean;
 }
@@ -33,7 +45,7 @@ const WebGPUDemoPage: React.FC<WebGPUDemoProps> = ({ isWebGPUSupported }) => {
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  const { capabilities, isLoading } = useWebGPUCapabilities();
+  // WebGPU capabilities will be detected client-side
   const {
     setAudioContext,
     setAudioSource,
@@ -101,16 +113,7 @@ const WebGPUDemoPage: React.FC<WebGPUDemoProps> = ({ isWebGPUSupported }) => {
     setError(`WebGPU Error: ${error.message}`);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading WebGPU capabilities...</p>
-        </div>
-      </div>
-    );
-  }
+  // Loading state will be handled by dynamic imports
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -125,24 +128,19 @@ const WebGPUDemoPage: React.FC<WebGPUDemoProps> = ({ isWebGPUSupported }) => {
           {/* Status indicators */}
           <div className="flex items-center gap-4 mt-4">
             <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${capabilities?.isSupported ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm">WebGPU: {capabilities?.isSupported ? 'Supported' : 'Not Supported'}</span>
+              <div className={`w-3 h-3 rounded-full ${isWebGPUSupported ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-sm">WebGPU: {isWebGPUSupported ? 'Supported' : 'Not Supported'}</span>
             </div>
             
-            {capabilities?.isSupported && (
+            {isWebGPUSupported && (
               <>
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${capabilities.computeShaderSupport ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                  <span className="text-sm">Compute Shaders: {capabilities.computeShaderSupport ? 'Available' : 'Limited'}</span>
+                  <div className={`w-3 h-3 rounded-full ${audioContext ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-sm">Audio: {audioContext ? 'Active' : 'Inactive'}</span>
                 </div>
-                
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${
-                    capabilities.performanceRating === 'excellent' ? 'bg-green-500' :
-                    capabilities.performanceRating === 'good' ? 'bg-blue-500' :
-                    capabilities.performanceRating === 'fair' ? 'bg-yellow-500' : 'bg-red-500'
-                  }`}></div>
-                  <span className="text-sm">Performance: {capabilities.performanceRating}</span>
+                  <div className={`w-3 h-3 rounded-full ${mediaStream ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-sm">Microphone: {mediaStream ? 'Active' : 'Inactive'}</span>
                 </div>
               </>
             )}
@@ -227,11 +225,8 @@ const WebGPUDemoPage: React.FC<WebGPUDemoProps> = ({ isWebGPUSupported }) => {
 
       {/* Main Visualizer */}
       <div className="relative flex-1" style={{ height: 'calc(100vh - 200px)' }}>
-        {capabilities?.isSupported ? (
-          <WebGPUVisualizer
-            className="w-full h-full"
-            onError={handleWebGPUError}
-          />
+        {isWebGPUSupported ? (
+          <WebGPUVisualizer />
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-md">
@@ -250,6 +245,19 @@ const WebGPUDemoPage: React.FC<WebGPUDemoProps> = ({ isWebGPUSupported }) => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* WebGPU Compatibility Info */}
+      <div className="bg-gray-800 border-t border-gray-700 p-4">
+        <div className="container mx-auto">
+          <WebGPUCompatibilityChecker>
+            <div className="text-center">
+              <p className="text-sm text-gray-400">
+                WebGPU compatibility information will be displayed here
+              </p>
+            </div>
+          </WebGPUCompatibilityChecker>
+        </div>
       </div>
 
       {/* Feature Info */}
