@@ -6,6 +6,8 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { errorHandler } from '@/utils/errorHandler';
+import { cognitoAuth } from '@/services/auth/cognitoAuth';
+import { tokenManager } from '@/services/auth/tokenManager';
 
 interface User {
   id: string;
@@ -66,89 +68,7 @@ interface AuthState {
   hasRole: (role: string) => boolean;
 }
 
-// Authentication implementation
-// Uses mock for development, AWS Amplify for production
-const getAuthImplementation = () => {
-  // Check if running in production with proper AWS configuration
-  if (process.env.NODE_ENV === 'production' && 
-      process.env.NEXT_PUBLIC_USER_POOL_ID && 
-      process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID) {
-    // Return AWS Amplify implementation
-    return createAmplifyAuth();
-  }
-  
-  // Return mock implementation for development
-  return createMockAuth();
-};
-
-const createMockAuth = () => ({
-  signIn: async (email: string, password: string) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock validation
-    if (email === 'test@example.com' && password === 'Test123!@#') {
-      return {
-        success: true,
-        user: {
-          id: 'mock-user-123',
-          email,
-          fullName: 'Test User',
-          vjHandle: 'test_vj',
-          tier: 'premium' as const,
-          emailVerified: true,
-          groups: ['premium'],
-        },
-        tokens: {
-          accessToken: 'mock-access-token',
-          idToken: 'mock-id-token',
-          refreshToken: 'mock-refresh-token',
-          expiresIn: 3600,
-        },
-      };
-    }
-    
-    throw new Error('NotAuthorizedException');
-  },
-  
-  signUp: async (params: any) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, userSub: 'mock-user-sub' };
-  },
-  
-  signOut: async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-  },
-  
-  refreshSession: async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return true;
-  },
-});
-
-const createAmplifyAuth = () => ({
-  signIn: async (email: string, password: string) => {
-    // TODO: Implement AWS Amplify Auth.signIn
-    throw new Error('AWS Amplify Auth not yet implemented');
-  },
-  
-  signUp: async (params: any) => {
-    // TODO: Implement AWS Amplify Auth.signUp
-    throw new Error('AWS Amplify Auth not yet implemented');
-  },
-  
-  signOut: async () => {
-    // TODO: Implement AWS Amplify Auth.signOut
-    throw new Error('AWS Amplify Auth not yet implemented');
-  },
-  
-  refreshSession: async () => {
-    // TODO: Implement AWS Amplify Auth.currentSession
-    throw new Error('AWS Amplify Auth not yet implemented');
-  },
-});
-
-const authImplementation = getAuthImplementation();
+// Use the new Cognito auth service
 
 export const useAuthStore = create<AuthState>()(
   devtools(
@@ -167,6 +87,9 @@ export const useAuthStore = create<AuthState>()(
         setUser: (user) => set({ user, isAuthenticated: !!user }),
         
         setTokens: ({ accessToken, idToken, refreshToken, expiresIn }) => {
+          // Store tokens in the secure token manager
+          tokenManager.setTokens({ accessToken, idToken, refreshToken, expiresIn });
+          
           const expiry = Date.now() + expiresIn * 1000;
           set({
             accessToken,
@@ -177,21 +100,26 @@ export const useAuthStore = create<AuthState>()(
           });
         },
         
-        clearAuth: () => set({
-          user: null,
-          isAuthenticated: false,
-          accessToken: null,
-          idToken: null,
-          refreshToken: null,
-          tokenExpiry: null,
-        }),
+        clearAuth: () => {
+          // Clear tokens from secure storage
+          tokenManager.clearTokens();
+          
+          set({
+            user: null,
+            isAuthenticated: false,
+            accessToken: null,
+            idToken: null,
+            refreshToken: null,
+            tokenExpiry: null,
+          });
+        },
         
         // Auth operations
         signIn: async (email, password) => {
           set({ isLoading: true });
           
           try {
-            const result = await authImplementation.signIn(email, password);
+            const result = await cognitoAuth.signIn(email, password);
             
             if (result.success && result.user && result.tokens) {
               get().setUser(result.user);
@@ -203,8 +131,8 @@ export const useAuthStore = create<AuthState>()(
             
             return { 
               success: false, 
-              challengeName: (result as any).challengeName,
-              session: (result as any).session,
+              challengeName: result.challengeName,
+              session: result.session,
             };
           } catch (error) {
             errorHandler.error('Sign in failed', error instanceof Error ? error : new Error(String(error)));
@@ -218,7 +146,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
           
           try {
-            const result = await authImplementation.signUp(params);
+            const result = await cognitoAuth.signUp(params);
             errorHandler.info('User signed up', { email: params.username });
             return result;
           } catch (error) {
@@ -233,7 +161,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
           
           try {
-            await authImplementation.signOut();
+            await cognitoAuth.signOut();
             get().clearAuth();
             errorHandler.info('User signed out');
           } catch (error) {
@@ -245,20 +173,13 @@ export const useAuthStore = create<AuthState>()(
         },
         
         refreshSession: async () => {
-          const { refreshToken } = get();
+          const refreshToken = tokenManager.getRefreshToken();
           if (!refreshToken) return false;
           
           try {
-            const result = await authImplementation.refreshSession();
-            if (result) {
-              // Update tokens with new values
-              // In production, this would come from the refresh response
-              get().setTokens({
-                accessToken: 'new-access-token',
-                idToken: 'new-id-token',
-                refreshToken: refreshToken,
-                expiresIn: 3600,
-              });
+            const tokens = await cognitoAuth.refreshSession(refreshToken);
+            if (tokens) {
+              get().setTokens(tokens);
               return true;
             }
             return false;
@@ -271,9 +192,8 @@ export const useAuthStore = create<AuthState>()(
         
         verifyEmail: async (email, code) => {
           try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return true;
+            const result = await cognitoAuth.verifyEmail(email, code);
+            return result;
           } catch (error) {
             errorHandler.error('Email verification failed', error instanceof Error ? error : new Error(String(error)));
             return false;
@@ -282,9 +202,8 @@ export const useAuthStore = create<AuthState>()(
         
         resendVerificationCode: async (email) => {
           try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return true;
+            const result = await cognitoAuth.resendVerificationCode(email);
+            return result;
           } catch (error) {
             errorHandler.error('Resend verification code failed', error instanceof Error ? error : new Error(String(error)));
             return false;
@@ -293,9 +212,8 @@ export const useAuthStore = create<AuthState>()(
         
         forgotPassword: async (email) => {
           try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return true;
+            const result = await cognitoAuth.forgotPassword(email);
+            return result;
           } catch (error) {
             errorHandler.error('Forgot password request failed', error instanceof Error ? error : new Error(String(error)));
             return false;
@@ -304,9 +222,8 @@ export const useAuthStore = create<AuthState>()(
         
         confirmForgotPassword: async (email, code, newPassword) => {
           try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return true;
+            const result = await cognitoAuth.confirmForgotPassword(email, code, newPassword);
+            return result;
           } catch (error) {
             errorHandler.error('Password reset failed', error instanceof Error ? error : new Error(String(error)));
             return false;
@@ -315,9 +232,11 @@ export const useAuthStore = create<AuthState>()(
         
         changePassword: async (oldPassword, newPassword) => {
           try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return true;
+            const accessToken = tokenManager.getAccessToken();
+            if (!accessToken) throw new Error('No access token');
+            
+            const result = await cognitoAuth.changePassword(accessToken, oldPassword, newPassword);
+            return result;
           } catch (error) {
             errorHandler.error('Password change failed', error instanceof Error ? error : new Error(String(error)));
             return false;
@@ -326,12 +245,11 @@ export const useAuthStore = create<AuthState>()(
         
         setupMFA: async () => {
           try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return {
-              secret: 'MOCK_SECRET_KEY',
-              qrCode: 'data:image/png;base64,mockQRCode',
-            };
+            const accessToken = tokenManager.getAccessToken();
+            if (!accessToken) throw new Error('No access token');
+            
+            const result = await cognitoAuth.setupMFA(accessToken);
+            return result;
           } catch (error) {
             errorHandler.error('MFA setup failed', error instanceof Error ? error : new Error(String(error)));
             throw error;
@@ -340,9 +258,12 @@ export const useAuthStore = create<AuthState>()(
         
         verifyMFA: async (code, session) => {
           try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return true;
+            const result = await cognitoAuth.verifyMFA(session || '', code);
+            if (result) {
+              get().setTokens(result);
+              return true;
+            }
+            return false;
           } catch (error) {
             errorHandler.error('MFA verification failed', error instanceof Error ? error : new Error(String(error)));
             return false;
@@ -351,21 +272,17 @@ export const useAuthStore = create<AuthState>()(
         
         // Utility methods
         isTokenExpired: () => {
-          const { tokenExpiry } = get();
-          if (!tokenExpiry) return true;
-          return Date.now() > tokenExpiry;
+          return tokenManager.isTokenExpired();
         },
         
         getUserAttribute: (attribute) => {
-          const { user } = get();
-          if (!user) return undefined;
-          return (user as any)[attribute];
+          const userInfo = tokenManager.getUserInfo();
+          if (!userInfo) return undefined;
+          return userInfo[attribute];
         },
         
         hasRole: (role) => {
-          const { user } = get();
-          if (!user) return false;
-          return user.groups?.includes(role) || user.tier === role;
+          return tokenManager.hasRole(role);
         },
       }),
       {
@@ -393,13 +310,13 @@ if (typeof window !== 'undefined') {
     clearInterval(tokenRefreshInterval);
   }
   
-  // Set up new interval with longer, more reasonable frequency
+  // Set up new interval to check for token refresh needs
   tokenRefreshInterval = setInterval(() => {
     const store = useAuthStore.getState();
-    if (store.isAuthenticated && store.isTokenExpired()) {
+    if (store.isAuthenticated && tokenManager.needsRefresh()) {
       store.refreshSession();
     }
-  }, 300000); // Check every 5 minutes instead of 1 minute
+  }, 60000); // Check every minute
   
   // Cleanup on page unload
   window.addEventListener('beforeunload', () => {

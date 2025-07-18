@@ -51,13 +51,21 @@ describe('LoginForm', () => {
     render(<LoginForm />);
     
     const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
     
-    // Invalid email
-    await user.type(emailInput, 'invalid-email');
+    // Invalid email - use a format that passes HTML5 validation but fails our custom validation
+    await user.type(emailInput, 'invalid@email'); // Missing .com makes it invalid for our regex
+    await user.type(passwordInput, 'password123'); // Valid password to isolate email validation
+    
+    // Submit the form
     await user.click(submitButton);
     
-    expect(await screen.findByText(/invalid email format/i)).toBeInTheDocument();
+    // Wait for validation to run and check for error display
+    await waitFor(() => {
+      expect(screen.getByText('Invalid email format')).toBeInTheDocument();
+    });
+    
     expect(mockAuthStore.signIn).not.toHaveBeenCalled();
   });
 

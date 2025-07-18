@@ -51,13 +51,25 @@ describe('RegisterForm', () => {
     const user = userEvent.setup();
     render(<RegisterForm />);
     
+    const fullNameInput = screen.getByLabelText(/full name/i);
+    const vjHandleInput = screen.getByLabelText(/vj handle/i);
     const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/^password$/i);
+    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const termsCheckbox = screen.getByLabelText(/i agree to the/i);
     const submitButton = screen.getByRole('button', { name: /create account/i });
     
-    await user.type(emailInput, 'invalid-email');
+    // Fill valid values for all fields except email
+    await user.type(fullNameInput, 'Test User');
+    await user.type(vjHandleInput, 'test_vj');
+    await user.type(emailInput, 'invalid@email'); // Invalid email format
+    await user.type(passwordInput, 'Test123!@#ABC');
+    await user.type(confirmPasswordInput, 'Test123!@#ABC');
+    await user.click(termsCheckbox);
+    
     await user.click(submitButton);
     
-    expect(await screen.findByText(/please enter a valid email/i)).toBeInTheDocument();
+    expect(await screen.findByText('Invalid email format')).toBeInTheDocument();
     expect(mockAuthStore.signUp).not.toHaveBeenCalled();
   });
 
@@ -90,12 +102,21 @@ describe('RegisterForm', () => {
     const user = userEvent.setup();
     render(<RegisterForm />);
     
+    // Fill required fields
+    const emailInput = screen.getByLabelText(/email/i);
+    const fullNameInput = screen.getByLabelText(/full name/i);
+    const vjHandleInput = screen.getByLabelText(/vj handle/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
+    const termsCheckbox = screen.getByRole('checkbox');
     const submitButton = screen.getByRole('button', { name: /create account/i });
     
+    await user.type(emailInput, 'test@example.com');
+    await user.type(fullNameInput, 'Test User');
+    await user.type(vjHandleInput, 'test_vj');
     await user.type(passwordInput, 'StrongPass123!@#');
     await user.type(confirmInput, 'DifferentPass123!@#');
+    await user.click(termsCheckbox);
     await user.click(submitButton);
     
     expect(await screen.findByText(/passwords do not match/i)).toBeInTheDocument();
@@ -106,8 +127,20 @@ describe('RegisterForm', () => {
     const user = userEvent.setup();
     render(<RegisterForm />);
     
+    // Fill required fields except VJ handle
+    const emailInput = screen.getByLabelText(/email/i);
+    const fullNameInput = screen.getByLabelText(/full name/i);
+    const passwordInput = screen.getByLabelText(/^password$/i);
+    const confirmInput = screen.getByLabelText(/confirm password/i);
     const vjHandleInput = screen.getByLabelText(/vj handle/i);
+    const termsCheckbox = screen.getByRole('checkbox');
     const submitButton = screen.getByRole('button', { name: /create account/i });
+    
+    await user.type(emailInput, 'test@example.com');
+    await user.type(fullNameInput, 'Test User');
+    await user.type(passwordInput, 'StrongPass123!@#');
+    await user.type(confirmInput, 'StrongPass123!@#');
+    await user.click(termsCheckbox);
     
     // Invalid characters
     await user.type(vjHandleInput, 'invalid handle!');
@@ -134,6 +167,7 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/confirm password/i), 'StrongPass123!@#');
     await user.type(screen.getByLabelText(/full name/i), 'Test User');
     await user.type(screen.getByLabelText(/vj handle/i), 'test_vj');
+    await user.click(screen.getByRole('checkbox'));
     
     const submitButton = screen.getByRole('button', { name: /create account/i });
     await user.click(submitButton);
@@ -158,7 +192,7 @@ describe('RegisterForm', () => {
   it('handles email verification', async () => {
     const user = userEvent.setup();
     mockAuthStore.signUp.mockResolvedValueOnce({ success: true, userSub: 'user-123' });
-    mockAuthStore.verifyEmail.mockResolvedValueOnce(true);
+    mockAuthStore.verifyEmail.mockResolvedValueOnce({ success: true });
     
     render(<RegisterForm />);
     
@@ -168,6 +202,7 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/confirm password/i), 'StrongPass123!@#');
     await user.type(screen.getByLabelText(/full name/i), 'Test User');
     await user.type(screen.getByLabelText(/vj handle/i), 'test_vj');
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
     
     // Wait for verification form
@@ -199,6 +234,7 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/confirm password/i), 'StrongPass123!@#');
     await user.type(screen.getByLabelText(/full name/i), 'Test User');
     await user.type(screen.getByLabelText(/vj handle/i), 'test_vj');
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
     
     // Wait for verification form
@@ -224,6 +260,7 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/confirm password/i), 'StrongPass123!@#');
     await user.type(screen.getByLabelText(/full name/i), 'Test User');
     await user.type(screen.getByLabelText(/vj handle/i), 'test_vj');
+    await user.click(screen.getByRole('checkbox'));
     
     const submitButton = screen.getByRole('button', { name: /create account/i });
     await user.click(submitButton);
@@ -278,6 +315,7 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/confirm password/i), 'StrongPass123!@#');
     await user.type(screen.getByLabelText(/full name/i), 'Test User');
     await user.type(screen.getByLabelText(/vj handle/i), 'test_vj');
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
     
     // Wait for verification form
