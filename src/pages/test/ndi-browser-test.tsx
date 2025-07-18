@@ -14,8 +14,15 @@ const NdiBrowserTest: React.FC = () => {
   const [isWebRTCSupported, setIsWebRTCSupported] = useState<boolean | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [streamConfig, setStreamConfig] = useState<StreamConfig>(ndiStreamingService.getConfig());
-  const [metrics, setMetrics] = useState<StreamMetrics>(ndiStreamingService.getMetrics());
+  const [streamConfig, setStreamConfig] = useState<StreamConfig>(() => ndiStreamingService.getConfig());
+  const [metrics, setMetrics] = useState<StreamMetrics>(() => ({
+    ...ndiStreamingService.getMetrics(),
+    fps: 0,
+    bitrate: 0,
+    packetsSent: 0,
+    packetsLost: 0,
+    activeStreams: 0,
+  }));
   const [error, setError] = useState<string | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [testResults, setTestResults] = useState<{
@@ -40,7 +47,15 @@ const NdiBrowserTest: React.FC = () => {
     
     const metricsInterval = setInterval(() => {
       if (isStreaming) {
-        setMetrics(ndiStreamingService.getMetrics());
+        const ndiMetrics = ndiStreamingService.getMetrics();
+        setMetrics(prev => ({
+          ...ndiMetrics,
+          fps: prev.fps || 30,
+          bitrate: ndiMetrics.bandwidth * 1000000,
+          packetsSent: ndiMetrics.framesSent,
+          packetsLost: ndiMetrics.droppedFrames,
+          activeStreams: ndiMetrics.connectedClients,
+        }));
       }
     }, 1000);
     
@@ -55,7 +70,7 @@ const NdiBrowserTest: React.FC = () => {
   const checkWebRTCSupport = () => {
     const supported = !!(
       navigator.mediaDevices &&
-      navigator.mediaDevices.getUserMedia &&
+      typeof navigator.mediaDevices.getUserMedia === 'function' &&
       window.RTCPeerConnection
     );
     setIsWebRTCSupported(supported);
@@ -191,6 +206,15 @@ const NdiBrowserTest: React.FC = () => {
   };
 
   const updateConfig = (updates: Partial<StreamConfig>) => {
+    // Map StreamConfig to NDIConfig format
+    if (updates.frameRate) {
+      const validFrameRates = [30, 60, 120];
+      const closest = validFrameRates.reduce((prev, curr) =>
+        Math.abs(curr - updates.frameRate!) < Math.abs(prev - updates.frameRate!) ? curr : prev
+      ) as 30 | 60 | 120;
+      updates.frameRate = closest;
+    }
+    
     ndiStreamingService.setConfig(updates);
     setStreamConfig(ndiStreamingService.getConfig());
   };
@@ -390,7 +414,7 @@ const NdiBrowserTest: React.FC = () => {
                   </label>
                   <select
                     value={streamConfig.frameRate}
-                    onChange={(e) => updateConfig({ frameRate: Number(e.target.value) })}
+                    onChange={(e) => updateConfig({ frameRate: Number(e.target.value) as 30 | 60 | 120 })}
                     className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white"
                   >
                     <option value={60}>60 fps</option>

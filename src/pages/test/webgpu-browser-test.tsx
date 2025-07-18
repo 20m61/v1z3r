@@ -96,10 +96,11 @@ const WebGPUBrowserTest: React.FC = () => {
       });
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
       setTestResults(prev => ({ 
         ...prev, 
-        adapterRequest: !err.message.includes('adapter'),
+        adapterRequest: !errorMessage.includes('adapter'),
         deviceCreation: false 
       }));
     }
