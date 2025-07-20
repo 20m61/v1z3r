@@ -161,7 +161,7 @@ function sanitizeError(error: Error): any {
   };
 
   // Only include stack trace in development
-  if (process.env.NODE_ENV === 'development') {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
     sanitized.stack = error.stack;
   }
 
@@ -183,10 +183,10 @@ class ErrorHandler {
 
   constructor(config?: Partial<LogConfig>) {
     this.config = {
-      level: process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG,
-      enableConsole: process.env.NODE_ENV !== 'production',
-      enableRemote: process.env.NODE_ENV === 'production',
-      remoteEndpoint: process.env.NEXT_PUBLIC_ERROR_ENDPOINT,
+      level: (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') ? LogLevel.WARN : LogLevel.DEBUG,
+      enableConsole: !(typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'),
+      enableRemote: typeof process !== 'undefined' && process.env?.NODE_ENV === 'production',
+      remoteEndpoint: typeof process !== 'undefined' ? process.env?.NEXT_PUBLIC_ERROR_ENDPOINT : undefined,
       enablePerformanceMetrics: true,
       enableUserTracking: false,
       sanitizeData: true, // Always sanitize data by default

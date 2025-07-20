@@ -1,12 +1,7 @@
 // Simple Lambda function for testing
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, ScanCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
-const { S3Client } = require('@aws-sdk/client-s3');
-
-// Create clients
-const dynamoClient = new DynamoDBClient({});
-const dynamodb = DynamoDBDocumentClient.from(dynamoClient);
-const s3 = new S3Client({});
+const AWS = require('aws-sdk');
+const dynamodb = new AWS.DynamoDB.DocumentClient();
+const s3 = new AWS.S3();
 
 const PRESET_TABLE = process.env.PRESET_TABLE;
 const PRESET_BUCKET = process.env.PRESET_BUCKET;
@@ -51,8 +46,7 @@ exports.handler = async (event) => {
           Limit: 10
         };
         
-        const command = new ScanCommand(params);
-        const result = await dynamodb.send(command);
+        const result = await dynamodb.scan(params).promise();
         return response(200, { 
           presets: result.Items || [],
           count: result.Items ? result.Items.length : 0,
@@ -83,8 +77,7 @@ exports.handler = async (event) => {
           Item: item
         };
         
-        const command = new PutCommand(params);
-        await dynamodb.send(command);
+        await dynamodb.put(params).promise();
         
         return response(201, {
           message: 'Preset created successfully',

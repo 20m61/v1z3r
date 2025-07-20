@@ -8,8 +8,14 @@
 
 import Head from 'next/head'
 import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import VJApplication from '../VJApplication'
+import { motion } from 'framer-motion'
+import dynamic from 'next/dynamic'
+
+// 動的インポートでVJApplicationWrapperを読み込み
+const VJApplicationWrapper = dynamic(() => import('../VJApplicationWrapper'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full text-white">Loading VJ Application...</div>
+})
 
 export default function Home() {
   const [isStarted, setIsStarted] = useState(false)
@@ -41,15 +47,13 @@ export default function Home() {
       </Head>
 
       <main className="w-full h-screen bg-black text-white overflow-hidden">
-        <AnimatePresence mode="wait">
-          {!isStarted ? (
-            <motion.div
-              key="welcome"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center justify-center h-full bg-gradient-to-br from-gray-900 to-black"
-            >
+        {!isStarted ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center justify-center h-full bg-gradient-to-br from-gray-900 to-black"
+          >
               <div className="text-center max-w-2xl px-8">
                 <motion.h1
                   initial={{ y: -50, opacity: 0 }}
@@ -168,18 +172,16 @@ export default function Home() {
                 </motion.div>
               </div>
             </motion.div>
-          ) : (
-            <motion.div
-              key="vj-app"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="w-full h-full"
-            >
-              <VJApplication config={vjConfig} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="w-full h-full"
+          >
+            <VJApplicationWrapper config={vjConfig} />
+          </motion.div>
+        )}
       </main>
     </>
   )

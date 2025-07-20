@@ -4,12 +4,33 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import * as THREE from 'three';
 import { useVisualizerStore } from '@/store/visualizerStore';
-import { WebGPURenderer } from '@/services/webgpu/webgpuRenderer';
-import { MusicToVisualEngine } from '@/services/ai/musicToVisualEngine';
-import { WebGPUCompatibilityChecker } from '@/components/webgpu/WebGPUCompatibilityChecker';
 import { errorHandler } from '@/utils/errorHandler';
+
+// WebGPU and AI components (will be loaded dynamically at runtime)
+let WebGPURenderer: any = null;
+let MusicToVisualEngine: any = null;
+
+// Dynamically import components when needed
+const loadWebGPUComponents = async () => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const webgpuModule = await import('@/services/webgpu/webgpuRenderer');
+    WebGPURenderer = webgpuModule.WebGPURenderer;
+  } catch (error) {
+    errorHandler.warn('Failed to load WebGPU renderer:', error as Error);
+  }
+  
+  try {
+    const musicModule = await import('@/services/ai/musicToVisualEngine');
+    MusicToVisualEngine = musicModule.MusicToVisualEngine;
+  } catch (error) {
+    errorHandler.warn('Failed to load music engine:', error as Error);
+  }
+};
 
 interface WebGPUVisualizerProps {
   className?: string;
@@ -22,8 +43,8 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const webgpuRendererRef = useRef<WebGPURenderer | null>(null);
-  const musicEngineRef = useRef<MusicToVisualEngine | null>(null);
+  const webgpuRendererRef = useRef<any>(null);
+  const musicEngineRef = useRef<any>(null);
   const threeSceneRef = useRef<THREE.Scene | null>(null);
   const threeCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -52,9 +73,43 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
     currentEffectType,
   }), [sensitivity, colorTheme, currentEffectType]);
   
+  // Check WebGPU support
+  const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null);
+  const [fallbackToWebGL, setFallbackToWebGL] = useState(false);
+
+  useEffect(() => {
+    const checkWebGPUSupport = async () => {
+      if (typeof window === 'undefined') {
+        return false;
+      }
+
+      // Load WebGPU components first
+      await loadWebGPUComponents();
+
+      try {
+        if (!navigator.gpu) {
+          return false;
+        }
+
+        const adapter = await navigator.gpu.requestAdapter();
+        return !!adapter;
+      } catch (error) {
+        errorHandler.warn('WebGPU not supported, will fallback to WebGL:', error as Error);
+        return false;
+      }
+    };
+
+    checkWebGPUSupport().then((supported) => {
+      setWebgpuSupported(supported);
+      if (!supported) {
+        setFallbackToWebGL(true);
+      }
+    });
+  }, []);
+
   // Initialize WebGPU and Three.js
   const initialize = useCallback(async () => {
-    if (!canvasRef.current || !containerRef.current) return;
+    if (!canvasRef.current || !containerRef.current || webgpuSupported === null) return;
     
     try {
       // Create Three.js scene and camera
@@ -70,40 +125,70 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
       threeSceneRef.current = scene;
       threeCameraRef.current = camera;
       
-      // Initialize WebGPU renderer
-      const webgpuRenderer = new WebGPURenderer({
-        canvas: canvasRef.current,
-        antialias: true,
-        powerPreference: 'high-performance',
-        maxParticles: 1000000,
-        enablePostProcessing: true,
-      });
+      // Initialize renderer (WebGPU or fallback)
+      if (webgpuSupported && !fallbackToWebGL && WebGPURenderer) {
+        try {
+          const webgpuRenderer = new WebGPURenderer({
+            canvas: canvasRef.current,
+            antialias: true,
+            powerPreference: 'high-performance',
+            maxParticles: 1000000,
+            enablePostProcessing: true,
+          });
+          
+          await webgpuRenderer.initialize();
+          webgpuRenderer.setCamera(camera);
+          webgpuRendererRef.current = webgpuRenderer;
+          
+          errorHandler.info('WebGPU renderer initialized successfully');
+        } catch (webgpuError) {
+          errorHandler.warn('WebGPU initialization failed, falling back to WebGL:', webgpuError as Error);
+          setFallbackToWebGL(true);
+          
+          // Create basic WebGL renderer as fallback
+          const fallbackRenderer = new THREE.WebGLRenderer({
+            canvas: canvasRef.current,
+            antialias: true,
+          });
+          fallbackRenderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+          webgpuRendererRef.current = fallbackRenderer as any;
+        }
+      } else {
+        // Use WebGL fallback
+        const fallbackRenderer = new THREE.WebGLRenderer({
+          canvas: canvasRef.current,
+          antialias: true,
+        });
+        fallbackRenderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        webgpuRendererRef.current = fallbackRenderer as any;
+        errorHandler.info('Using WebGL renderer as fallback');
+      }
       
-      await webgpuRenderer.initialize();
-      webgpuRenderer.setCamera(camera);
-      webgpuRendererRef.current = webgpuRenderer;
-      
-      // Initialize music analysis engine
-      if (audioContext) {
-        const musicEngine = new MusicToVisualEngine(audioContext);
-        await musicEngine.initialize();
-        musicEngineRef.current = musicEngine;
-        
-        // Connect audio source if available
-        if (audioSource) {
-          musicEngine.connectSource(audioSource);
+      // Initialize music analysis engine if available
+      if (audioContext && MusicToVisualEngine) {
+        try {
+          const musicEngine = new MusicToVisualEngine(audioContext);
+          await musicEngine.initialize();
+          musicEngineRef.current = musicEngine;
+          
+          // Connect audio source if available
+          if (audioSource) {
+            musicEngine.connectSource(audioSource);
+          }
+        } catch (audioError) {
+          errorHandler.warn('Music engine initialization failed:', audioError as Error);
         }
       }
       
       setIsInitialized(true);
-      errorHandler.info('WebGPU visualizer initialized successfully');
+      errorHandler.info('Visualizer initialized successfully');
     } catch (error) {
-      errorHandler.error('Failed to initialize WebGPU visualizer', error as Error);
+      errorHandler.error('Failed to initialize visualizer', error as Error);
       if (onError) {
         onError(error as Error);
       }
     }
-  }, [audioContext, audioSource, onError]);
+  }, [audioContext, audioSource, onError, webgpuSupported, fallbackToWebGL]);
   
   // Handle resize
   const handleResize = useCallback(() => {
@@ -217,33 +302,53 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
     }
   }, [audioSource]);
   
-  return (
-    <WebGPUCompatibilityChecker>
-      <div ref={containerRef} className={`relative w-full h-full ${className}`}>
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full"
-          style={{ display: 'block' }}
-        />
-        
-        {/* Performance stats overlay */}
-        <div className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded text-xs font-mono">
-          <div>FPS: {renderStats.fps}</div>
-          <div>Frame: {renderStats.frameTime.toFixed(2)}ms</div>
-          <div>Particles: {renderStats.particles.toLocaleString()}</div>
+  // Show loading state while checking WebGPU support
+  if (webgpuSupported === null) {
+    return (
+      <div className={`relative w-full h-full ${className} flex items-center justify-center bg-black`}>
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-lg">Checking graphics support...</p>
         </div>
-        
-        {/* Loading indicator */}
-        {!isInitialized && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-white">Initializing WebGPU...</p>
-            </div>
-          </div>
-        )}
       </div>
-    </WebGPUCompatibilityChecker>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className={`relative w-full h-full ${className}`}>
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full"
+        style={{ display: 'block' }}
+      />
+      
+      {/* Renderer type indicator */}
+      {fallbackToWebGL && (
+        <div className="absolute top-4 left-4 bg-yellow-900/80 border border-yellow-500/50 rounded-lg p-2 text-yellow-200 text-xs">
+          Using WebGL fallback
+        </div>
+      )}
+      
+      {/* Performance stats overlay */}
+      <div className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded text-xs font-mono">
+        <div>Renderer: {fallbackToWebGL ? 'WebGL' : 'WebGPU'}</div>
+        <div>FPS: {renderStats.fps}</div>
+        <div>Frame: {renderStats.frameTime.toFixed(2)}ms</div>
+        <div>Particles: {renderStats.particles.toLocaleString()}</div>
+      </div>
+      
+      {/* Loading indicator */}
+      {!isInitialized && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-white">
+              Initializing {fallbackToWebGL ? 'WebGL' : 'WebGPU'} renderer...
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
