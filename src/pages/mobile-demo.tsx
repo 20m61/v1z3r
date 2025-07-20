@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useVisualizerStore } from '@/store/visualizerStore';
@@ -268,14 +268,11 @@ const MobileDemoPage: React.FC<MobileDemoProps> = ({ userAgent, isIOS }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const userAgent = context.req.headers['user-agent'] || '';
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-  
+export const getStaticProps: GetStaticProps = async () => {
   return {
     props: {
-      userAgent,
-      isIOS,
+      userAgent: '',
+      isIOS: false,
     },
   };
 };

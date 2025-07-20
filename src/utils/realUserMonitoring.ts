@@ -662,10 +662,10 @@ export class RealUserMonitoring {
 
 // Export singleton instance (disabled by default)
 export const rum = new RealUserMonitoring({
-  endpoint: process.env.NEXT_PUBLIC_RUM_ENDPOINT || '/api/rum',
+  endpoint: (typeof process !== 'undefined' ? process.env?.NEXT_PUBLIC_RUM_ENDPOINT : undefined) || '/api/rum',
   batchSize: 10,
   interval: 30000,
-  enableTracking: process.env.NEXT_PUBLIC_RUM_ENABLED === 'true',
+  enableTracking: typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_RUM_ENABLED === 'true',
   privacyMode: true,
   sanitizePII: true
 });

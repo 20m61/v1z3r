@@ -342,7 +342,7 @@ export class VjUnifiedStack extends cdk.Stack {
     this.presetFunction = new lambda.Function(this, 'PresetFunction', {
       functionName: `vj-preset-${stage}`,
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'preset.handler',
+      handler: 'index.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/preset')),
       layers: [lambdaLayer],
       role: lambdaRole,

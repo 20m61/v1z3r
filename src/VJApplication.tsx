@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+// import { motion, AnimatePresence } from 'framer-motion' // Removed for static export compatibility
 import VisualEffects from './components/VisualEffects'
 import AudioAnalyzer from './components/AudioAnalyzer'
 import MIDIAnalyzer from './components/MIDIAnalyzer'
@@ -58,7 +58,7 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
     fps: 0,
     frameTime: 0,
     memoryUsage: 0,
-    lastUpdated: Date.now()
+    lastUpdated: 0 // Initialize with 0 instead of Date.now() to avoid hydration mismatch
   })
 
   // Initialize application
@@ -258,30 +258,26 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
             backgroundColor: '#000'
           }}
         >
-          <AnimatePresence>
-            {activeLayersForRender.map((layer) => (
-              <motion.div
-                key={layer.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: layer.opacity }}
-                exit={{ opacity: 0 }}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  zIndex: layer.zIndex
-                }}
-              >
-                <VisualEffects
-                  audioData={audioData}
-                  effectType={layer.type}
-                  colorTheme={layer.colorTheme}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          {activeLayersForRender.map((layer) => (
+            <div
+              key={layer.id}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: layer.zIndex,
+                opacity: layer.opacity
+              }}
+            >
+              <VisualEffects
+                audioData={audioData}
+                effectType={layer.type}
+                colorTheme={layer.colorTheme}
+              />
+            </div>
+          ))}
 
           {/* Default visual effect if no layers */}
           {activeLayersForRender.length === 0 && (

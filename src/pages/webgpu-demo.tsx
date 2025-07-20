@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import dynamic from 'next/dynamic';
 import { useVisualizerStore } from '@/store/visualizerStore';
 // Remove SSR-incompatible import
@@ -289,14 +289,10 @@ const WebGPUDemoPage: React.FC<WebGPUDemoProps> = ({ isWebGPUSupported }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  // Check if WebGPU is potentially supported (server-side approximation)
-  const userAgent = context.req.headers['user-agent'] || '';
-  const isWebGPUSupported = /Chrome\/11[3-9]|Chrome\/1[2-9]\d|Edge\/11[3-9]|Edge\/1[2-9]\d/.test(userAgent);
-
+export const getStaticProps: GetStaticProps = async () => {
   return {
     props: {
-      isWebGPUSupported,
+      isWebGPUSupported: false,
     },
   };
 };

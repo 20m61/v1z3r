@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -80,12 +80,10 @@ export default function LoginPage({ redirect }: LoginPageProps) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<LoginPageProps> = async (context) => {
-  const redirect = context.query.redirect as string | undefined;
-
+export const getStaticProps: GetStaticProps<LoginPageProps> = async () => {
   return {
     props: {
-      redirect,
+      redirect: null,
     },
   };
 };

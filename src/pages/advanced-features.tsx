@@ -64,8 +64,8 @@ const NDIStreamingPanel = dynamic(
   }
 );
 
-const WebGPUVisualizer = dynamic(
-  () => import('@/components/visualizer/WebGPUVisualizer'),
+const SafeWebGPUVisualizer = dynamic(
+  () => import('@/components/visualizer/SafeWebGPUVisualizer'),
   { 
     ssr: false,
     loading: () => (
@@ -257,7 +257,7 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
               </div>
             </div>
           }>
-            <WebGPUVisualizer
+            <SafeWebGPUVisualizer
               className="w-full h-full"
             />
           </Suspense>
