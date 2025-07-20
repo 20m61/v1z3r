@@ -9,9 +9,40 @@ import * as THREE from 'three';
 import { useVisualizerStore } from '@/store/visualizerStore';
 import { errorHandler } from '@/utils/errorHandler';
 
+// WebGPU and AI component types
+interface WebGPURendererInstance {
+  initialize(): Promise<void>;
+  setCamera(camera: THREE.Camera): void;
+  render(scene: THREE.Scene, camera?: THREE.Camera): void;
+  updateSettings(settings: any): void;
+  destroy(): void;
+  resize?(width: number, height: number): void;
+  updateParticleConfig?(config: any): void;
+  updateParticles?(audioData: Float32Array, time: number): void;
+  getStats?(): any;
+}
+
+interface MusicToVisualEngineInstance {
+  analyzeAudio(data: Float32Array): any;
+  generateVisualizationParams(analysis: any): any;
+  initialize?(audioContext: AudioContext): Promise<void>;
+  connectSource?(source: AudioNode): void;
+  extractAudioFeatures?(audioData: Float32Array): any;
+  generateVisualParameters?(features: any): any;
+  destroy?(): void;
+}
+
+interface WebGPURendererClass {
+  new (config: any): WebGPURendererInstance;
+}
+
+interface MusicToVisualEngineClass {
+  new (options?: any): MusicToVisualEngineInstance;
+}
+
 // WebGPU and AI components (will be loaded dynamically at runtime)
-let WebGPURenderer: any = null;
-let MusicToVisualEngine: any = null;
+let WebGPURenderer: WebGPURendererClass | null = null;
+let MusicToVisualEngine: MusicToVisualEngineClass | null = null;
 
 // Dynamically import components when needed
 const loadWebGPUComponents = async () => {
@@ -19,14 +50,14 @@ const loadWebGPUComponents = async () => {
   
   try {
     const webgpuModule = await import('@/services/webgpu/webgpuRenderer');
-    WebGPURenderer = webgpuModule.WebGPURenderer;
+    WebGPURenderer = webgpuModule.WebGPURenderer as unknown as WebGPURendererClass;
   } catch (error) {
     errorHandler.warn('Failed to load WebGPU renderer:', error as Error);
   }
   
   try {
     const musicModule = await import('@/services/ai/musicToVisualEngine');
-    MusicToVisualEngine = musicModule.MusicToVisualEngine;
+    MusicToVisualEngine = musicModule.MusicToVisualEngine as unknown as MusicToVisualEngineClass;
   } catch (error) {
     errorHandler.warn('Failed to load music engine:', error as Error);
   }
@@ -35,16 +66,18 @@ const loadWebGPUComponents = async () => {
 interface WebGPUVisualizerProps {
   className?: string;
   onError?: (error: Error) => void;
+  audioData?: Float32Array;
 }
 
 export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
   className = '',
   onError,
+  audioData,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const webgpuRendererRef = useRef<any>(null);
-  const musicEngineRef = useRef<any>(null);
+  const webgpuRendererRef = useRef<WebGPURendererInstance | THREE.WebGLRenderer | null>(null);
+  const musicEngineRef = useRef<MusicToVisualEngineInstance | null>(null);
   const threeSceneRef = useRef<THREE.Scene | null>(null);
   const threeCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -151,7 +184,7 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
             antialias: true,
           });
           fallbackRenderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-          webgpuRendererRef.current = fallbackRenderer as any;
+          webgpuRendererRef.current = fallbackRenderer;
         }
       } else {
         // Use WebGL fallback
@@ -167,12 +200,16 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
       // Initialize music analysis engine if available
       if (audioContext && MusicToVisualEngine) {
         try {
-          const musicEngine = new MusicToVisualEngine(audioContext);
-          await musicEngine.initialize();
+          const musicEngine = new MusicToVisualEngine({
+            audioContext: audioContext
+          });
+          if (musicEngine.initialize) {
+            await musicEngine.initialize(audioContext);
+          }
           musicEngineRef.current = musicEngine;
           
           // Connect audio source if available
-          if (audioSource) {
+          if (audioSource && musicEngine.connectSource) {
             musicEngine.connectSource(audioSource);
           }
         } catch (audioError) {
@@ -200,7 +237,11 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
     threeCameraRef.current.aspect = width / height;
     threeCameraRef.current.updateProjectionMatrix();
     
-    webgpuRendererRef.current.resize(width, height);
+    if ('resize' in webgpuRendererRef.current && webgpuRendererRef.current.resize) {
+      webgpuRendererRef.current.resize(width, height);
+    } else if ('setSize' in webgpuRendererRef.current) {
+      (webgpuRendererRef.current as THREE.WebGLRenderer).setSize(width, height);
+    }
   }, []);
   
   // Animation loop
@@ -210,18 +251,24 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
     const startTime = performance.now();
     
     // Extract audio features and generate visual parameters
-    if (isAudioAnalyzing && musicEngineRef.current) {
-      const audioFeatures = musicEngineRef.current.extractAudioFeatures();
-      const visualParams = musicEngineRef.current.generateVisualParameters(audioFeatures);
+    if (isAudioAnalyzing && musicEngineRef.current && audioData) {
+      const audioFeatures = musicEngineRef.current.extractAudioFeatures ? 
+        musicEngineRef.current.extractAudioFeatures(audioData) : 
+        musicEngineRef.current.analyzeAudio(audioData);
+      const visualParams = musicEngineRef.current.generateVisualParameters ? 
+        musicEngineRef.current.generateVisualParameters(audioFeatures) :
+        musicEngineRef.current.generateVisualizationParams(audioFeatures);
       
       // Update particle system based on visual parameters
-      webgpuRendererRef.current.updateParticleConfig({
-        gravity: visualParams.gravity,
-        audioReactivity: settings.sensitivity,
-        spread: visualParams.particleSpread,
-        speed: visualParams.particleSpeed,
-        lifespan: visualParams.particleLifespan,
-      });
+      if ('updateParticleConfig' in webgpuRendererRef.current && webgpuRendererRef.current.updateParticleConfig) {
+        webgpuRendererRef.current.updateParticleConfig({
+          gravity: visualParams.gravity,
+          audioReactivity: settings.sensitivity,
+          spread: visualParams.particleSpread,
+          speed: visualParams.particleSpeed,
+          lifespan: visualParams.particleLifespan,
+        });
+      }
       
       // Update camera based on audio
       if (threeCameraRef.current && visualParams.cameraMovement) {
@@ -237,13 +284,18 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
     
     // Update particles
     const deltaTime = Math.min((performance.now() - startTime) / 1000, 0.1); // Cap at 100ms
-    webgpuRendererRef.current.updateParticles(deltaTime);
+    if ('updateParticles' in webgpuRendererRef.current && webgpuRendererRef.current.updateParticles) {
+      webgpuRendererRef.current.updateParticles(audioData || new Float32Array(1024), deltaTime);
+    }
     
     // Render frame
-    webgpuRendererRef.current.render();
+    if (threeSceneRef.current && threeCameraRef.current) {
+      webgpuRendererRef.current.render(threeSceneRef.current, threeCameraRef.current);
+    }
     
     // Update stats
-    const stats = webgpuRendererRef.current.getStats();
+    const stats = ('getStats' in webgpuRendererRef.current && webgpuRendererRef.current.getStats) ?
+      webgpuRendererRef.current.getStats() : { frameTime: 16.67, particles: 0 };
     setRenderStats({
       fps: Math.round(1000 / Math.max(stats.frameTime, 1)),
       frameTime: stats.frameTime,
@@ -251,7 +303,7 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
     });
     
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [isInitialized, isAudioAnalyzing, settings]);
+  }, [isInitialized, isAudioAnalyzing, settings, audioData]);
   
   // Initialize on mount
   useEffect(() => {
@@ -263,10 +315,14 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
       }
       
       if (webgpuRendererRef.current) {
-        webgpuRendererRef.current.destroy();
+        if ('destroy' in webgpuRendererRef.current && webgpuRendererRef.current.destroy) {
+          webgpuRendererRef.current.destroy();
+        } else if ('dispose' in webgpuRendererRef.current) {
+          (webgpuRendererRef.current as THREE.WebGLRenderer).dispose();
+        }
       }
       
-      if (musicEngineRef.current) {
+      if (musicEngineRef.current && musicEngineRef.current.destroy) {
         musicEngineRef.current.destroy();
       }
     };
@@ -283,7 +339,7 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isInitialized, animate]);
+  }, [isInitialized, animate, audioData]);
   
   // Handle resize
   useEffect(() => {
@@ -298,7 +354,9 @@ export const WebGPUVisualizer: React.FC<WebGPUVisualizerProps> = ({
   // Update audio connection
   useEffect(() => {
     if (musicEngineRef.current && audioSource) {
-      musicEngineRef.current.connectSource(audioSource);
+      if (musicEngineRef.current.connectSource) {
+        musicEngineRef.current.connectSource(audioSource);
+      }
     }
   }, [audioSource]);
   

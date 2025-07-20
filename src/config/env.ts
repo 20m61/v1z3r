@@ -4,9 +4,8 @@
 
 // Helper function to safely get environment variables
 function getEnvVar(key: string, defaultValue: string = ''): string {
-  if (typeof window !== 'undefined' && window.process?.env?.[key]) {
-    return window.process.env[key];
-  }
+  // In Next.js, process.env values are replaced at build time
+  // Only NEXT_PUBLIC_ prefixed variables are available on the client
   if (typeof process !== 'undefined' && process.env?.[key]) {
     return process.env[key];
   }

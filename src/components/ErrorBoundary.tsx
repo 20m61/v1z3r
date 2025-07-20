@@ -128,7 +128,7 @@ export const DefaultErrorFallback: React.FC<{ error: Error; resetError: () => vo
 }) => (
   <div className="flex items-center justify-center w-full h-full bg-red-900/20 border border-red-500/30 rounded-lg">
     <div className="text-center p-6">
-      <div className="text-red-400 mb-2">⚠️ Component Error</div>
+      <div className="text-red-400 mb-2">Component Error</div>
       <p className="text-sm text-gray-300 mb-4">{error.message}</p>
       <button
         onClick={resetError}
