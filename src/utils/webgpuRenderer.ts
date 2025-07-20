@@ -5,19 +5,23 @@
 
 import * as THREE from 'three';
 
-// Conditional WebGPU import based on environment
-let WebGPURenderer: any;
-if (process.env.NEXT_PUBLIC_ENABLE_WEBGPU === 'true') {
+// Dynamic WebGPU import to avoid build issues
+let WebGPURenderer: any = null;
+
+// Only load WebGPU in browser environment
+const loadWebGPURenderer = async () => {
+  if (typeof window === 'undefined' || process.env.NEXT_PUBLIC_ENABLE_WEBGPU !== 'true') {
+    return null;
+  }
+  
   try {
-    // Dynamic import to avoid build errors when WebGPU is disabled
-    WebGPURenderer = require('three/examples/jsm/renderers/webgpu/WebGPURenderer.js').WebGPURenderer;
+    const webgpuModule = await import('three/examples/jsm/renderers/webgpu/WebGPURenderer.js');
+    return (webgpuModule as any).default || (webgpuModule as any).WebGPURenderer;
   } catch (error) {
     console.warn('WebGPU renderer not available:', error);
-    WebGPURenderer = null;
+    return null;
   }
-} else {
-  WebGPURenderer = null;
-}
+};
 
 import { WebGPUDetector, WebGPUCapabilities } from './webgpuDetection';
 
@@ -146,7 +150,13 @@ export class V1z3rRenderer {
       throw new Error('WebGPU capabilities not detected');
     }
 
-    const renderer = new WebGPURenderer({
+    // Load WebGPU renderer dynamically
+    const WebGPURendererClass = await loadWebGPURenderer();
+    if (!WebGPURendererClass) {
+      throw new Error('WebGPU renderer could not be loaded');
+    }
+
+    const renderer = new WebGPURendererClass({
       canvas: this.config.canvas,
       powerPreference: this.config.powerPreference,
       antialias: this.config.antialias,

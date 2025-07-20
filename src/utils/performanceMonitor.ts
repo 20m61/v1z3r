@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { errorHandler } from './errorHandler';
 
 export interface CoreWebVitals {
   LCP: number;  // Largest Contentful Paint
@@ -22,6 +23,14 @@ export interface CustomMetrics {
   bundleLoadTime: number;
   stateUpdateTime: number;
   websocketLatency: number;
+  // WebGPU/WebGL specific metrics
+  webgpuSupported?: boolean;
+  webgpuInitTime?: number;
+  renderMode?: 'webgpu' | 'webgl' | 'fallback';
+  renderModeStats?: { webgpu: number; webgl: number; fallback: number };
+  textureUploadTime?: number;
+  particleCount?: number;
+  shaderCompilationTimes?: Record<string, number>;
 }
 
 export interface PerformanceMetrics extends CoreWebVitals, CustomMetrics {
@@ -285,6 +294,94 @@ export class PerformanceMonitor {
   public measureWebSocketLatency(startTime: number): void {
     this.metrics.websocketLatency = performance.now() - startTime;
     this.debugLog('WebSocket Latency:', this.metrics.websocketLatency);
+  }
+
+  // WebGPU/WebGL specific monitoring
+  public measureWebGPUSupport(): void {
+    const startTime = performance.now();
+    
+    // Check WebGPU support
+    if (navigator.gpu) {
+      navigator.gpu.requestAdapter().then(adapter => {
+        if (adapter) {
+          this.metrics.webgpuSupported = true;
+          this.metrics.webgpuInitTime = performance.now() - startTime;
+          this.debugLog('WebGPU Supported - Init Time:', this.metrics.webgpuInitTime);
+        } else {
+          this.metrics.webgpuSupported = false;
+          this.debugLog('WebGPU Not Supported');
+        }
+      }).catch(() => {
+        this.metrics.webgpuSupported = false;
+        this.debugLog('WebGPU Check Failed');
+      });
+    } else {
+      this.metrics.webgpuSupported = false;
+      this.debugLog('WebGPU Not Available');
+    }
+  }
+
+  public recordRenderMode(mode: 'webgpu' | 'webgl' | 'fallback'): void {
+    this.metrics.renderMode = mode;
+    this.debugLog('Render Mode:', mode);
+    
+    // Track render mode usage
+    if (!this.metrics.renderModeStats) {
+      this.metrics.renderModeStats = { webgpu: 0, webgl: 0, fallback: 0 };
+    }
+    this.metrics.renderModeStats[mode]++;
+    
+    // Log performance warning if using fallback
+    if (mode === 'fallback' || mode === 'webgl') {
+      errorHandler.info('Using fallback rendering mode', { mode });
+    }
+  }
+
+  public measureTextureUploadTime(textureSize: number): () => void {
+    const startTime = performance.now();
+    return () => {
+      const uploadTime = performance.now() - startTime;
+      this.metrics.textureUploadTime = uploadTime;
+      this.debugLog(`Texture Upload (${textureSize}px):`, uploadTime);
+      
+      // Warn if texture upload is slow
+      if (uploadTime > 50) {
+        errorHandler.warn('Slow texture upload detected', new Error('Texture upload performance issue'), {
+          uploadTime,
+          textureSize
+        });
+      }
+    };
+  }
+
+  public recordParticleCount(count: number): void {
+    this.metrics.particleCount = count;
+    this.debugLog('Particle Count:', count);
+    
+    // Warn if particle count is very high
+    if (count > 100000) {
+      errorHandler.warn('High particle count detected', new Error('Particle count performance issue'), { count });
+    }
+  }
+
+  public measureShaderCompilationTime(shaderName: string): () => void {
+    const startTime = performance.now();
+    return () => {
+      const compilationTime = performance.now() - startTime;
+      if (!this.metrics.shaderCompilationTimes) {
+        this.metrics.shaderCompilationTimes = {};
+      }
+      this.metrics.shaderCompilationTimes[shaderName] = compilationTime;
+      this.debugLog(`Shader Compilation (${shaderName}):`, compilationTime);
+      
+      // Warn if shader compilation is slow
+      if (compilationTime > 100) {
+        errorHandler.warn('Slow shader compilation detected', new Error('Shader compilation performance issue'), {
+          shaderName,
+          compilationTime
+        });
+      }
+    };
   }
 
   // Reporting and callbacks

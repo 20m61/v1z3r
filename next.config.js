@@ -47,13 +47,12 @@ const nextConfig = {
       ]
     })
     
-    // Conditionally exclude WebGPU files if WebGPU is disabled
-    if (process.env.NEXT_PUBLIC_ENABLE_WEBGPU === 'false') {
+    // Exclude WebGPU files in static export mode to avoid build issues
+    if (process.env.EXPORT_MODE === 'true' || process.env.NEXT_PUBLIC_ENABLE_WEBGPU === 'false') {
       config.resolve.alias = {
         ...config.resolve.alias,
-        './webgpuRenderer': false,
-        './webgpuDetection': false,
-        'three/addons/renderers/webgpu/WebGPURenderer.js': false,
+        'three/examples/jsm/renderers/webgpu/WebGPURenderer.js': false,
+        'three/examples/jsm/capabilities/WebGPU.js': false,
       }
     }
     

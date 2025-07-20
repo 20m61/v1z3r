@@ -31,11 +31,99 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       errorInfo,
     });
 
-    // Log the error
+    // Enhanced error logging with performance context
+    const performanceData = this.getPerformanceContext();
+    
     errorHandler.error('React Error Boundary caught an error:', error, {
       componentStack: errorInfo.componentStack,
       errorBoundary: true,
+      performance: performanceData,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
     });
+
+    // Track error in performance monitor if available
+    if (typeof window !== 'undefined' && window.performance) {
+      this.recordErrorMetrics(error, errorInfo);
+    }
+  }
+
+  private getPerformanceContext() {
+    if (typeof window === 'undefined' || !window.performance) {
+      return null;
+    }
+
+    const memory = (performance as any).memory;
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+
+    return {
+      memory: memory ? {
+        usedJSHeapSize: memory.usedJSHeapSize,
+        totalJSHeapSize: memory.totalJSHeapSize,
+        jsHeapSizeLimit: memory.jsHeapSizeLimit,
+      } : null,
+      timing: navigation ? {
+        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+        loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
+        firstPaint: navigation.responseEnd - navigation.requestStart,
+      } : null,
+      timeOrigin: performance.timeOrigin,
+      now: performance.now(),
+    };
+  }
+
+  private recordErrorMetrics(error: Error, errorInfo: React.ErrorInfo) {
+    // Custom error tracking for performance monitoring
+    const errorMetrics = {
+      errorType: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: Date.now(),
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+    };
+
+    // Store in sessionStorage for debugging
+    try {
+      const existingErrors = JSON.parse(sessionStorage.getItem('vj-app-errors') || '[]');
+      existingErrors.push(errorMetrics);
+      
+      // Keep only last 10 errors
+      if (existingErrors.length > 10) {
+        existingErrors.shift();
+      }
+      
+      sessionStorage.setItem('vj-app-errors', JSON.stringify(existingErrors));
+    } catch (storageError) {
+      console.warn('Failed to store error metrics:', storageError);
+    }
+
+    // Send to performance monitoring endpoint if configured
+    this.sendErrorToMonitoring(errorMetrics);
+  }
+
+  private async sendErrorToMonitoring(errorMetrics: any) {
+    try {
+      // Check if RUM endpoint is configured
+      const rumEndpoint = process.env.NEXT_PUBLIC_RUM_ENDPOINT;
+      if (!rumEndpoint) return;
+
+      await fetch(rumEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'error',
+          data: errorMetrics,
+        }),
+      });
+    } catch (networkError) {
+      // Don't throw errors in error boundary
+      console.warn('Failed to send error metrics:', networkError);
+    }
   }
 
   resetError = () => {
