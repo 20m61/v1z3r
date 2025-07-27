@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   # VJ Application Main Service
   v1z3r-app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: tools/docker/Dockerfile
       args:
         - NODE_ENV=production
         - DOCKER_BUILD=true
@@ -31,13 +29,13 @@ services:
   # Development hot-reload service
   v1z3r-dev:
     build:
-      context: .
-      dockerfile: Dockerfile.dev
+      context: ../..
+      dockerfile: tools/docker/Dockerfile.dev
     container_name: v1z3r-dev
     ports:
       - "3001:3000"
     volumes:
-      - .:/app
+      - ../..:/app
       - /app/node_modules
       - /app/.next
     environment:

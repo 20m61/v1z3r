@@ -83,8 +83,8 @@ Phase 6（WebGPU + AI Visual Intelligence）とiPhone最適化機能の開発環
 - `src/hooks/useDeviceOrientation.ts`
 
 #### Documentation
-- `docs/WEBGPU_FEATURES.md` - WebGPU機能の詳細ドキュメント
-- `docs/IPHONE_OPTIMIZATION.md` - iPhone最適化の詳細ドキュメント
+- `docs/architecture/WEBGPU_FEATURES.md` - WebGPU機能の詳細ドキュメント
+- `docs/development/IPHONE_OPTIMIZATION.md` - iPhone最適化の詳細ドキュメント
 
 ## 🚀 推奨対応方針
 
