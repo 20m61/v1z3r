@@ -1,4 +1,5 @@
 import React, { ButtonHTMLAttributes } from 'react';
+import { clsx } from 'clsx';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
@@ -33,13 +34,17 @@ const Button: React.FC<ButtonProps> = ({
     lg: 'px-6 py-3 text-lg'
   };
   
-  const activeClasses = isActive
-    ? 'ring-2 ring-v1z3r-primary ring-opacity-50'
-    : '';
   
-  const widthClass = fullWidth ? 'w-full' : '';
-  
-  const buttonClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${activeClasses} ${widthClass} ${className || ''}`.trim();
+  const buttonClasses = clsx(
+    baseClasses,
+    variantClasses[variant],
+    sizeClasses[size],
+    {
+      'ring-2 ring-v1z3r-primary ring-opacity-50': isActive,
+      'w-full': fullWidth,
+    },
+    className
+  );
   
   return (
     <button

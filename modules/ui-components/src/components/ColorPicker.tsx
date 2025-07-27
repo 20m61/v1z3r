@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { clsx } from 'clsx';
 
 export interface ColorPickerProps {
   color?: string;
@@ -7,7 +8,13 @@ export interface ColorPickerProps {
   label?: string;
   presetColors?: string[];
   className?: string;
-  simple?: boolean; // Use simple HTML color input instead of advanced picker
+  /**
+   * Use simple HTML color input instead of advanced picker
+   * 
+   * When true, renders a native HTML color input for simple color selection.
+   * When false (default), renders an advanced color picker with preset colors and custom input.
+   */
+  simple?: boolean;
 }
 
 const defaultPresetColors = [
@@ -48,7 +55,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
   // Simple version - just HTML color input
   if (simple) {
     return (
-      <div className={`relative ${className}`.trim()}>
+      <div className={clsx('relative', className)}>
         {label && <span className="text-sm text-gray-300 mb-1 block">{label}</span>}
         <div className="flex items-center space-x-2">
           <input
@@ -70,7 +77,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
 
   // Advanced version with preset colors
   return (
-    <div className={`relative ${className}`.trim()}>
+    <div className={clsx('relative', className)}>
       {label && <span className="text-sm text-gray-300 mb-1 block">{label}</span>}
       
       <div className="flex items-center space-x-2">

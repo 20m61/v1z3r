@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { clsx } from 'clsx';
 
 export interface SliderProps {
   min?: number;
@@ -44,7 +45,7 @@ const Slider: React.FC<SliderProps> = ({
   };
 
   return (
-    <div className={`w-full ${className}`.trim()}>
+    <div className={clsx('w-full', className)}>
       {(label || showValue) && (
         <div className="flex justify-between items-center mb-1">
           {label && <span className="text-sm text-gray-300">{label}</span>}
