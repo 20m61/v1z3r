@@ -1,75 +1,26 @@
 /**
  * Enhanced test setup for comprehensive testing
- * Includes mocks for auth, WebGL, and other dependencies
+ * Uses shared test utilities for consistency
  */
 
 import '@testing-library/jest-dom';
 import { TextDecoder, TextEncoder } from 'util';
+import { 
+  setupConsoleMocks, 
+  restoreConsoleMocks, 
+  setupBrowserMocks, 
+  setupCanvasMocks, 
+  setupAudioMocks 
+} from '@vj-app/test-utils';
 
 // Polyfills for Node.js environment
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
-
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
-global.localStorage = localStorageMock;
-
-// Mock sessionStorage
-global.sessionStorage = localStorageMock;
-
-// Mock fetch for tests
-global.fetch = jest.fn();
-
-// Mock IntersectionObserver
-global.IntersectionObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
-
-// Mock ResizeObserver
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
-
-// Mock crypto API for auth tests
-Object.defineProperty(window, 'crypto', {
-  value: {
-    getRandomValues: (arr: any) => {
-      for (let i = 0; i < arr.length; i++) {
-        arr[i] = Math.floor(Math.random() * 256);
-      }
-      return arr;
-    },
-    subtle: {
-      digest: jest.fn().mockResolvedValue(new ArrayBuffer(32)),
-    },
-  },
-});
+// Setup browser mocks using shared utilities
+const localStorageMock = setupBrowserMocks();
+setupCanvasMocks();
+setupAudioMocks();
 
 // Mock Zustand store for auth
 jest.mock('@/store/authStore', () => ({
@@ -102,61 +53,13 @@ jest.mock('@/store/authStore', () => ({
   cleanupAuthStore: jest.fn(),
 }));
 
-// Store original console methods
-const originalConsole = {
-  error: console.error,
-  warn: console.warn,
-  log: console.log,
-};
-
-// Suppress specific console errors during tests
+// Setup console mocks using shared utilities
 beforeAll(() => {
-  // Create a more robust console.error mock
-  console.error = jest.fn((...args: any[]) => {
-    const message = args[0]?.toString() || '';
-    
-    // List of errors to suppress
-    const suppressedErrors = [
-      'Warning: ReactDOM.render',
-      'Not implemented: HTMLCanvasElement',
-      'Error: Could not parse CSS stylesheet',
-      'WebGPU is not supported',
-      'WebGPU not available',
-      'Failed to create WebGL context',
-    ];
-    
-    // Check if this error should be suppressed
-    const shouldSuppress = suppressedErrors.some(error => message.includes(error));
-    
-    if (!shouldSuppress) {
-      // Call original error for non-suppressed errors
-      originalConsole.error.apply(console, args);
-    }
-  });
-  
-  // Also mock warn to reduce noise
-  console.warn = jest.fn((...args: any[]) => {
-    const message = args[0]?.toString() || '';
-    
-    const suppressedWarnings = [
-      'THREE.',
-      'WebGL',
-      'GPU',
-    ];
-    
-    const shouldSuppress = suppressedWarnings.some(warning => message.includes(warning));
-    
-    if (!shouldSuppress) {
-      originalConsole.warn.apply(console, args);
-    }
-  });
+  setupConsoleMocks();
 });
 
 afterAll(() => {
-  // Restore original console methods
-  console.error = originalConsole.error;
-  console.warn = originalConsole.warn;
-  console.log = originalConsole.log;
+  restoreConsoleMocks();
 });
 
 // Reset mocks between tests
