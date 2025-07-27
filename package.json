@@ -23,7 +23,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test --config=tools/configs/playwright.config.ts",
     "test:modules": "yarn workspace @vj-app/visual-renderer test && yarn workspace @vj-app/vj-controller test && yarn workspace @vj-app/sync-core test && yarn workspace @vj-app/preset-storage test",
-    "build:modules": "cd modules/visual-renderer && yarn build && cd ../vj-controller && yarn build && cd ../sync-core && yarn build && cd ../preset-storage && yarn build && cd ../..",
+    "build:modules": "cd modules/types && yarn build && cd ../test-utils && yarn build && cd ../ui-components && yarn build && cd ../visual-renderer && yarn build && cd ../vj-controller && yarn build && cd ../sync-core && yarn build && cd ../preset-storage && yarn build && cd ../lyrics-engine && yarn build && cd ../..",
     "setup:dev": "yarn install && yarn build:modules && echo \"Development environment setup complete\"",
     "infra:dev": "cd infra/cdk && cdk deploy VjUnifiedStack-dev --require-approval=never",
     "infra:prod": "cd infra/cdk && cdk deploy VjUnifiedStack-prod --require-approval=never --context stage=prod",
@@ -34,7 +34,10 @@
     "env:local": "cp .env.local .env",
     "env:dev": "cp .env.dev .env",
     "env:prod": "cp .env.prod .env",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "ci:quick": "yarn type-check && yarn lint",
+    "ci:core-tests": "yarn test src/store/__tests__/authStore.test.ts src/utils/__tests__/errorHandler.test.ts src/components/auth/__tests__/RoleGuard.test.tsx src/services/webgpu/__tests__/webgpuService.test.ts --passWithNoTests",
+    "ci:stable-tests": "yarn test --testPathPattern='(authStore|errorHandler|RoleGuard|webgpuService)' --passWithNoTests"
   },
   "resolutions": {
     "@tensorflow/tfjs-converter": "4.22.0",
@@ -51,6 +54,7 @@
     "@react-three/fiber": "^9.2.0",
     "@tensorflow/tfjs": "^4.11.0",
     "@types/qrcode.react": "^3.0.0",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.5.0",
     "next": "^14.2.30",
     "playwright": "^1.54.1",

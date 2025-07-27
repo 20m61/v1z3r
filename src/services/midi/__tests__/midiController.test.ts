@@ -32,21 +32,40 @@ const mockMidiAccess = {
   onstatechange: null
 };
 
-const mockRequestMIDIAccess = jest.fn().mockResolvedValue(mockMidiAccess);
+const mockRequestMIDIAccess = jest.fn();
 
-Object.defineProperty(navigator, 'requestMIDIAccess', {
-  value: mockRequestMIDIAccess,
-  writable: true
-});
+// Ensure global navigator exists
+if (typeof global.navigator === 'undefined') {
+  (global as any).navigator = {};
+}
 
 describe('MidiController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Reset mock implementation
+    mockRequestMIDIAccess.mockResolvedValue(mockMidiAccess);
+    
+    // Ensure navigator.requestMIDIAccess is available
+    Object.defineProperty(global.navigator, 'requestMIDIAccess', {
+      value: mockRequestMIDIAccess,
+      writable: true,
+      configurable: true
+    });
+    
     // Reset singleton
     (midiController as any).isInitialized = false;
     (midiController as any).midiAccess = null;
     (midiController as any).devices.clear();
     (midiController as any).mappings.clear();
+    (midiController as any).learningMapping = null;
+  });
+
+  afterEach(() => {
+    // Clean up navigator mock
+    if (global.navigator && global.navigator.requestMIDIAccess) {
+      delete (global.navigator as any).requestMIDIAccess;
+    }
   });
 
   describe('initialization', () => {
@@ -59,9 +78,10 @@ describe('MidiController', () => {
     });
 
     it('should handle missing Web MIDI API', async () => {
-      Object.defineProperty(navigator, 'requestMIDIAccess', {
+      Object.defineProperty(global.navigator, 'requestMIDIAccess', {
         value: undefined,
-        writable: true
+        writable: true,
+        configurable: true
       });
 
       await expect(midiController.initialize()).rejects.toThrow('Web MIDI API not supported');

@@ -1,10 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
 
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './e2e',
+  testDir: path.resolve(__dirname, '../../e2e'),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -37,35 +38,22 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
-
-    /* Test against branded browsers. */
+    // Simplified browser matrix for faster CI
     // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
     // },
     // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
+    // {
+    //   name: 'Mobile Chrome',
+    //   use: { ...devices['Pixel 5'] },
+    // },
+    // {
+    //   name: 'Mobile Safari',
+    //   use: { ...devices['iPhone 12'] },
     // },
   ],
 

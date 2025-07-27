@@ -1,6 +1,8 @@
+// Re-export from shared ui-components module with enhanced features fallback
 import React, { useState } from 'react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ColorPicker as BaseColorPicker, type ColorPickerProps as BaseColorPickerProps } from '@vj-app/ui-components';
 
 interface ColorPickerProps {
   color: string;
@@ -98,3 +100,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
 };
 
 export default ColorPicker;
+export type { ColorPickerProps };
+
+// Also export the simple version for compatibility
+export { BaseColorPicker as SimpleColorPicker };
