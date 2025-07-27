@@ -88,7 +88,7 @@ yarn test
 - Maintain 70% code coverage minimum
 - Write tests for all new features
 - Use React Testing Library for component tests
-- Follow TDD principles (see docs/TDD_GUIDELINES.md)
+- Follow TDD principles (see docs/development/TDD_GUIDELINES.md)
 - Mock external dependencies (AudioContext, WebGL, etc.)
 
 ### AWS Development
@@ -100,9 +100,9 @@ yarn test
 ### Docker Development
 For Docker-based development:
 ```bash
-docker compose up dev      # Development environment
-docker compose up prod     # Production-like environment
-docker compose up test     # Run tests in Docker
+docker compose -f tools/docker/docker-compose.yml up dev      # Development environment
+docker compose -f tools/docker/docker-compose.yml up prod     # Production-like environment
+docker compose -f tools/docker/docker-compose.yml up test     # Run tests in Docker
 ```
 
 ## Important Files
@@ -110,7 +110,7 @@ docker compose up test     # Run tests in Docker
 - `tsconfig.json`: TypeScript config with path aliases
 - `jest.config.js`: Jest setup with module aliases and WebGL/canvas mocks
 - `jest.setup.js`: Jest configuration with react-icons mocking for test stability
-- `playwright.config.ts`: E2E test configuration
+- `tools/configs/playwright.config.ts`: E2E test configuration
 - `src/store/visualizerStore.ts`: Central Zustand state management (EffectType, PresetType, LayerType)
 - `src/utils/errorHandler.ts`: Production-ready error logging and monitoring
 - `src/utils/performanceOptimizations.ts`: Memory management, debouncing, throttling utilities
