@@ -7,6 +7,3 @@ export * from './types';
 
 // Export hooks
 export { setLyricsStoreProvider } from './hooks/useLyricsStore';
-
-// Export UI registration
-export { registerUIComponents } from './components/ui';

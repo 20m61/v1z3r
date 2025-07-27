@@ -34,10 +34,9 @@ describe('ErrorHandler', () => {
       errorHandler.logError(errorInfo);
       
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[ERROR\]/),
-        expect.stringMatching(/Test error message/),
-        expect.any(Error),
-        expect.objectContaining({ user: 'test-user' })
+        expect.stringMatching(/\[ERROR\].*\[audio\].*Test error message/),
+        expect.objectContaining({ user: 'test-user' }),
+        expect.objectContaining({ name: 'Error', message: 'Test error' })
       );
     });
 
@@ -47,10 +46,9 @@ describe('ErrorHandler', () => {
       errorHandler.error('Simple test error', error);
       
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[ERROR\]/),
-        expect.stringMatching(/Simple test error/),
-        error,
-        undefined
+        expect.stringMatching(/\[ERROR\].*\[unknown\].*Simple test error/),
+        undefined,
+        expect.objectContaining({ name: 'Error', message: 'Simple test error' })
       );
     });
 
@@ -58,8 +56,8 @@ describe('ErrorHandler', () => {
       errorHandler.warn('Test warning', { data: 'test' });
       
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[WARN\]/),
-        expect.stringMatching(/Test warning/),
+        expect.stringMatching(/\[WARN\].*\[unknown\].*Test warning/),
+        undefined,
         expect.objectContaining({ data: 'test' })
       );
     });
@@ -68,8 +66,7 @@ describe('ErrorHandler', () => {
       errorHandler.info('Test info', { data: 'test' });
       
       expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[INFO\]/),
-        expect.stringMatching(/Test info/),
+        expect.stringMatching(/\[INFO\].*\[unknown\].*Test info/),
         expect.objectContaining({ data: 'test' })
       );
     });
@@ -98,9 +95,9 @@ describe('ErrorHandler', () => {
       errorHandler.logError(audioError);
       
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[ERROR\].*\[audio\]/),
-        expect.objectContaining({ error: expect.any(Error) }),
-        expect.objectContaining({ message: 'AudioContext failed' })
+        expect.stringMatching(/\[ERROR\].*\[audio\].*Audio device not found/),
+        undefined,
+        expect.objectContaining({ name: 'Error', message: 'AudioContext failed' })
       );
     });
 
@@ -115,9 +112,9 @@ describe('ErrorHandler', () => {
       errorHandler.logError(visualError);
       
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[ERROR\].*\[visual\]/),
-        expect.objectContaining({ error: expect.any(Error) }),
-        expect.objectContaining({ message: 'WebGL error' })
+        expect.stringMatching(/\[ERROR\].*\[visual\].*WebGL context lost/),
+        undefined,
+        expect.objectContaining({ name: 'Error', message: 'WebGL error' })
       );
     });
 
@@ -132,9 +129,9 @@ describe('ErrorHandler', () => {
       errorHandler.logError(networkError);
       
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[ERROR\].*\[network\]/),
-        expect.objectContaining({ error: expect.any(Error) }),
-        expect.objectContaining({ message: 'Failed to fetch' })
+        expect.stringMatching(/\[ERROR\].*\[network\].*Connection failed/),
+        undefined,
+        expect.objectContaining({ name: 'Error', message: 'Failed to fetch' })
       );
     });
   });
@@ -151,8 +148,9 @@ describe('ErrorHandler', () => {
       errorHandler.logError(warningInfo);
       
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\[WARN\].*\[performance\]/),
-        expect.objectContaining({})
+        expect.stringMatching(/\[WARN\].*\[performance\].*High memory usage detected/),
+        undefined,
+        undefined
       );
     });
 

@@ -1,49 +1,24 @@
 import { create } from 'zustand';
+import { 
+  EffectType, 
+  FontType, 
+  AnimationType, 
+  MIDIControllerMapping, 
+  PresetType, 
+  LayerType, 
+  LyricsLineType,
+  MIDIMessage
+} from '@vj-app/types';
 
-export type EffectType = 'waveform' | 'particles' | 'spectrum' | 'lyrics' | 'camera';
-export type FontType = 'teko' | 'prompt' | 'audiowide' | 'russo' | 'orbitron';
-export type AnimationType = 'glow' | 'pulse' | 'bounce' | 'fade' | 'none';
-
-export type MIDIControllerMapping = {
-  id: string;
-  name: string;
-  type: 'note' | 'cc' | 'pitch_bend';
-  midiChannel: number;
-  midiNumber: number;
-  targetParameter: string;
-  minValue: number;
-  maxValue: number;
-  curve: 'linear' | 'exponential' | 'logarithmic';
-  enabled: boolean;
-};
-
-export type PresetType = {
-  id: string;
-  name: string;
-  effectType: EffectType;
-  colorTheme: string;
-  sensitivity: number;
-  layers: LayerType[];
-  midiChannel?: number;
-  midiMappings?: MIDIControllerMapping[];
-};
-
-export type LayerType = {
-  id: string;
-  type: EffectType;
-  active: boolean;
-  opacity: number;
-  colorTheme: string;
-  sensitivity: number;
-  zIndex: number;
-};
-
-export type LyricsLineType = {
-  id: string;
-  text: string;
-  timestamp: number;
-  duration?: number;
-  confidence?: number;
+// Re-export types for backward compatibility
+export type { 
+  EffectType, 
+  FontType, 
+  AnimationType, 
+  MIDIControllerMapping, 
+  PresetType, 
+  LayerType, 
+  LyricsLineType 
 };
 
 interface VisualizerState {
@@ -75,13 +50,7 @@ interface VisualizerState {
   isMIDIEnabled: boolean;
   midiMappings: MIDIControllerMapping[];
   activeMIDIDeviceId: string | null;
-  lastMIDIMessage: {
-    type: number;
-    channel: number;
-    data1: number;
-    data2: number;
-    timestamp: number;
-  } | null;
+  lastMIDIMessage: MIDIMessage | null;
   
   // 歌詞認識関連
   isLyricsEnabled: boolean;

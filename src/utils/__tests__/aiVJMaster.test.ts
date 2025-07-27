@@ -6,12 +6,53 @@ import { AIVJMaster, AIVJConfig } from '../aiVJMaster';
 import { webgpuDetector } from '../webgpuDetection';
 
 // Mock dependencies
-jest.mock('../webgpuRenderer');
-jest.mock('../aiMusicAnalyzer');
+jest.mock('../webgpuRenderer', () => ({
+  V1z3rRenderer: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue({
+      renderer: {},
+      isWebGPU: true
+    }),
+    render: jest.fn(),
+    updateEffects: jest.fn(),
+    setCanvasSize: jest.fn(),
+    dispose: jest.fn()
+  }))
+}));
+jest.mock('../aiMusicAnalyzer', () => ({
+  AIMusicalAnalyzer: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    connect: jest.fn(),
+    analyze: jest.fn().mockReturnValue({
+      energy: 0.5,
+      tempo: 120,
+      harmonicity: 0.7
+    }),
+    getFeatureHistory: jest.fn().mockReturnValue([]),
+    dispose: jest.fn()
+  }))
+}));
 jest.mock('../aiStyleTransfer');
 jest.mock('../webgpuParticles');
-jest.mock('../professionalMIDI');
-jest.mock('../webgpuDetection');
+jest.mock('../professionalMIDI', () => ({
+  ProfessionalMIDI: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    setCallbacks: jest.fn(),
+    dispose: jest.fn()
+  }))
+}));
+jest.mock('../webgpuDetection', () => ({
+  webgpuDetector: {
+    detect: jest.fn().mockResolvedValue({
+      isSupported: true,
+      device: {},
+      capabilities: {
+        maxTextureSize: 8192,
+        maxComputeWorkgroupSize: [256, 256, 64],
+        preferredFormat: 'bgra8unorm',
+      },
+    })
+  }
+}));
 
 describe('AIVJMaster', () => {
   let mockCanvas: HTMLCanvasElement;
@@ -32,17 +73,6 @@ describe('AIVJMaster', () => {
       createAnalyser: jest.fn(),
       resume: jest.fn(),
     } as unknown as AudioContext;
-
-    // Mock WebGPU detector
-    (webgpuDetector.detect as jest.Mock).mockResolvedValue({
-      isSupported: true,
-      device: {},
-      capabilities: {
-        maxTextureSize: 8192,
-        maxComputeWorkgroupSize: [256, 256, 64],
-        preferredFormat: 'bgra8unorm',
-      },
-    });
   });
 
   afterEach(() => {

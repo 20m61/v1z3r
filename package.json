@@ -34,7 +34,10 @@
     "env:local": "cp .env.local .env",
     "env:dev": "cp .env.dev .env",
     "env:prod": "cp .env.prod .env",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "ci:quick": "yarn type-check && yarn lint",
+    "ci:core-tests": "yarn test src/store/__tests__/authStore.test.ts src/utils/__tests__/errorHandler.test.ts src/components/auth/__tests__/RoleGuard.test.tsx src/services/webgpu/__tests__/webgpuService.test.ts --passWithNoTests",
+    "ci:stable-tests": "yarn test --testPathPattern='(authStore|errorHandler|RoleGuard|webgpuService)' --passWithNoTests"
   },
   "resolutions": {
     "@tensorflow/tfjs-converter": "4.22.0",

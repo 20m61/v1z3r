@@ -1,10 +1,12 @@
 /**
  * Type definitions for lyrics-engine module
- * These interfaces allow the module to be independent of the main app
+ * Re-exports from shared types module
  */
 
-export type FontType = 'futuristic' | 'classic' | 'handwritten' | 'bold' | 'elegant' | 'teko' | 'prompt' | 'audiowide' | 'russo' | 'orbitron';
-export type AnimationType = 'fade' | 'slide' | 'scale' | 'rotate' | 'bounce' | 'glow' | 'pulse' | 'none';
+import { FontType, AnimationType } from '@vj-app/types';
+
+// Re-export shared types
+export type { FontType, AnimationType };
 
 export interface LyricsStore {
   isLyricsEnabled: boolean;
@@ -32,31 +34,5 @@ export interface LyricsStore {
   lyricsConfidence?: number;
 }
 
-export interface ButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-  disabled?: boolean;
-  icon?: React.ReactNode;
-}
-
-export interface SliderProps {
-  value: number;
-  onChange: (value: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  label?: string;
-  className?: string;
-}
-
-export interface ColorPickerProps {
-  value?: string;
-  color?: string; // alias for value
-  onChange: (color: string) => void;
-  label?: string;
-  className?: string;
-  presetColors?: string[];
-}
+// Re-export UI component types from shared module
+export type { ButtonProps, SliderProps, ColorPickerProps } from '@vj-app/types';
