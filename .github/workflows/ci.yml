@@ -35,7 +35,7 @@ jobs:
       
     - name: Run type checking
       run: yarn type-check
-      continue-on-error: true  # Allow to continue for now due to UI component type issues
+      continue-on-error: true  # Allow to continue due to known UI component type issues (Phase 8 priority)
       
     - name: Run stable tests
       run: yarn ci:stable-tests
