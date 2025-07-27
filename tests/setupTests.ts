@@ -102,24 +102,61 @@ jest.mock('@/store/authStore', () => ({
   cleanupAuthStore: jest.fn(),
 }));
 
-// Suppress console errors during tests
-const originalError = console.error;
+// Store original console methods
+const originalConsole = {
+  error: console.error,
+  warn: console.warn,
+  log: console.log,
+};
+
+// Suppress specific console errors during tests
 beforeAll(() => {
-  console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Warning: ReactDOM.render') ||
-        args[0].includes('Not implemented: HTMLCanvasElement') ||
-        args[0].includes('Error: Could not parse CSS stylesheet'))
-    ) {
-      return;
+  // Create a more robust console.error mock
+  console.error = jest.fn((...args: any[]) => {
+    const message = args[0]?.toString() || '';
+    
+    // List of errors to suppress
+    const suppressedErrors = [
+      'Warning: ReactDOM.render',
+      'Not implemented: HTMLCanvasElement',
+      'Error: Could not parse CSS stylesheet',
+      'WebGPU is not supported',
+      'WebGPU not available',
+      'Failed to create WebGL context',
+    ];
+    
+    // Check if this error should be suppressed
+    const shouldSuppress = suppressedErrors.some(error => message.includes(error));
+    
+    if (!shouldSuppress) {
+      // Call original error for non-suppressed errors
+      originalConsole.error.apply(console, args);
     }
-    originalError.call(console, ...args);
-  };
+  });
+  
+  // Also mock warn to reduce noise
+  console.warn = jest.fn((...args: any[]) => {
+    const message = args[0]?.toString() || '';
+    
+    const suppressedWarnings = [
+      'THREE.',
+      'WebGL',
+      'GPU',
+    ];
+    
+    const shouldSuppress = suppressedWarnings.some(warning => message.includes(warning));
+    
+    if (!shouldSuppress) {
+      originalConsole.warn.apply(console, args);
+    }
+  });
 });
 
 afterAll(() => {
-  console.error = originalError;
+  // Restore original console methods
+  console.error = originalConsole.error;
+  console.warn = originalConsole.warn;
+  console.log = originalConsole.log;
 });
 
 // Reset mocks between tests

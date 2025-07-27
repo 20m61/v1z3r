@@ -88,7 +88,7 @@ const validateConfig = () => {
 
 // Mock implementations for development
 // These will be replaced with actual AWS SDK calls in production
-class CognitoAuthService {
+export class CognitoAuthService {
   private userPool: CognitoUserPool | null = null;
 
   constructor() {

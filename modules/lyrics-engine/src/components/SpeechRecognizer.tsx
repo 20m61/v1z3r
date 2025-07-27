@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useVisualizerStore } from '@/store/visualizerStore';
+import { useLyricsStore } from '../hooks/useLyricsStore';
 
 // Web Speech API用の型定義
 interface SpeechRecognitionEvent extends Event {
@@ -74,7 +74,7 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
     isLyricsEnabled,
     updateCurrentLyrics,
     updateNextLyrics,
-  } = useVisualizerStore();
+  } = useLyricsStore();
 
   // 音声データのノイズフィルタリング
   const filterNoise = (text: string): string => {
@@ -163,13 +163,13 @@ const SpeechRecognizer: React.FC<SpeechRecognizerProps> = ({
           if (result.isFinal) {
             const { text, confidence } = selectBestResult(event.results, i);
             if (text) {
-              updateCurrentLyrics(text, confidence);
+              updateCurrentLyrics?.(text, confidence);
             }
           } else {
             // 暫定的な結果（まだ確定していない発話）
             const { text } = selectBestResult(event.results, i);
             if (text) {
-              updateNextLyrics(text);
+              updateNextLyrics?.(text);
             }
           }
         }

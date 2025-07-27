@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useVisualizerStore, FontType, AnimationType } from '@/store/visualizerStore';
+import { useLyricsStore } from '../hooks/useLyricsStore';
+import { FontType, AnimationType } from '../types';
 
 interface LyricsVisualizerProps {
   audioData?: Uint8Array;
@@ -21,7 +22,7 @@ const LyricsVisualizer: React.FC<LyricsVisualizerProps> = ({ audioData, classNam
     lyricsAnimation,
     lyricsColor,
     lyricsConfidence,
-  } = useVisualizerStore();
+  } = useLyricsStore();
 
   const [previousLyrics, setPreviousLyrics] = useState<string>('');
   const [fontSize, setFontSize] = useState<number>(6); // rem単位
@@ -107,7 +108,7 @@ const LyricsVisualizer: React.FC<LyricsVisualizerProps> = ({ audioData, classNam
   
   // 歌詞更新時の処理
   useEffect(() => {
-    if (currentLyrics !== previousLyrics && currentLyrics.trim()) {
+    if (currentLyrics && currentLyrics !== previousLyrics && currentLyrics.trim()) {
       setPreviousLyrics(currentLyrics);
       lastLyricsUpdateRef.current = Date.now();
     }
@@ -148,7 +149,7 @@ const LyricsVisualizer: React.FC<LyricsVisualizerProps> = ({ audioData, classNam
     // ベーススタイル
     const baseStyle: CSSPropertiesWithVars = {
       color: lyricsColor,
-      opacity: getOpacityFromConfidence(lyricsConfidence),
+      opacity: getOpacityFromConfidence(lyricsConfidence || 0),
       ['--glow-color']: `${lyricsColor}80`, // 半透明のカラー（グロー効果用）
     };
     

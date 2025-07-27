@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useVisualizerStore, FontType, AnimationType } from '@/store/visualizerStore';
-import Button from '@/components/ui/Button';
-import Slider from '@/components/ui/Slider';
-import ColorPicker from '@/components/ui/ColorPicker';
+import { useLyricsStore } from '../hooks/useLyricsStore';
+import { Button, Slider, ColorPicker } from './ui';
+import { FontType, AnimationType } from '../types';
 import { FiType, FiPlayCircle, FiStopCircle, FiRefreshCw, FiInfo } from 'react-icons/fi';
 
 interface LyricsControlProps {
@@ -26,7 +25,7 @@ const LyricsControl: React.FC<LyricsControlProps> = ({ className = '' }) => {
     currentLyrics,
     nextLyrics,
     lyricsHistory,
-  } = useVisualizerStore();
+  } = useLyricsStore();
 
   // ブラウザの音声認識APIサポートをチェック
   useEffect(() => {
@@ -70,7 +69,7 @@ const LyricsControl: React.FC<LyricsControlProps> = ({ className = '' }) => {
 
   // 歌詞履歴のクリア
   const handleClearHistory = () => {
-    clearLyricsHistory();
+    clearLyricsHistory?.();
   };
 
   // 手動でフォントをプリロード
@@ -215,7 +214,7 @@ const LyricsControl: React.FC<LyricsControlProps> = ({ className = '' }) => {
           </div>
           
           <div className="bg-gray-800 rounded-md p-2 h-32 overflow-y-auto">
-            {lyricsHistory.length > 0 ? (
+            {lyricsHistory && lyricsHistory.length > 0 ? (
               <ul className="space-y-1">
                 {lyricsHistory.slice(0, 10).map((item) => (
                   <li

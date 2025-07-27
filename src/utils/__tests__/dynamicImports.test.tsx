@@ -99,50 +99,38 @@ describe('Dynamic Imports', () => {
     consoleErrorSpy.mockRestore();
     consoleLogSpy.mockRestore();
     
-    Object.defineProperty(global, 'navigator', {
-      value: originalNavigator,
-      writable: true,
-    });
-    
-    Object.defineProperty(global, 'document', {
-      value: originalDocument,
-      writable: true,
-    });
+    // Reset global objects without redefining
+    global.navigator = originalNavigator;
+    global.document = originalDocument;
   });
 
   describe('loadWebGPURenderer', () => {
     it('should throw error if WebGPU is not supported', async () => {
-      Object.defineProperty(global, 'navigator', {
-        value: {},
-        writable: true,
-      });
+      // Mock navigator without defineProperty
+      global.navigator = {} as any;
 
       await expect(loadWebGPURenderer()).rejects.toThrow('WebGPU not supported');
     });
 
     it('should throw error if adapter is not available', async () => {
-      Object.defineProperty(global, 'navigator', {
-        value: {
-          gpu: {
-            requestAdapter: jest.fn().mockResolvedValue(null),
-          },
+      // Mock navigator with gpu without defineProperty
+      global.navigator = {
+        gpu: {
+          requestAdapter: jest.fn().mockResolvedValue(null),
         },
-        writable: true,
-      });
+      } as any;
 
       await expect(loadWebGPURenderer()).rejects.toThrow('WebGPU adapter not available');
     });
 
     it('should load WebGPU modules successfully', async () => {
       const mockAdapter = {};
-      Object.defineProperty(global, 'navigator', {
-        value: {
-          gpu: {
-            requestAdapter: jest.fn().mockResolvedValue(mockAdapter),
-          },
+      // Mock navigator with successful adapter
+      global.navigator = {
+        gpu: {
+          requestAdapter: jest.fn().mockResolvedValue(mockAdapter),
         },
-        writable: true,
-      });
+      } as any;
 
       const result = await loadWebGPURenderer();
 
@@ -153,14 +141,12 @@ describe('Dynamic Imports', () => {
 
     it('should handle import errors gracefully', async () => {
       const mockAdapter = {};
-      Object.defineProperty(global, 'navigator', {
-        value: {
-          gpu: {
-            requestAdapter: jest.fn().mockResolvedValue(mockAdapter),
-          },
+      // Mock navigator with successful adapter
+      global.navigator = {
+        gpu: {
+          requestAdapter: jest.fn().mockResolvedValue(mockAdapter),
         },
-        writable: true,
-      });
+      } as any;
 
       // Mock import failure
       jest.doMock('@/utils/webgpuRenderer', () => {
