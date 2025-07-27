@@ -39,7 +39,6 @@ jobs:
         
     - name: TypeScript check
       run: yarn type-check
-      continue-on-error: true  # Allow UI component type issues (Phase 8 priority)
       
     - name: Linting
       run: yarn lint

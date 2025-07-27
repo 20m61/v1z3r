@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff, FiTrash, FiPlusCircle, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import { useVisualizerStore, LayerType, EffectType } from '@/store/visualizerStore';
 import Button from './ui/Button';
-import Slider from './ui/Slider';
+import { Slider } from '@vj-app/ui-components';
 import ColorPicker from './ui/ColorPicker';
 
 interface LayerManagerProps {
@@ -107,8 +107,8 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
           max={1}
           step={0.01}
           value={layer.opacity}
-          onChange={(value) => updateLayer(layer.id, { opacity: value })}
-          valueFormatter={(val) => `${Math.round(val * 100)}%`}
+          onChange={(value: number) => updateLayer(layer.id, { opacity: value })}
+          valueFormatter={(val: number) => `${Math.round(val * 100)}%`}
         />
 
         <Slider
@@ -117,8 +117,8 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
           max={2}
           step={0.1}
           value={layer.sensitivity}
-          onChange={(value) => updateLayer(layer.id, { sensitivity: value })}
-          valueFormatter={(val) => `${val.toFixed(1)}x`}
+          onChange={(value: number) => updateLayer(layer.id, { sensitivity: value })}
+          valueFormatter={(val: number) => `${val.toFixed(1)}x`}
         />
       </div>
     );

@@ -9,7 +9,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isActive?: boolean;
 }
 
-const Button: React.FC<ButtonProps> = ({
+export const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
   size = 'md',
@@ -57,4 +57,5 @@ const Button: React.FC<ButtonProps> = ({
   );
 };
 
+// Default export for backward compatibility
 export default Button;

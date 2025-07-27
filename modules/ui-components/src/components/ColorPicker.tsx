@@ -28,7 +28,7 @@ const defaultPresetColors = [
   '#00ff99', // teal
 ];
 
-const ColorPicker: React.FC<ColorPickerProps> = ({
+export const ColorPicker: React.FC<ColorPickerProps> = ({
   color,
   value,
   onChange,
@@ -131,4 +131,5 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
   );
 };
 
+// Default export for backward compatibility
 export default ColorPicker;
