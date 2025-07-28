@@ -15,6 +15,7 @@ import MIDIControls from './components/MIDIControls'
 // import { ControlPanel } from '@vj-app/vj-controller' // Temporarily disabled for build
 import { useVisualizerStore } from './store/visualizerStore'
 import { startPerformanceMonitoring, getCurrentFps, getCurrentMemoryUsage } from './utils/performance'
+import { performanceMonitor } from './utils/performanceMonitor'
 
 interface VJApplicationProps {
   config?: {
@@ -88,6 +89,9 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
         
         // Start real performance monitoring
         const stopPerformanceMonitoring = startPerformanceMonitoring()
+        
+        // Initialize mobile-specific performance monitoring
+        performanceMonitor.initializeMobileMetrics()
         
         const interval = setInterval(() => {
           const currentFps = getCurrentFps()

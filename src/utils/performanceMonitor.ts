@@ -31,6 +31,18 @@ export interface CustomMetrics {
   textureUploadTime?: number;
   particleCount?: number;
   shaderCompilationTimes?: Record<string, number>;
+  // Mobile-specific metrics
+  isMobileDevice?: boolean;
+  deviceMemory?: number;
+  hardwareConcurrency?: number;
+  orientationChangeTime?: number;
+  touchResponseTime?: number;
+  batteryLevel?: number;
+  batteryCharging?: boolean;
+  offscreenCanvasFallback?: boolean;
+  mobileOptimizationLevel?: 'low' | 'medium' | 'high';
+  realFrameRate?: number; // Actual measured FPS vs target FPS
+  memoryPressure?: boolean;
 }
 
 export interface PerformanceMetrics extends CoreWebVitals, CustomMetrics {
@@ -425,7 +437,170 @@ export class PerformanceMonitor {
       bundleLoadTime: this.metrics.bundleLoadTime || 0,
       stateUpdateTime: this.metrics.stateUpdateTime || 0,
       websocketLatency: this.metrics.websocketLatency || 0,
+      // Mobile-specific metrics
+      isMobileDevice: this.metrics.isMobileDevice,
+      deviceMemory: this.metrics.deviceMemory,
+      hardwareConcurrency: this.metrics.hardwareConcurrency,
+      orientationChangeTime: this.metrics.orientationChangeTime,
+      touchResponseTime: this.metrics.touchResponseTime,
+      batteryLevel: this.metrics.batteryLevel,
+      batteryCharging: this.metrics.batteryCharging,
+      offscreenCanvasFallback: this.metrics.offscreenCanvasFallback,
+      mobileOptimizationLevel: this.metrics.mobileOptimizationLevel,
+      realFrameRate: this.metrics.realFrameRate,
+      memoryPressure: this.metrics.memoryPressure,
     };
+  }
+
+  // Mobile-specific performance methods
+  public initializeMobileMetrics(): void {
+    this.metrics.isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (!this.metrics.isMobileDevice) return;
+
+    // Device memory (Chrome only)
+    if ('deviceMemory' in navigator) {
+      this.metrics.deviceMemory = (navigator as any).deviceMemory;
+    }
+
+    // Hardware concurrency
+    this.metrics.hardwareConcurrency = navigator.hardwareConcurrency || 1;
+
+    // Battery status (if available)
+    this.initializeBatteryMonitoring();
+
+    // Touch response monitoring
+    this.initializeTouchResponseMonitoring();
+
+    // Orientation change monitoring
+    this.initializeOrientationChangeMonitoring();
+
+    // Memory pressure detection
+    this.initializeMemoryPressureDetection();
+
+    // Determine mobile optimization level
+    this.determineMobileOptimizationLevel();
+  }
+
+  private async initializeBatteryMonitoring(): Promise<void> {
+    try {
+      // @ts-ignore - Battery API is experimental
+      if ('getBattery' in navigator) {
+        // @ts-ignore
+        const battery = await navigator.getBattery();
+        this.metrics.batteryLevel = battery.level;
+        this.metrics.batteryCharging = battery.charging;
+
+        battery.addEventListener('levelchange', () => {
+          this.metrics.batteryLevel = battery.level;
+        });
+
+        battery.addEventListener('chargingchange', () => {
+          this.metrics.batteryCharging = battery.charging;
+        });
+      }
+    } catch (error) {
+      // Battery API not supported, ignore silently
+    }
+  }
+
+  private initializeTouchResponseMonitoring(): void {
+    let touchStartTime = 0;
+
+    document.addEventListener('touchstart', () => {
+      touchStartTime = performance.now();
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      if (touchStartTime > 0) {
+        const responseTime = performance.now() - touchStartTime;
+        this.metrics.touchResponseTime = responseTime;
+        touchStartTime = 0;
+      }
+    }, { passive: true });
+  }
+
+  private initializeOrientationChangeMonitoring(): void {
+    let orientationChangeStart = 0;
+
+    window.addEventListener('orientationchange', () => {
+      orientationChangeStart = performance.now();
+    });
+
+    // Use resize event to detect when orientation change is complete
+    window.addEventListener('resize', () => {
+      if (orientationChangeStart > 0) {
+        const orientationChangeTime = performance.now() - orientationChangeStart;
+        this.metrics.orientationChangeTime = orientationChangeTime;
+        orientationChangeStart = 0;
+      }
+    });
+  }
+
+  private initializeMemoryPressureDetection(): void {
+    // Monitor memory usage trends to detect memory pressure
+    let memoryReadings: number[] = [];
+    
+    setInterval(() => {
+      if ('memory' in performance) {
+        const memory = (performance as any).memory;
+        const currentUsage = memory.usedJSHeapSize;
+        memoryReadings.push(currentUsage);
+
+        // Keep only last 10 readings
+        if (memoryReadings.length > 10) {
+          memoryReadings = memoryReadings.slice(-10);
+        }
+
+        // Detect memory pressure (increasing trend + high usage)
+        if (memoryReadings.length >= 5) {
+          const recent = memoryReadings.slice(-5);
+          const isIncreasing = recent.every((val, i) => i === 0 || val >= recent[i - 1]);
+          const highUsage = currentUsage > memory.totalJSHeapSize * 0.8;
+          
+          this.metrics.memoryPressure = isIncreasing && highUsage;
+        }
+      }
+    }, 2000);
+  }
+
+  private determineMobileOptimizationLevel(): void {
+    const device = this.metrics;
+    let score = 0;
+
+    // Device memory score
+    if (device.deviceMemory && device.deviceMemory >= 4) score += 2;
+    else if (device.deviceMemory && device.deviceMemory >= 2) score += 1;
+
+    // Hardware concurrency score  
+    if (device.hardwareConcurrency && device.hardwareConcurrency >= 8) score += 2;
+    else if (device.hardwareConcurrency && device.hardwareConcurrency >= 4) score += 1;
+
+    // Battery level score (low battery = lower performance)
+    if (device.batteryLevel && device.batteryLevel > 0.5) score += 1;
+
+    // Determine optimization level
+    if (score >= 4) {
+      this.metrics.mobileOptimizationLevel = 'low'; // High-end device, minimal optimization
+    } else if (score >= 2) {
+      this.metrics.mobileOptimizationLevel = 'medium';
+    } else {
+      this.metrics.mobileOptimizationLevel = 'high'; // Low-end device, heavy optimization
+    }
+  }
+
+  public measureOffscreenCanvasFallback(fallbackUsed: boolean): void {
+    this.metrics.offscreenCanvasFallback = fallbackUsed;
+  }
+
+  public updateRealFrameRate(actualFps: number, targetFps: number): void {
+    this.metrics.realFrameRate = actualFps;
+    this.metrics.frameRate = actualFps; // Update the standard frameRate as well
+    
+    // Log performance gap if significant
+    if (Math.abs(actualFps - targetFps) > 5) {
+      this.debugLog(`FPS Gap: Target ${targetFps}, Actual ${actualFps}`);
+    }
   }
 
   // Performance budgets

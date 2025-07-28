@@ -3,6 +3,7 @@ import styles from '@/styles/VisualEffects.module.css';
 import { EffectType } from '@/store/visualizerStore';
 import { startMeasure, endMeasure, throttle } from '@/utils/performance';
 import { validateAudioData, ValidationError } from '@/utils/validation';
+import { performanceMonitor } from '@/utils/performanceMonitor';
 
 interface VisualEffectsProps {
   audioData?: Uint8Array;
@@ -13,16 +14,26 @@ interface VisualEffectsProps {
 
 // オフスクリーンキャンバスの作成（iOS Safari対応）
 const createOffscreenCanvas = (width: number, height: number): HTMLCanvasElement | OffscreenCanvas => {
+  let fallbackUsed = false;
+  
   // iOS Safari及びモバイルブラウザではOffscreenCanvasを使用せず、通常のcanvasを使用
   if (typeof window !== 'undefined' && 'OffscreenCanvas' in window && !navigator.userAgent.includes('Safari')) {
     try {
-      return new OffscreenCanvas(width, height);
+      const offscreenCanvas = new OffscreenCanvas(width, height);
+      performanceMonitor.measureOffscreenCanvasFallback(false);
+      return offscreenCanvas;
     } catch (e) {
+      fallbackUsed = true;
       if (process.env.NODE_ENV === 'development') {
         console.warn('OffscreenCanvas creation failed, falling back to regular canvas:', e);
       }
     }
+  } else {
+    fallbackUsed = true;
   }
+  
+  // Fallback to regular canvas
+  performanceMonitor.measureOffscreenCanvasFallback(fallbackUsed);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -81,11 +92,16 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
     fpsCounterRef.current.frames++;
     
     if (now - fpsCounterRef.current.lastUpdate >= 1000) {
-      setFps(fpsCounterRef.current.frames);
+      const actualFps = fpsCounterRef.current.frames;
+      setFps(actualFps);
+      
+      // Update performance monitor with real vs target FPS
+      performanceMonitor.updateRealFrameRate(actualFps, renderConfig.targetFps);
+      
       fpsCounterRef.current.frames = 0;
       fpsCounterRef.current.lastUpdate = now;
     }
-  }, []);
+  }, [renderConfig.targetFps]);
 
   // キャンバスのリサイズ（スロットリング適用）
   // eslint-disable-next-line react-hooks/exhaustive-deps

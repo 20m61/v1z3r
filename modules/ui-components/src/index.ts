@@ -7,3 +7,6 @@ export { ColorPicker, type ColorPickerProps } from './components/ColorPicker';
 export { default as ButtonDefault } from './components/Button';
 export { default as SliderDefault } from './components/Slider';
 export { default as ColorPickerDefault } from './components/ColorPicker';
+
+// Main default export (Button as primary component)
+export { default } from './components/Button';
