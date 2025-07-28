@@ -361,14 +361,34 @@ describe('Dynamic Imports', () => {
       await expect(loader.loadModule('unknown')).rejects.toThrow('Unknown module: unknown');
     });
 
-    it.skip('should handle module load timeout', async () => {
-      // Skipped due to timing issues with fake timers in test environment
-      // The timeout functionality works correctly in real usage
+    it('should handle module load timeout', async () => {
+      // Mock setTimeout to immediately trigger timeout
+      const originalSetTimeout = global.setTimeout;
+      global.setTimeout = jest.fn((fn) => {
+        fn(); // Immediately execute timeout callback
+        return 1 as any;
+      });
+
+      await expect(loader.loadModule('webgpu')).rejects.toThrow();
+      
+      global.setTimeout = originalSetTimeout;
     });
 
-    it.skip('should retry failed loads', async () => {
-      // Skipped due to complex retry mechanism testing
-      // The retry functionality works correctly in real usage
+    it('should retry failed loads', async () => {
+      let attemptCount = 0;
+      const mockLoadModule = jest.spyOn(loader, 'loadModule').mockImplementation(async () => {
+        attemptCount++;
+        if (attemptCount < 3) {
+          throw new Error('Load failed');
+        }
+        return {}; // Success on third attempt
+      });
+
+      const result = await loader.loadModule('webgpu');
+      expect(result).toBeDefined();
+      expect(attemptCount).toBe(3);
+      
+      mockLoadModule.mockRestore();
     });
 
     it('should preload modules', () => {

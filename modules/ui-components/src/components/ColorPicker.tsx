@@ -131,4 +131,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
   );
 };
 
+// Named export for JSX usage
+export { ColorPicker };
+
 export default ColorPicker;

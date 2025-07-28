@@ -70,4 +70,7 @@ const Slider: React.FC<SliderProps> = ({
   );
 };
 
+// Named export for JSX usage
+export { Slider };
+
 export default Slider;
