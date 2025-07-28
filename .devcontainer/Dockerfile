@@ -40,7 +40,7 @@ RUN npm install -g \
 RUN mkdir -p /workspace
 
 # Copy firewall initialization script
-COPY .devcontainer/init-firewall.sh /usr/local/bin/init-firewall.sh
+COPY init-firewall.sh /usr/local/bin/init-firewall.sh
 RUN chmod +x /usr/local/bin/init-firewall.sh
 
 # Switch to vscode user

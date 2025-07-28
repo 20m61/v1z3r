@@ -1,5 +1,4 @@
 {
-  // Dev Container for v1z3r VJ Application
   "name": "v1z3r Development Container",
   "dockerComposeFile": "docker-compose.yml",
   "service": "devcontainer",

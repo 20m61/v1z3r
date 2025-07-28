@@ -48,10 +48,14 @@ iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
 # Allow HTTP outbound (for some package registries)
 iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
 
-# Allow Git SSH
-iptables -A OUTPUT -p tcp --dport 22 -d github.com -j ACCEPT
-iptables -A OUTPUT -p tcp --dport 22 -d gitlab.com -j ACCEPT
-iptables -A OUTPUT -p tcp --dport 22 -d bitbucket.org -j ACCEPT
+# Allow Git SSH (flexible for common hosting services)
+# Allow SSH to commonly used git hosting IP ranges
+iptables -A OUTPUT -p tcp --dport 22 -d 140.82.112.0/20 -j ACCEPT    # GitHub
+iptables -A OUTPUT -p tcp --dport 22 -d 192.30.252.0/22 -j ACCEPT    # GitHub
+iptables -A OUTPUT -p tcp --dport 22 -d 35.231.145.151/32 -j ACCEPT  # GitLab
+iptables -A OUTPUT -p tcp --dport 22 -d 104.192.143.0/24 -j ACCEPT   # Bitbucket
+# Fallback: Allow SSH outbound for other git services (more permissive)
+iptables -A OUTPUT -p tcp --dport 22 -j ACCEPT
 
 # Allow development server (internal only)
 iptables -A INPUT -p tcp --dport 3000 -s 127.0.0.1 -j ACCEPT
@@ -108,3 +112,7 @@ else
 fi
 
 log "Firewall initialization complete"
+
+# Switch back to vscode user and start development container
+log "Switching to vscode user and starting development environment..."
+exec runuser -l vscode -c 'sleep infinity'

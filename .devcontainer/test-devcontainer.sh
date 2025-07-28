@@ -109,8 +109,20 @@ echo
 # 6. Optional services
 echo "🐳 Optional Services"
 echo "-------------------"
-test_command "Redis connectivity" "redis-cli ping 2>/dev/null || echo 'Redis not running (optional)'"
-test_command "PostgreSQL connectivity" "pg_isready -h localhost 2>/dev/null || echo 'PostgreSQL not running (optional)'"
+echo -n "Testing: Redis connectivity... "
+if redis-cli ping &>/dev/null; then
+    echo -e "${GREEN}✓${NC}"
+    ((TESTS_PASSED++))
+else
+    echo -e "${YELLOW}○ (Redis not running - optional service)${NC}"
+fi
+echo -n "Testing: PostgreSQL connectivity... "
+if pg_isready -h localhost &>/dev/null; then
+    echo -e "${GREEN}✓${NC}"
+    ((TESTS_PASSED++))
+else
+    echo -e "${YELLOW}○ (PostgreSQL not running - optional service)${NC}"
+fi
 
 echo
 
