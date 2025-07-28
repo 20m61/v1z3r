@@ -69,8 +69,10 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
       try {
         setStatus(prev => ({ ...prev, error: undefined }))
         
-        // モバイル環境でのユーザージェスチャー要求チェック
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        // モバイル環境でのユーザージェスチャー要求チェック (SSR安全)
+        const isMobile = typeof window !== 'undefined' && typeof navigator !== 'undefined' 
+          ? /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+          : false
         if (isMobile) {
           setShowMobilePrompt(true)
           return // ユーザーのタップを待つ

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff, FiTrash, FiPlusCircle, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import { useVisualizerStore, LayerType, EffectType } from '@/store/visualizerStore';
 import Button from './ui/Button';
-import Slider from './ui/Slider';
+import { Slider } from '@vj-app/ui-components';
 import ColorPicker from './ui/ColorPicker';
+import { validateOpacity, validateSensitivity, ValidationError } from '@/utils/validation';
 
 interface LayerManagerProps {
   className?: string;
@@ -78,6 +79,34 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
   const LayerSettings = ({ layer }: { layer: LayerType }) => {
     const effectTypes: EffectType[] = ['spectrum', 'waveform', 'particles', 'lyrics', 'camera'];
 
+    // 不透明度変更時の検証付きハンドラー
+    const handleOpacityChange = useCallback((value: number) => {
+      try {
+        const validatedOpacity = validateOpacity(value);
+        updateLayer(layer.id, { opacity: validatedOpacity });
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          console.warn(`Invalid opacity: ${error.message}`);
+          return;
+        }
+        throw error;
+      }
+    }, [layer.id]); // updateLayer is Zustand action - doesn't cause re-renders
+
+    // 感度変更時の検証付きハンドラー
+    const handleSensitivityChange = useCallback((value: number) => {
+      try {
+        const validatedSensitivity = validateSensitivity(value);
+        updateLayer(layer.id, { sensitivity: validatedSensitivity });
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          console.warn(`Invalid sensitivity: ${error.message}`);
+          return;
+        }
+        throw error;
+      }
+    }, [layer.id]); // updateLayer is Zustand action - doesn't cause re-renders
+
     return (
       <div className="space-y-4 p-3 bg-gray-800 rounded mt-2">
         <div className="grid grid-cols-2 gap-2">
@@ -107,8 +136,8 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
           max={1}
           step={0.01}
           value={layer.opacity}
-          onChange={(value) => updateLayer(layer.id, { opacity: value })}
-          valueFormatter={(val) => `${Math.round(val * 100)}%`}
+          onChange={handleOpacityChange}
+          valueFormatter={(val: number) => `${Math.round(val * 100)}%`}
         />
 
         <Slider
@@ -117,8 +146,8 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
           max={2}
           step={0.1}
           value={layer.sensitivity}
-          onChange={(value) => updateLayer(layer.id, { sensitivity: value })}
-          valueFormatter={(val) => `${val.toFixed(1)}x`}
+          onChange={handleSensitivityChange}
+          valueFormatter={(val: number) => `${val.toFixed(1)}x`}
         />
       </div>
     );

@@ -9,6 +9,7 @@ import {
   LyricsLineType,
   MIDIMessage
 } from '@vj-app/types';
+import { validateVJParameters, ValidationError } from '@/utils/validation';
 
 // Re-export types for backward compatibility
 export type { 
@@ -207,15 +208,25 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   },
   
   updateLayer: (id, updates) => {
-    const layers = get().layers;
-    
-    set({
-      layers: layers.map(layer => 
-        layer.id === id 
-          ? { ...layer, ...updates } 
-          : layer
-      )
-    });
+    try {
+      // レイヤー更新値の検証
+      const validatedUpdates = validateVJParameters(updates);
+      const layers = get().layers;
+      
+      set({
+        layers: layers.map(layer => 
+          layer.id === id 
+            ? { ...layer, ...validatedUpdates } 
+            : layer
+        )
+      });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        console.error('Layer update validation failed:', error.message, 'Invalid values:', updates);
+        return; // 無効な値の場合は更新をスキップ
+      }
+      throw error; // その他のエラーは再スロー
+    }
   },
   
   setActiveLayer: (id) => set({ activeLayerId: id }),

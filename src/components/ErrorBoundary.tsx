@@ -38,8 +38,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       componentStack: errorInfo.componentStack,
       errorBoundary: true,
       performance: performanceData,
-      userAgent: navigator.userAgent,
-      url: window.location.href,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'SSR',
+      url: typeof window !== 'undefined' ? window.location.href : 'SSR',
       timestamp: new Date().toISOString(),
     });
 
@@ -81,8 +81,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       errorStack: error.stack,
       componentStack: errorInfo.componentStack,
       timestamp: Date.now(),
-      url: window.location.href,
-      userAgent: navigator.userAgent,
+      url: typeof window !== 'undefined' ? window.location.href : 'SSR',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'SSR',
     };
 
     // Store in sessionStorage for debugging

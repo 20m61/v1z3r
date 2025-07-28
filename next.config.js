@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Temporarily disable type checking for development deployment testing
+  // TypeScript configuration - errors now properly handled
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   // Conditional configuration based on environment
   ...(process.env.EXPORT_MODE === 'true' && {
