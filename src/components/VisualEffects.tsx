@@ -11,10 +11,17 @@ interface VisualEffectsProps {
   quality?: 'low' | 'medium' | 'high';
 }
 
-// オフスクリーンキャンバスの作成（Worker対応ブラウザのみ）
+// オフスクリーンキャンバスの作成（iOS Safari対応）
 const createOffscreenCanvas = (width: number, height: number): HTMLCanvasElement | OffscreenCanvas => {
-  if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
-    return new OffscreenCanvas(width, height);
+  // iOS Safari及びモバイルブラウザではOffscreenCanvasを使用せず、通常のcanvasを使用
+  if (typeof window !== 'undefined' && 'OffscreenCanvas' in window && !navigator.userAgent.includes('Safari')) {
+    try {
+      return new OffscreenCanvas(width, height);
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('OffscreenCanvas creation failed, falling back to regular canvas:', e);
+      }
+    }
   }
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -36,27 +43,30 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
   const [fps, setFps] = useState<number>(60);
   const fpsCounterRef = useRef<{ frames: number, lastUpdate: number }>({ frames: 0, lastUpdate: 0 });
 
-  // quality設定に基づいてレンダリング設定を決定
+  // quality設定に基づいてレンダリング設定を決定（モバイル最適化）
   const renderConfig = useMemo(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
     const config = {
-      particleCount: 32,
-      smoothing: true,
-      antialiasing: true,
-      resolution: 1,
-      targetFps: 60,
+      particleCount: isMobile ? 16 : 32,
+      smoothing: !isMobile, // モバイルではスムージング無効
+      antialiasing: !isMobile, // モバイルではアンチエイリアス無効
+      resolution: isMobile ? 0.75 : 1,
+      targetFps: isMobile ? 30 : 60,
     };
 
     switch (quality) {
       case 'low':
-        config.particleCount = 16;
+        config.particleCount = isMobile ? 8 : 16;
         config.smoothing = false;
         config.antialiasing = false;
-        config.resolution = 0.75;
+        config.resolution = isMobile ? 0.5 : 0.75;
         config.targetFps = 30;
         break;
       case 'high':
-        config.particleCount = 64;
-        config.resolution = 1.25;
+        config.particleCount = isMobile ? 24 : 64;
+        config.resolution = isMobile ? 1 : 1.25;
+        config.targetFps = isMobile ? 30 : 60;
         break;
       default: // medium
         break;
@@ -350,7 +360,9 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
         }
       } catch (validationError) {
         if (validationError instanceof ValidationError) {
-          console.warn('Audio data validation failed in VisualEffects:', validationError.message);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Audio data validation failed in VisualEffects:', validationError.message);
+          }
           // Fall back to demo display for invalid data
           if (offscreenCanvas && offscreenCtx) {
             drawDemo(offscreenCtx, offscreenCanvas, colorTheme);
