@@ -86,7 +86,10 @@ jobs:
       run: npx playwright install --with-deps
       
     - name: Build application
-      run: yarn build:dev
+      run: yarn build
+      env:
+        NODE_ENV: production
+        EXPORT_MODE: true
       
     - name: Run E2E tests
       run: yarn test:e2e
