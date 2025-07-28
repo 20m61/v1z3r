@@ -56,7 +56,10 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
 
   // quality設定に基づいてレンダリング設定を決定（モバイル最適化）
   const renderConfig = useMemo(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    // SSR安全なモバイル検出
+    const isMobile = typeof window !== 'undefined' && typeof navigator !== 'undefined' 
+      ? /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      : false;
     
     const config = {
       particleCount: isMobile ? 16 : 32,
