@@ -222,7 +222,8 @@ const MIDIAnalyzer: React.FC<MIDIAnalyzerProps> = ({
     return () => {
       stopMIDI();
     };
-  }, [isMIDIEnabled, isConnected, startMIDI, stopMIDI]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMIDIEnabled, isConnected]);
 
   // Render error state
   if (error) {

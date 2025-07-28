@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('VJ Application Workflow', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/vj-app');
   });
 
   test('should load the main VJ interface', async ({ page }) => {
@@ -52,7 +52,7 @@ test.describe('VJ Application Workflow', () => {
 
   test('should maintain performance standards', async ({ page }) => {
     // Basic performance test - check page loads
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.goto('/vj-app', { waitUntil: 'networkidle' });
     
     // Main components should be visible
     await expect(page.locator('[data-testid="control-panel"]')).toBeVisible({ timeout: 10000 });
