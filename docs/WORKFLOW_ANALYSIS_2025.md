@@ -3,7 +3,7 @@
 ## 📊 **分析結果サマリー**
 
 ### **現状の問題**
-- **成功率**: Staged CI Pipeline (100%) vs 他のワークフロー (0%)
+- **成功率** (2025年1月29日時点): Staged CI Pipeline (100%) vs 他のワークフロー (0%)
 - **根本原因**: モジュール解決エラー (`@vj-app/ui-components`, `@vj-app/types`)
 - **ビルド順序問題**: `yarn build:modules` 未実行でTypeScriptチェック実行
 - **依存関係競合**: React 18 vs React 19 peer dependency conflicts
@@ -81,7 +81,7 @@
 - **ci-optimized.yml** (Optimized CI/CD) - 🔧 修正済み
 - **ci.yml** (CI/CD Pipeline) - ✅ 既に適切
 - **deploy.yml** (Build and Deploy to GitHub Pages) - 🔧 修正済み
-- **nextjs.yml** (Deploy Next.js site to Pages) - 📋 重複、要検討
+- **nextjs.yml** (Deploy Next.js site to Pages) - 📋 重複、要検討 (このPRの範囲外)
 
 ### **推奨戦略**
 1. **メインワークフロー**: ci-staged.yml (Staged CI Pipeline)を採用
