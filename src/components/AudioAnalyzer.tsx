@@ -24,23 +24,49 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   const startAnalyzing = useCallback(async () => {
     try {
       // ブラウザがWeb Audio APIをサポートしているか確認
-      if (!window.AudioContext) {
-        console.error('Web Audio APIはこのブラウザでサポートされていません');
+      if (!window.AudioContext && !(window as any).webkitAudioContext) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Web Audio APIはこのブラウザでサポートされていません');
+        }
         setError('Web Audio APIはこのブラウザでサポートされていません');
         return;
       }
 
-      // マイクへのアクセスを要求
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // iOS Safari対応: ユーザージェスチャー後のみAudioContext作成
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       
-      // AudioContextの作成
-      audioContextRef.current = new AudioContext();
+      // マイクへのアクセスを要求（iOS制限を考慮）
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: false, // iOS最適化
+            noiseSuppression: false,
+            autoGainControl: false
+          } 
+        });
+      } catch (micError) {
+        // Silent fallback on mobile - this is expected behavior
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('マイクアクセスに失敗、デモモードで継続:', micError);
+        }
+        setError('マイクアクセスが拒否されました。視覚エフェクトはデモモードで動作します。');
+        return;
+      }
+      
+      // AudioContextの作成（iOS Safari対応）
+      audioContextRef.current = new AudioContextClass();
       const audioContext = audioContextRef.current;
+      
+      // iOS Safari: AudioContextの状態確認と再開
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       
       // アナライザーノードの作成
       analyserRef.current = audioContext.createAnalyser();
       const analyser = analyserRef.current;
-      analyser.fftSize = 2048;
+      analyser.fftSize = 1024; // iOS最適化: より小さなFFTサイズ
       
       // マイク入力のソースノードを作成
       sourceRef.current = audioContext.createMediaStreamSource(stream);
@@ -80,7 +106,9 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
             globalRateLimiters.audioData.recordSuccess(clientId);
           } catch (validationError) {
             if (validationError instanceof ValidationError) {
-              console.warn('Audio data validation failed:', validationError.message);
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('Audio data validation failed:', validationError.message);
+              }
               globalRateLimiters.audioData.recordFailure(clientId);
               // Continue with animation loop but don't pass invalid data
             } else {
@@ -129,7 +157,9 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       try {
         audioContextRef.current.close();
       } catch (e) {
-        console.warn('AudioContextのクローズ中にエラーが発生しました:', e);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('AudioContextのクローズ中にエラーが発生しました:', e);
+        }
       }
       audioContextRef.current = null;
     }

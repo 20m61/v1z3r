@@ -73,7 +73,10 @@ export class WebGPUDetector {
     try {
       // Check for WebGPU support
       if (!navigator.gpu) {
-        console.warn('[WebGPU] Not supported in this browser');
+        // Silently fallback on mobile devices - WebGPU is expected to be unsupported
+        if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          console.warn('[WebGPU] Not supported in this browser');
+        }
         this.capabilities = capabilities;
         return capabilities;
       }
@@ -85,7 +88,10 @@ export class WebGPUDetector {
       });
 
       if (!this.adapter) {
-        console.warn('[WebGPU] Failed to get adapter');
+        // Silently fallback on mobile devices
+        if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          console.warn('[WebGPU] Failed to get adapter');
+        }
         this.capabilities = capabilities;
         return capabilities;
       }
@@ -106,7 +112,10 @@ export class WebGPUDetector {
       this.device = await this.adapter.requestDevice(deviceDescriptor);
 
       if (!this.device) {
-        console.warn('[WebGPU] Failed to get device');
+        // Silently fallback on mobile devices
+        if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          console.warn('[WebGPU] Failed to get device');
+        }
         this.capabilities = capabilities;
         return capabilities;
       }
@@ -114,7 +123,10 @@ export class WebGPUDetector {
       // Test canvas context
       this.context = this.canvas!.getContext('webgpu') as GPUCanvasContext;
       if (!this.context) {
-        console.warn('[WebGPU] Failed to get canvas context');
+        // Silently fallback on mobile devices
+        if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          console.warn('[WebGPU] Failed to get canvas context');
+        }
         this.capabilities = capabilities;
         return capabilities;
       }

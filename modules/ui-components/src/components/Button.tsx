@@ -57,4 +57,7 @@ const Button: React.FC<ButtonProps> = ({
   );
 };
 
+// Named export for JSX usage
+export { Button };
+
 export default Button;

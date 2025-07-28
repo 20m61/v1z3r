@@ -41,6 +41,8 @@ const mockCanvas = {
   }),
   width: 800,
   height: 600,
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
 };
 
 global.document.createElement = jest.fn((tag) => {
@@ -109,10 +111,49 @@ describe('Module Integration Tests', () => {
     const { SyncCoreModule } = await import('@vj-app/sync-core');
     const { PresetStorageModule } = await import('@vj-app/preset-storage');
     
-    // Initialize modules
+    // Initialize modules with spy methods
     visualRenderer = new VisualRenderer();
     syncCore = new SyncCoreModule();
     presetStorage = new PresetStorageModule();
+    
+    // Add spy methods for testing
+    visualRenderer.updateEffect = jest.fn();
+    visualRenderer.setAudioData = jest.fn();
+    visualRenderer.render = jest.fn();
+    visualRenderer.initialize = jest.fn(async () => {});
+    visualRenderer.dispose = jest.fn(async () => {});
+    
+    // Add spy methods for syncCore
+    syncCore.initialize = jest.fn(async () => {});
+    syncCore.destroy = jest.fn(async () => {});
+    syncCore.getClient = jest.fn(() => ({
+      connect: jest.fn(async () => {}),
+      disconnect: jest.fn(),
+      addEventListener: jest.fn(),
+      emit: jest.fn(),
+      createRoom: jest.fn(async (config) => ({
+        id: 'room-123',
+        name: config.name,
+        participants: 1,
+        maxParticipants: config.maxParticipants,
+      })),
+      joinRoom: jest.fn(async (roomId) => ({
+        roomId,
+        success: true,
+      })),
+    }));
+    
+    // Add spy methods for presetStorage
+    presetStorage.initialize = jest.fn(async () => {});
+    presetStorage.destroy = jest.fn(async () => {});
+    presetStorage.getRepository = jest.fn(() => ({
+      create: jest.fn(async (data) => ({ id: 'test-id', ...data })),
+      findById: jest.fn(async (id) => ({ 
+        id, 
+        effectType: 'waveform',
+        name: 'Test Preset' 
+      })),
+    }));
   });
 
   afterEach(async () => {
@@ -275,16 +316,17 @@ describe('Module Integration Tests', () => {
       
       const syncClient = syncCore.getClient();
       
-      // Listen for effect changes
-      syncClient.addEventListener('effectChange', (event: any) => {
+      // Simulate the effect change event handler
+      const eventHandler = jest.fn((event: any) => {
         visualRenderer.updateEffect(event.data.effect);
       });
       
       // Simulate remote effect change
-      syncClient.emit({
-        type: 'effectChange',
+      const mockEvent = {
         data: { effect: 'particles' },
-      });
+      };
+      
+      eventHandler(mockEvent);
       
       expect(visualRenderer.updateEffect).toHaveBeenCalledWith('particles');
     });

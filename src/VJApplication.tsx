@@ -15,6 +15,7 @@ import MIDIControls from './components/MIDIControls'
 // import { ControlPanel } from '@vj-app/vj-controller' // Temporarily disabled for build
 import { useVisualizerStore } from './store/visualizerStore'
 import { startPerformanceMonitoring, getCurrentFps, getCurrentMemoryUsage } from './utils/performance'
+import { performanceMonitor } from './utils/performanceMonitor'
 
 interface VJApplicationProps {
   config?: {
@@ -35,6 +36,7 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
   const [isInitialized, setIsInitialized] = useState(false)
   const [audioData, setAudioData] = useState<Uint8Array | undefined>()
   const [isAnalysisStarted, setIsAnalysisStarted] = useState(false)
+  const [showMobilePrompt, setShowMobilePrompt] = useState(false)
   
   // Get state from visualizer store
   const {
@@ -67,6 +69,13 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
       try {
         setStatus(prev => ({ ...prev, error: undefined }))
         
+        // モバイル環境でのユーザージェスチャー要求チェック
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        if (isMobile) {
+          setShowMobilePrompt(true)
+          return // ユーザーのタップを待つ
+        }
+        
         // Simulate module initialization
         await new Promise(resolve => setTimeout(resolve, 500))
         
@@ -80,6 +89,9 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
         
         // Start real performance monitoring
         const stopPerformanceMonitoring = startPerformanceMonitoring()
+        
+        // Initialize mobile-specific performance monitoring
+        performanceMonitor.initializeMobileMetrics()
         
         const interval = setInterval(() => {
           const currentFps = getCurrentFps()
@@ -109,6 +121,47 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
 
     initializeApp()
   }, [config])
+
+  // Handle mobile audio context activation
+  const handleMobileActivation = async () => {
+    try {
+      setShowMobilePrompt(false)
+      
+      // Simulate module initialization
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      setStatus(prev => ({ 
+        ...prev, 
+        rendering: true,
+        initialized: true 
+      }))
+      
+      setIsInitialized(true)
+      
+      // Start real performance monitoring
+      const stopPerformanceMonitoring = startPerformanceMonitoring()
+      
+      const interval = setInterval(() => {
+        const currentFps = getCurrentFps()
+        const memoryUsage = getCurrentMemoryUsage()
+        
+        setPerformanceMetrics({
+          fps: currentFps || 30, // Mobile default FPS
+          frameTime: currentFps > 0 ? (1000 / currentFps) : 33.33,
+          memoryUsage: memoryUsage ? Math.round((memoryUsage / 256) * 100) : 35, // Lower baseline for mobile
+          lastUpdated: Date.now()
+        })
+      }, 1000)
+
+    } catch (error) {
+      console.error('Failed to activate mobile VJ Application:', error)
+      setStatus(prev => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Mobile activation failed',
+        initialized: false
+      }))
+    }
+  }
 
   // Handle audio data from analyzer
   const handleAudioData = (data: Uint8Array) => {
@@ -207,6 +260,49 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
 
   return (
     <div className="vj-application" data-testid="vj-application">
+      {/* Mobile Activation Prompt */}
+      {showMobilePrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          color: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: '20px',
+          textAlign: 'center'
+        }}>
+          <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>v1z3r Mobile</h2>
+          <p style={{ fontSize: '16px', marginBottom: '30px', lineHeight: '1.5' }}>
+            AudioContextを有効にするため、<br/>
+            以下のボタンをタップしてください
+          </p>
+          <button
+            onClick={handleMobileActivation}
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#6366f1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            VJアプリを開始
+          </button>
+          <p style={{ fontSize: '12px', marginTop: '20px', color: '#999' }}>
+            ※ マイクアクセスの許可が求められる場合があります
+          </p>
+        </div>
+      )}
+
       {/* Status Bar */}
       <div className="status-bar" style={{
         position: 'fixed',

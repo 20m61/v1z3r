@@ -9,12 +9,22 @@ import { webgpuDetector } from '../webgpuDetection';
 jest.mock('../webgpuRenderer', () => ({
   V1z3rRenderer: jest.fn().mockImplementation(() => ({
     initialize: jest.fn().mockResolvedValue({
-      renderer: {},
+      renderer: {
+        domElement: document.createElement('canvas'),
+        setSize: jest.fn(),
+        render: jest.fn(),
+      },
       isWebGPU: true
     }),
     render: jest.fn(),
     updateEffects: jest.fn(),
     setCanvasSize: jest.fn(),
+    setSize: jest.fn(),
+    getThreeRenderer: jest.fn(() => ({
+      domElement: document.createElement('canvas'),
+      setSize: jest.fn(),
+      render: jest.fn(),
+    })),
     dispose: jest.fn()
   }))
 }));
@@ -38,6 +48,13 @@ jest.mock('../professionalMIDI', () => ({
     initialize: jest.fn().mockResolvedValue(undefined),
     setCallbacks: jest.fn(),
     dispose: jest.fn()
+  })),
+  ProfessionalMIDIManager: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    setCallbacks: jest.fn(),
+    dispose: jest.fn(),
+    isSupported: jest.fn().mockReturnValue(true),
+    getDevices: jest.fn().mockReturnValue([]),
   }))
 }));
 jest.mock('../webgpuDetection', () => ({
