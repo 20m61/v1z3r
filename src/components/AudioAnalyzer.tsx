@@ -188,6 +188,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       stopAnalyzing();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally omitting startAnalyzing and stopAnalyzing to prevent infinite loop
   }, [isMicrophoneEnabled, isAnalyzing]);
 
   // エラーメッセージを表示
