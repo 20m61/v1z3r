@@ -9,37 +9,53 @@ v1z3r is a modular VJ (Visual Jockey) application for live audio-visual performa
 
 ### Development
 ```bash
-yarn dev          # Start development server on port 3000
-yarn build        # Build production bundle
-yarn start        # Start production server
-yarn lint         # Run ESLint
-yarn type-check   # Run TypeScript type checking
+yarn dev                # Start development server on port 3000
+yarn dev:local          # Start with .env.local configuration
+yarn dev:dev            # Start with .env.dev configuration
+yarn build              # Build production bundle
+yarn build:dev          # Build with dev environment config
+yarn build:prod         # Build with production environment config
+yarn start              # Start production server
+yarn lint               # Run ESLint
+yarn type-check         # Run TypeScript type checking
+yarn setup:dev          # Complete development environment setup
 ```
 
 ### Testing
 ```bash
-yarn test           # Run all unit tests
-yarn test:watch     # Run tests in watch mode
-yarn test:coverage  # Generate coverage report
-yarn test:e2e       # Run Playwright E2E tests
-yarn test:modules   # Test all workspace modules
+yarn test               # Run all unit tests
+yarn test:watch         # Run tests in watch mode
+yarn test:coverage      # Generate coverage report
+yarn test:e2e           # Run Playwright E2E tests
+yarn test:modules       # Test all workspace modules
+yarn ci:quick           # Quick CI check (type-check + lint)
+yarn ci:core-tests      # Run core stable tests only
 
 # Run a single test file
 yarn test src/components/__tests__/AudioAnalyzer.test.tsx
 ```
 
-### Infrastructure (AWS CDK)
+### Infrastructure & Deployment
 ```bash
-cd infra/cdk
-cdk deploy --all --profile dev      # Deploy dev infrastructure
-cdk deploy --all --profile staging  # Deploy staging infrastructure
-cdk deploy --all --profile prod     # Deploy production infrastructure
-cdk destroy --all                   # Tear down infrastructure
+# AWS CDK Infrastructure
+yarn infra:dev          # Deploy dev infrastructure
+yarn infra:prod         # Deploy production infrastructure
+yarn infra:destroy:dev  # Destroy dev infrastructure
+yarn infra:destroy:prod # Destroy production infrastructure
+
+# Environment Management
+yarn env:local          # Switch to local environment
+yarn env:dev            # Switch to dev environment
+yarn env:prod           # Switch to production environment
+
+# Deployment
+yarn deploy:dev         # Deploy to dev environment
+yarn deploy:prod        # Deploy to production environment
 ```
 
 ### Module Development
 ```bash
-yarn build:modules  # Build all workspace modules
+yarn build:modules      # Build all workspace modules
 
 # Manual CI verification (when GitHub Actions unavailable)
 ./scripts/manual-ci-check.sh
@@ -114,6 +130,8 @@ docker compose -f tools/docker/docker-compose.yml up test     # Run tests in Doc
 - `src/store/visualizerStore.ts`: Central Zustand state management (EffectType, PresetType, LayerType)
 - `src/utils/errorHandler.ts`: Production-ready error logging and monitoring
 - `src/utils/performanceOptimizations.ts`: Memory management, debouncing, throttling utilities
+- `src/utils/logger.ts`: Environment-aware logging system with mobile optimization
+- `src/components/VisualEffects.tsx`: Main visual rendering component with mobile optimizations
 - `scripts/manual-ci-check.sh`: Manual CI verification when GitHub Actions unavailable
 
 ## Current Implementation Status
@@ -123,7 +141,21 @@ docker compose -f tools/docker/docker-compose.yml up test     # Run tests in Doc
 - ✅ **Audio reactivity**: Real-time FFT analysis and microphone integration
 - ✅ **AWS infrastructure**: Complete serverless deployment (5 CDK stacks)
 - ✅ **Production deployment**: Live environment with S3 static hosting + API Gateway + Lambda
+- ✅ **Mobile optimization**: iOS Safari compatibility with AudioContext handling
 - ✅ **Performance optimizations**: Memory leak prevention, debouncing, throttling utilities
+
+## Environment URLs
+- **Development**: https://v1z3r-dev.sc4pe.net
+- **Production**: https://v1z3r.sc4pe.net
+- **Documentation**: https://20m61.github.io/v1z3r/
+- **Local Development**: http://localhost:3000
+
+## Directory Restructuring (Current Branch)
+Currently on `refactor/directory-structure-optimization` branch:
+- **docs/**: Reorganized into specialized subdirectories (api/, architecture/, deployment/, development/, legacy/)
+- **tools/**: Centralized tooling and configuration files
+- **Cleanup**: Removing outdated documentation and unused files
+- **Status**: Major restructuring in progress - many legacy files being removed
 
 ## GitHub Actions Issue
 **IMPORTANT**: GitHub Actions is currently disabled due to billing issues. Use manual CI verification:
@@ -140,12 +172,29 @@ If encountering module resolution errors:
 3. Verify module exports in respective `package.json` files
 4. Use tsconfig.build.json for individual module builds
 
+## Mobile & iOS Compatibility
+- **iOS Safari AudioContext**: User gesture required for audio initialization on mobile
+- **WebGPU detection**: Silent fallback on mobile devices (WebGPU warnings suppressed)
+- **Performance scaling**: Automatic quality reduction on mobile (particles, FPS, resolution)
+- **Touch-friendly UI**: Mobile-optimized interface with gesture support
+- **OffscreenCanvas handling**: Automatic fallback for Safari compatibility
+- **Console optimization**: Reduced logging on mobile devices for performance
+
 ## Performance Optimizations
-- Memory leak prevention in `src/utils/performanceOptimizations.ts`
-- Audio buffer pooling via `AudioDataOptimizer` class
-- WebGL frame skipping for performance (`WebGLOptimizer`)
-- React component memoization with `withPerformanceOptimization` HOC
-- Use `useDebounce` and `useThrottle` hooks for expensive operations
+- **Memory leak prevention** in `src/utils/performanceOptimizations.ts`
+- **Audio buffer pooling** via `AudioDataOptimizer` class
+- **WebGL frame skipping** for performance (`WebGLOptimizer`)
+- **React component memoization** with `withPerformanceOptimization` HOC  
+- **Custom hooks**: Use `useDebounce` and `useThrottle` for expensive operations
+- **Mobile-specific optimizations**: Reduced particle counts, frame rates, and resolution scaling
+- **OffscreenCanvas fallback**: iOS Safari compatibility with regular canvas fallback
+
+## Logging System
+Production-ready logging system in `src/utils/logger.ts`:
+- **Environment-based levels**: DEBUG (dev) → WARN (prod) → ERROR (mobile)
+- **Specialized loggers**: `logger.webgpu()`, `logger.audio()`, `logger.performance()`
+- **Mobile optimization**: Minimal logging on mobile devices to improve performance
+- **WebGPU warnings**: Automatically suppressed on mobile where WebGPU is unsupported
 
 ## Branch Management
 Optimal git configuration applied:
