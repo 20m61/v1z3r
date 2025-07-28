@@ -3,329 +3,282 @@
  */
 
 import { 
-  optimizeImage, 
-  generateSrcSet, 
-  preloadImages,
-  convertToWebP,
-  convertToAVIF,
-  ImageOptimizer 
+  generateResponsiveImages,
+  preloadCriticalImages,
+  ImageLazyLoader,
+  canvasToOptimizedBlob,
+  getImageDimensions
 } from '../imageOptimization';
 
-// Mock canvas API
-const mockCanvas = {
-  getContext: jest.fn(() => ({
-    drawImage: jest.fn(),
-    getImageData: jest.fn(() => ({
-      data: new Uint8ClampedArray(4),
-      width: 100,
-      height: 100,
-    })),
-  })),
-  toBlob: jest.fn((callback) => {
-    callback(new Blob(['mock-image-data'], { type: 'image/webp' }));
+// Mock DOM APIs
+const mockDocument = {
+  createElement: jest.fn((tagName: string) => {
+    if (tagName === 'canvas') {
+      return {
+        width: 0,
+        height: 0,
+        getContext: jest.fn(() => ({
+          drawImage: jest.fn(),
+          getImageData: jest.fn(() => ({
+            data: new Uint8ClampedArray(4),
+            width: 100,
+            height: 100,
+          })),
+        })),
+        toBlob: jest.fn((callback) => {
+          callback(new Blob(['mock-image-data'], { type: 'image/webp' }));
+        }),
+        toDataURL: jest.fn((type) => {
+          if (type === 'image/webp') {
+            return 'data:image/webp;base64,mockdata';
+          }
+          if (type === 'image/avif') {
+            return 'data:image/avif;base64,mockdata';
+          }
+          return 'data:image/png;base64,mockdata';
+        }),
+      };
+    }
+    if (tagName === 'link') {
+      return {
+        rel: '',
+        as: '',
+        href: '',
+        type: '',
+      };
+    }
+    if (tagName === 'img') {
+      return {};
+    }
+    return {};
   }),
-  toDataURL: jest.fn(() => 'data:image/webp;base64,mockdata'),
-  width: 0,
-  height: 0,
+  head: {
+    appendChild: jest.fn(),
+  },
 };
 
-// Mock document.createElement
-const originalCreateElement = document.createElement;
-beforeAll(() => {
-  (document.createElement as any) = jest.fn((tagName: string) => {
-    if (tagName === 'canvas') {
-      return mockCanvas;
-    }
-    return originalCreateElement.call(document, tagName);
-  });
-});
+// Mock window with IntersectionObserver
+const mockWindow = {
+  IntersectionObserver: jest.fn(() => ({
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  })),
+};
 
-afterAll(() => {
-  document.createElement = originalCreateElement;
+// Set up mocks before tests
+beforeAll(() => {
+  (global as any).document = mockDocument;
+  (global as any).window = mockWindow;
 });
 
 // Mock Image constructor
-global.Image = jest.fn(() => ({
-  onload: null,
-  onerror: null,
-  src: '',
-  width: 1920,
-  height: 1080,
-  addEventListener: jest.fn((event, handler) => {
-    if (event === 'load') {
-      setTimeout(() => handler(), 10);
+global.Image = jest.fn(() => {
+  const mockImg = {
+    onload: null as (() => void) | null,
+    onerror: null as (() => void) | null,
+    src: '',
+    width: 1920,
+    height: 1080,
+    naturalWidth: 1920,
+    naturalHeight: 1080,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+  };
+  
+  // Auto-trigger load when src is set
+  Object.defineProperty(mockImg, 'src', {
+    set: function(value: string) {
+      // Use immediate execution for tests
+      if (this.onload) {
+        this.onload();
+      }
+    },
+    get: function() {
+      return '';
     }
-  }),
-  removeEventListener: jest.fn(),
-})) as any;
+  });
+  
+  return mockImg;
+}) as any;
 
 describe('imageOptimization', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('optimizeImage', () => {
-    it('optimizes image with default settings', async () => {
-      const result = await optimizeImage('/test/image.jpg');
+  describe('generateResponsiveImages', () => {
+    it('generates responsive images with default settings', () => {
+      const result = generateResponsiveImages('/test/image.jpg');
       
       expect(result).toEqual({
-        original: '/test/image.jpg',
-        optimized: expect.stringContaining('data:image/webp'),
+        src: expect.stringContaining('/test/image'),
+        srcSet: expect.stringContaining('320w'),
+        sizes: expect.any(String),
+        format: expect.any(String),
+        width: expect.any(Number),
+        height: expect.any(Number),
+      });
+    });
+
+    it('throws error for invalid image source', () => {
+      expect(() => generateResponsiveImages('')).toThrow('Invalid image source path');
+    });
+
+    it('throws error for image without extension', () => {
+      expect(() => generateResponsiveImages('image-no-ext')).toThrow('Image source must have a file extension');
+    });
+
+    it('accepts custom options', () => {
+      const options = {
+        quality: 90,
+        format: 'webp' as const,
+        sizes: ['640w', '1280w'],
+      };
+      
+      const result = generateResponsiveImages('/test/image.png', options);
+      
+      expect(result.format).toBe('webp');
+      expect(result.srcSet).toContain('640w');
+      expect(result.srcSet).toContain('1280w');
+    });
+  });
+
+  describe('preloadCriticalImages', () => {
+    it('creates preload links for images', () => {
+      const images = ['/image1.jpg', '/image2.webp', '/image3.avif'];
+      
+      preloadCriticalImages(images);
+      
+      expect(document.createElement).toHaveBeenCalledTimes(3);
+      expect(document.head.appendChild).toHaveBeenCalledTimes(3);
+    });
+
+    it('handles empty image array', () => {
+      preloadCriticalImages([]);
+      
+      expect(document.createElement).not.toHaveBeenCalled();
+    });
+
+    it('does nothing in server environment', () => {
+      const originalWindow = global.window;
+      delete (global as any).window;
+      
+      preloadCriticalImages(['/image.jpg']);
+      
+      expect(document.createElement).not.toHaveBeenCalled();
+      
+      global.window = originalWindow;
+    });
+  });
+
+  describe('ImageLazyLoader', () => {
+    it('creates instance without errors', () => {
+      const loader = new ImageLazyLoader();
+      expect(loader).toBeInstanceOf(ImageLazyLoader);
+    });
+
+    it('handles server environment gracefully', () => {
+      const originalWindow = global.window;
+      delete (global as any).window;
+      
+      const loader = new ImageLazyLoader();
+      expect(loader).toBeInstanceOf(ImageLazyLoader);
+      
+      global.window = originalWindow;
+    });
+
+    it('observes image elements', () => {
+      const loader = new ImageLazyLoader();
+      const mockImg = document.createElement('img') as HTMLImageElement;
+      
+      loader.observe(mockImg);
+      
+      // Should not throw
+      expect(() => loader.observe(mockImg)).not.toThrow();
+    });
+  });
+
+  describe('canvasToOptimizedBlob', () => {
+    it('converts canvas to optimized blob', async () => {
+      const mockCanvas = document.createElement('canvas');
+      
+      const result = await canvasToOptimizedBlob(mockCanvas as HTMLCanvasElement);
+      
+      expect(result).toBeInstanceOf(Blob);
+      expect(result.type).toBe('image/webp');
+    });
+
+    it('handles canvas conversion errors', async () => {
+      const mockCanvas = {
+        toBlob: jest.fn((callback) => {
+          callback(null); // Simulate failure
+        }),
+      } as unknown as HTMLCanvasElement;
+      
+      await expect(canvasToOptimizedBlob(mockCanvas)).rejects.toThrow();
+    });
+  });
+
+  describe('getImageDimensions', () => {
+    it('returns image dimensions', async () => {
+      const result = await getImageDimensions('/test/image.jpg');
+      
+      expect(result).toEqual({
         width: 1920,
         height: 1080,
-        format: 'webp',
-        size: expect.any(Number),
       });
     });
 
-    it('resizes image to specified dimensions', async () => {
-      mockCanvas.width = 800;
-      mockCanvas.height = 600;
+    it('handles image load errors', async () => {
+      // Mock Image to simulate error
+      const originalImage = global.Image;
+      global.Image = jest.fn(() => {
+        const mockImg = {
+          onload: null,
+          onerror: null,
+          src: '',
+        };
+        
+        Object.defineProperty(mockImg, 'src', {
+          set: function() {
+            if (this.onerror) {
+              this.onerror();
+            }
+          },
+        });
+        
+        return mockImg;
+      }) as any;
       
-      const result = await optimizeImage('/test/image.jpg', {
-        width: 800,
-        height: 600,
-      });
+      await expect(getImageDimensions('/invalid/image.jpg')).rejects.toThrow();
       
-      expect(mockCanvas.getContext).toHaveBeenCalled();
-      expect(result.width).toBe(800);
-      expect(result.height).toBe(600);
-    });
-
-    it('maintains aspect ratio when resizing', async () => {
-      const result = await optimizeImage('/test/image.jpg', {
-        width: 800,
-        maintainAspectRatio: true,
-      });
-      
-      // Original is 1920x1080 (16:9)
-      // Width 800 should give height 450
-      expect(result.width).toBe(800);
-      expect(result.height).toBe(450);
-    });
-
-    it('applies quality settings', async () => {
-      await optimizeImage('/test/image.jpg', {
-        quality: 0.7,
-        format: 'jpeg',
-      });
-      
-      expect(mockCanvas.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.7);
-    });
-
-    it('handles image loading errors', async () => {
-      global.Image = jest.fn(() => ({
-        onerror: null,
-        addEventListener: jest.fn((event, handler) => {
-          if (event === 'error') {
-            setTimeout(() => handler(new Error('Failed to load')), 10);
-          }
-        }),
-        removeEventListener: jest.fn(),
-      })) as any;
-      
-      await expect(
-        optimizeImage('/test/broken.jpg')
-      ).rejects.toThrow('Failed to load image');
+      global.Image = originalImage;
     });
   });
 
-  describe('generateSrcSet', () => {
-    it('generates srcset for responsive images', async () => {
-      const srcset = await generateSrcSet('/test/image.jpg', {
-        widths: [400, 800, 1200],
-      });
+  describe('format detection', () => {
+    it('detects webp support', () => {
+      const result = generateResponsiveImages('/test/image.jpg');
       
-      expect(srcset).toEqual([
-        expect.objectContaining({ width: 400, url: expect.any(String) }),
-        expect.objectContaining({ width: 800, url: expect.any(String) }),
-        expect.objectContaining({ width: 1200, url: expect.any(String) }),
-      ]);
+      // Should return a valid format
+      expect(['webp', 'avif', 'jpg']).toContain(result.format);
     });
 
-    it('generates srcset string format', async () => {
-      const srcset = await generateSrcSet('/test/image.jpg', {
-        widths: [400, 800],
-        format: 'string',
-      });
-      
-      expect(typeof srcset).toBe('string');
-      expect(srcset).toMatch(/400w.*800w/);
-    });
-
-    it('includes 2x variants for retina', async () => {
-      const srcset = await generateSrcSet('/test/image.jpg', {
-        widths: [400],
-        includeRetina: true,
-      });
-      
-      expect(srcset).toHaveLength(2);
-      expect(srcset[1].descriptor).toBe('2x');
-      expect(srcset[1].width).toBe(800); // 2x of 400
-    });
-  });
-
-  describe('preloadImages', () => {
-    it('preloads multiple images', async () => {
-      const urls = ['/image1.jpg', '/image2.jpg', '/image3.jpg'];
-      const results = await preloadImages(urls);
-      
-      expect(results).toHaveLength(3);
-      expect(results.every(r => r.loaded)).toBe(true);
-    });
-
-    it('continues loading if some images fail', async () => {
-      // Mock one image to fail
-      let callCount = 0;
-      global.Image = jest.fn(() => ({
-        addEventListener: jest.fn((event, handler) => {
-          callCount++;
-          if (callCount === 2 && event === 'error') {
-            setTimeout(() => handler(new Error('Failed')), 10);
-          } else if (event === 'load') {
-            setTimeout(() => handler(), 10);
-          }
-        }),
-        removeEventListener: jest.fn(),
-      })) as any;
-      
-      const urls = ['/image1.jpg', '/image2.jpg', '/image3.jpg'];
-      const results = await preloadImages(urls);
-      
-      expect(results).toHaveLength(3);
-      expect(results[0].loaded).toBe(true);
-      expect(results[1].loaded).toBe(false);
-      expect(results[2].loaded).toBe(true);
-    });
-
-    it('reports progress during preloading', async () => {
-      const progressCallback = jest.fn();
-      
-      await preloadImages(
-        ['/image1.jpg', '/image2.jpg'],
-        { onProgress: progressCallback }
-      );
-      
-      expect(progressCallback).toHaveBeenCalled();
-      expect(progressCallback).toHaveBeenCalledWith(expect.objectContaining({
-        loaded: expect.any(Number),
-        total: 2,
-        percent: expect.any(Number),
-      }));
-    });
-  });
-
-  describe('format conversion', () => {
-    it('converts to WebP format', async () => {
-      const result = await convertToWebP('/test/image.jpg');
-      
-      expect(result.format).toBe('webp');
-      expect(result.url).toContain('data:image/webp');
-      expect(mockCanvas.toBlob).toHaveBeenCalledWith(
-        expect.any(Function),
-        'image/webp',
-        expect.any(Number)
-      );
-    });
-
-    it('converts to AVIF format with fallback', async () => {
-      // Mock AVIF not supported
-      mockCanvas.toBlob.mockImplementationOnce((callback, type) => {
-        if (type === 'image/avif') {
-          callback(null);
-        } else {
-          callback(new Blob(['webp-data'], { type: 'image/webp' }));
+    it('falls back gracefully when canvas fails', () => {
+      // Mock canvas to throw error
+      const originalCreateElement = document.createElement;
+      (document.createElement as jest.Mock).mockImplementation((tagName: string) => {
+        if (tagName === 'canvas') {
+          throw new Error('Canvas not supported');
         }
+        return originalCreateElement(tagName);
       });
       
-      const result = await convertToAVIF('/test/image.jpg');
+      const result = generateResponsiveImages('/test/image.jpg');
+      expect(result.format).toBe('jpg');
       
-      // Should fallback to WebP
-      expect(result.format).toBe('webp');
-      expect(result.url).toBeDefined();
-    });
-  });
-
-  describe('ImageOptimizer class', () => {
-    it('creates optimizer instance with config', () => {
-      const optimizer = new ImageOptimizer({
-        defaultQuality: 0.8,
-        defaultFormat: 'webp',
-        maxWidth: 2000,
-        maxHeight: 2000,
-      });
-      
-      expect(optimizer).toBeInstanceOf(ImageOptimizer);
-    });
-
-    it('optimizes with instance config', async () => {
-      const optimizer = new ImageOptimizer({
-        defaultQuality: 0.9,
-        defaultFormat: 'jpeg',
-      });
-      
-      await optimizer.optimize('/test/image.jpg');
-      
-      expect(mockCanvas.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.9);
-    });
-
-    it('caches optimized images', async () => {
-      const optimizer = new ImageOptimizer({ enableCache: true });
-      
-      const result1 = await optimizer.optimize('/test/image.jpg');
-      const result2 = await optimizer.optimize('/test/image.jpg');
-      
-      // Should return same result from cache
-      expect(result1).toBe(result2);
-    });
-
-    it('clears cache', async () => {
-      const optimizer = new ImageOptimizer({ enableCache: true });
-      
-      await optimizer.optimize('/test/image.jpg');
-      optimizer.clearCache();
-      
-      const cacheSize = optimizer.getCacheSize();
-      expect(cacheSize).toBe(0);
-    });
-
-    it('respects cache size limit', async () => {
-      const optimizer = new ImageOptimizer({ 
-        enableCache: true,
-        maxCacheSize: 2, // Only cache 2 images
-      });
-      
-      await optimizer.optimize('/test/image1.jpg');
-      await optimizer.optimize('/test/image2.jpg');
-      await optimizer.optimize('/test/image3.jpg');
-      
-      const cacheSize = optimizer.getCacheSize();
-      expect(cacheSize).toBe(2);
-    });
-  });
-
-  describe('error handling', () => {
-    it('handles invalid image URLs', async () => {
-      await expect(
-        optimizeImage('')
-      ).rejects.toThrow('Invalid image URL');
-    });
-
-    it('handles canvas context errors', async () => {
-      mockCanvas.getContext.mockReturnValueOnce(null);
-      
-      await expect(
-        optimizeImage('/test/image.jpg')
-      ).rejects.toThrow('Canvas context not available');
-    });
-
-    it('handles unsupported formats gracefully', async () => {
-      const result = await optimizeImage('/test/image.jpg', {
-        format: 'unsupported' as any,
-      });
-      
-      // Should fallback to default format
-      expect(result.format).toBe('webp');
+      document.createElement = originalCreateElement;
     });
   });
 });
