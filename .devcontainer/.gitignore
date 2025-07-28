@@ -1,0 +1,19 @@
+# Dev Container specific ignores
+.env.local
+.env.devcontainer.local
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Docker volumes (if created locally)
+node_modules/
+.next/
+.cache/
+
+# VS Code workspace settings (user-specific)
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
