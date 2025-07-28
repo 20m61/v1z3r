@@ -41,6 +41,8 @@ const mockCanvas = {
   }),
   width: 800,
   height: 600,
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
 };
 
 global.document.createElement = jest.fn((tag) => {
@@ -125,8 +127,20 @@ describe('Module Integration Tests', () => {
     syncCore.initialize = jest.fn(async () => {});
     syncCore.destroy = jest.fn(async () => {});
     syncCore.getClient = jest.fn(() => ({
+      connect: jest.fn(async () => {}),
+      disconnect: jest.fn(),
       addEventListener: jest.fn(),
       emit: jest.fn(),
+      createRoom: jest.fn(async (config) => ({
+        id: 'room-123',
+        name: config.name,
+        participants: 1,
+        maxParticipants: config.maxParticipants,
+      })),
+      joinRoom: jest.fn(async (roomId) => ({
+        roomId,
+        success: true,
+      })),
     }));
     
     // Add spy methods for presetStorage

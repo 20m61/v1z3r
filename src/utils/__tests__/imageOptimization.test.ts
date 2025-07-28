@@ -1,5 +1,6 @@
 /**
  * Tests for image optimization utility
+ * @jest-environment jsdom
  */
 
 import { 
@@ -105,6 +106,9 @@ global.Image = jest.fn(() => {
 describe('imageOptimization', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset document mock
+    (mockDocument.createElement as jest.Mock).mockClear();
+    (mockDocument.head.appendChild as jest.Mock).mockClear();
   });
 
   describe('generateResponsiveImages', () => {
@@ -146,18 +150,19 @@ describe('imageOptimization', () => {
 
   describe('preloadCriticalImages', () => {
     it('creates preload links for images', () => {
+      // Mock document and window are already set up
       const images = ['/image1.jpg', '/image2.webp', '/image3.avif'];
       
       preloadCriticalImages(images);
       
-      expect(document.createElement).toHaveBeenCalledTimes(3);
-      expect(document.head.appendChild).toHaveBeenCalledTimes(3);
+      expect(mockDocument.createElement).toHaveBeenCalledWith('link');
+      expect(mockDocument.head.appendChild).toHaveBeenCalledTimes(3);
     });
 
     it('handles empty image array', () => {
       preloadCriticalImages([]);
       
-      expect(document.createElement).not.toHaveBeenCalled();
+      expect(mockDocument.createElement).not.toHaveBeenCalled();
     });
 
     it('does nothing in server environment', () => {
@@ -166,7 +171,7 @@ describe('imageOptimization', () => {
       
       preloadCriticalImages(['/image.jpg']);
       
-      expect(document.createElement).not.toHaveBeenCalled();
+      expect(mockDocument.createElement).not.toHaveBeenCalled();
       
       global.window = originalWindow;
     });
@@ -201,9 +206,9 @@ describe('imageOptimization', () => {
 
   describe('canvasToOptimizedBlob', () => {
     it('converts canvas to optimized blob', async () => {
-      const mockCanvas = document.createElement('canvas');
+      const mockCanvas = mockDocument.createElement('canvas') as HTMLCanvasElement;
       
-      const result = await canvasToOptimizedBlob(mockCanvas as HTMLCanvasElement);
+      const result = await canvasToOptimizedBlob(mockCanvas);
       
       expect(result).toBeInstanceOf(Blob);
       expect(result.type).toBe('image/webp');
@@ -267,8 +272,8 @@ describe('imageOptimization', () => {
 
     it('falls back gracefully when canvas fails', () => {
       // Mock canvas to throw error
-      const originalCreateElement = document.createElement;
-      (document.createElement as jest.Mock).mockImplementation((tagName: string) => {
+      const originalCreateElement = mockDocument.createElement;
+      (mockDocument.createElement as jest.Mock).mockImplementation((tagName: string) => {
         if (tagName === 'canvas') {
           throw new Error('Canvas not supported');
         }
@@ -278,7 +283,8 @@ describe('imageOptimization', () => {
       const result = generateResponsiveImages('/test/image.jpg');
       expect(result.format).toBe('jpg');
       
-      document.createElement = originalCreateElement;
+      // Restore original implementation
+      mockDocument.createElement = originalCreateElement;
     });
   });
 });
