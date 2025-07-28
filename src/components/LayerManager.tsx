@@ -91,7 +91,7 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
         }
         throw error;
       }
-    }, [layer.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [layer.id]); // updateLayer is Zustand action - doesn't cause re-renders
 
     // 感度変更時の検証付きハンドラー
     const handleSensitivityChange = useCallback((value: number) => {
@@ -105,7 +105,7 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
         }
         throw error;
       }
-    }, [layer.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [layer.id]); // updateLayer is Zustand action - doesn't cause re-renders
 
     return (
       <div className="space-y-4 p-3 bg-gray-800 rounded mt-2">

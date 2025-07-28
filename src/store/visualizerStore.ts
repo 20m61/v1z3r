@@ -222,7 +222,7 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
       });
     } catch (error) {
       if (error instanceof ValidationError) {
-        console.error('Layer update validation failed:', error.message);
+        console.error('Layer update validation failed:', error.message, 'Invalid values:', updates);
         return; // 無効な値の場合は更新をスキップ
       }
       throw error; // その他のエラーは再スロー
