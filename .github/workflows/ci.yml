@@ -38,10 +38,10 @@ jobs:
       continue-on-error: true  # Allow to continue due to known UI component type issues (Phase 8 priority)
       
     - name: Run stable tests
-      run: yarn ci:stable-tests
+      run: yarn ci:core-tests
       
     - name: Run unit tests with coverage
-      run: yarn test --coverage
+      run: yarn test --coverage --maxWorkers=2 --logHeapUsage
       continue-on-error: true  # Allow some test failures while fixing
       
     - name: Run module tests

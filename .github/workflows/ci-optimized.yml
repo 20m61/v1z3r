@@ -46,6 +46,10 @@ jobs:
         if: steps.skip-check.outputs.should_skip != 'true'
         run: yarn install --frozen-lockfile --prefer-offline
         
+      - name: Build modules
+        if: steps.skip-check.outputs.should_skip != 'true'
+        run: yarn build:modules
+        
       - name: TypeScript check
         if: steps.skip-check.outputs.should_skip != 'true'
         run: yarn type-check
@@ -86,6 +90,9 @@ jobs:
             
       - name: Install dependencies
         run: yarn install --frozen-lockfile --prefer-offline
+        
+      - name: Build modules
+        run: yarn build:modules
         
       - name: Run unit tests
         if: matrix.test-type == 'unit'
