@@ -70,6 +70,7 @@ The project uses Yarn workspaces with modules located in `/modules/`:
 - **sync-core**: WebSocket client for real-time collaboration with auto-reconnection
 - **preset-storage**: AWS DynamoDB/S3 integration for preset persistence
 - **lyrics-engine**: Speech recognition and lyrics processing visualization
+- **ui-components**: Shared UI components (Button, Slider, ColorPicker) with TypeScript support
 
 ### Tech Stack
 - **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS, Three.js
@@ -133,9 +134,12 @@ docker compose -f tools/docker/docker-compose.yml up test     # Run tests in Doc
 - `src/utils/logger.ts`: Environment-aware logging system with mobile optimization
 - `src/components/VisualEffects.tsx`: Main visual rendering component with mobile optimizations
 - `scripts/manual-ci-check.sh`: Manual CI verification when GitHub Actions unavailable
+- `src/utils/dynamicImports.ts`: Advanced module loading with WebGPU, Three.js, TensorFlow support
+- `src/utils/swRegistration.ts`: Service Worker registration utilities for PWA functionality
+- `.github/workflows/ci-staged.yml`: Staged CI pipeline with critical checks and extended tests
 
 ## Current Implementation Status
-- ✅ **5 modules**: Fully implemented modular architecture (visual-renderer, vj-controller, sync-core, preset-storage, lyrics-engine)
+- ✅ **6 modules**: Fully implemented modular architecture (visual-renderer, vj-controller, sync-core, preset-storage, lyrics-engine, ui-components)
 - ✅ **244+ Jest tests**: Comprehensive test coverage (88.1% success rate)
 - ✅ **WebGL rendering**: Hardware-accelerated visual effects with Three.js
 - ✅ **Audio reactivity**: Real-time FFT analysis and microphone integration
@@ -143,6 +147,8 @@ docker compose -f tools/docker/docker-compose.yml up test     # Run tests in Doc
 - ✅ **Production deployment**: Live environment with S3 static hosting + API Gateway + Lambda
 - ✅ **Mobile optimization**: iOS Safari compatibility with AudioContext handling
 - ✅ **Performance optimizations**: Memory leak prevention, debouncing, throttling utilities
+- ✅ **Dynamic module loading**: WebGPU, Three.js, TensorFlow lazy loading with fallbacks
+- ✅ **Service Worker**: PWA functionality with cache management and auto-updates
 
 ## Environment URLs
 - **Development**: https://v1z3r-dev.sc4pe.net
@@ -156,6 +162,21 @@ Currently on `refactor/directory-structure-optimization` branch:
 - **tools/**: Centralized tooling and configuration files
 - **Cleanup**: Removing outdated documentation and unused files
 - **Status**: Major restructuring in progress - many legacy files being removed
+
+## Mobile & iOS Compatibility
+- **iOS Safari AudioContext**: User gesture required for audio initialization on mobile
+- **WebGPU detection**: Silent fallback on mobile devices (WebGPU warnings suppressed)
+- **Performance scaling**: Automatic quality reduction on mobile (particles, FPS, resolution)
+- **Touch-friendly UI**: Mobile-optimized interface with gesture support
+- **OffscreenCanvas handling**: Automatic fallback for Safari compatibility
+- **Console optimization**: Reduced logging on mobile devices for performance
+
+## Logging System
+Production-ready logging system in `src/utils/logger.ts`:
+- **Environment-based levels**: DEBUG (dev) → WARN (prod) → ERROR (mobile)
+- **Specialized loggers**: `logger.webgpu()`, `logger.audio()`, `logger.performance()`
+- **Mobile optimization**: Minimal logging on mobile devices to improve performance
+- **WebGPU warnings**: Automatically suppressed on mobile where WebGPU is unsupported
 
 ## GitHub Actions Issue
 **IMPORTANT**: GitHub Actions is currently disabled due to billing issues. Use manual CI verification:
@@ -172,13 +193,11 @@ If encountering module resolution errors:
 3. Verify module exports in respective `package.json` files
 4. Use tsconfig.build.json for individual module builds
 
-## Mobile & iOS Compatibility
-- **iOS Safari AudioContext**: User gesture required for audio initialization on mobile
-- **WebGPU detection**: Silent fallback on mobile devices (WebGPU warnings suppressed)
-- **Performance scaling**: Automatic quality reduction on mobile (particles, FPS, resolution)
-- **Touch-friendly UI**: Mobile-optimized interface with gesture support
-- **OffscreenCanvas handling**: Automatic fallback for Safari compatibility
-- **Console optimization**: Reduced logging on mobile devices for performance
+**Common Issues**:
+- **UI component type errors**: "JSX element type 'Button' does not have any construct or call signatures"
+  - Solution: Ensure proper default export structure in `modules/ui-components/src/index.ts`
+- **Dynamic import failures**: Module loading timeouts or WebGPU adapter issues
+  - Solution: Check browser compatibility and fallback mechanisms in `dynamicImports.ts`
 
 ## Performance Optimizations
 - **Memory leak prevention** in `src/utils/performanceOptimizations.ts`
@@ -189,15 +208,61 @@ If encountering module resolution errors:
 - **Mobile-specific optimizations**: Reduced particle counts, frame rates, and resolution scaling
 - **OffscreenCanvas fallback**: iOS Safari compatibility with regular canvas fallback
 
-## Logging System
-Production-ready logging system in `src/utils/logger.ts`:
-- **Environment-based levels**: DEBUG (dev) → WARN (prod) → ERROR (mobile)
-- **Specialized loggers**: `logger.webgpu()`, `logger.audio()`, `logger.performance()`
-- **Mobile optimization**: Minimal logging on mobile devices to improve performance
-- **WebGPU warnings**: Automatically suppressed on mobile where WebGPU is unsupported
+## Performance Monitoring
+Comprehensive performance tracking in `src/utils/performanceMonitor.ts`:
+- **Mobile-specific metrics**: Battery level, touch response, memory pressure detection
+- **Real-time FPS tracking**: Actual vs target frame rate comparison
+- **WebGPU fallback detection**: Automatic OffscreenCanvas compatibility handling
+- **Memory optimization**: Device memory and hardware concurrency monitoring
+- **Orientation change tracking**: Mobile UI adaptation metrics
+- **Performance level adaptation**: Automatic quality scaling based on device capabilities
+
+## Dynamic Module Loading
+Advanced module loading system in `src/utils/dynamicImports.ts`:
+- **WebGPU modules**: Conditional loading with adapter detection and fallbacks
+- **Three.js features**: Selective loading of controls, postprocessing, loaders
+- **TensorFlow.js**: AI feature detection and conditional imports (speech, vision, pose)
+- **React Three Fiber**: Lazy loading of 3D rendering components
+- **Module caching**: Intelligent caching with timeout and retry mechanisms
+- **Preloading strategies**: Critical component preloading and interaction-based loading
+
+## Service Worker & PWA
+Service Worker implementation in `src/utils/swRegistration.ts`:
+- **Production-only registration**: Automatic registration in production environments
+- **Auto-update handling**: User-prompted updates with Japanese localization
+- **Cache management**: Automatic cache clearing and update mechanisms
+- **Periodic updates**: Hourly update checks for new versions
+- **Offline functionality**: Enhanced caching for offline VJ performance capabilities
+
+## CI/CD Pipeline
+Staged CI pipeline in `.github/workflows/ci-staged.yml`:
+- **Stage 1 - Critical Checks**: TypeScript, ESLint, build verification (10min timeout)
+- **Stage 2 - Core Tests**: Stable test suite focusing on auth, utils, services (15min timeout)
+- **Stage 3 - Extended Tests**: Full test suite with failure tolerance (20min timeout)
+- **Stage 4 - E2E Tests**: Playwright tests for main branch only (25min timeout)
+- **Concurrency control**: Automatic cancellation of previous runs
+- **Artifact collection**: E2E reports and test results with 7-day retention
 
 ## Branch Management
 Optimal git configuration applied:
 - Auto-rebase for clean history
 - Automatic branch tracking
 - All stale branches cleaned
+
+Main branch (you will usually use this for PRs): main
+
+## UI Components Architecture
+Shared UI components in `modules/ui-components/src/components/`:
+- **Button.tsx**: Multi-variant button with v1z3r theme integration (primary, secondary, outline, ghost)
+- **ColorPicker.tsx**: Advanced color picker with preset colors and simple mode fallback
+- **Slider.tsx**: Range input with custom styling and real-time value updates
+- **Export structure**: Named exports for JSX components, default export for primary component
+- **TypeScript integration**: Full type safety with exported Props interfaces
+
+## Important Notes for Development
+- **Module resolution**: If encountering errors, run `yarn build:modules` first
+- **UI component imports**: Use named imports from `@vj-app/ui-components` package
+- **Mobile testing**: Always test on actual iOS devices for AudioContext behavior
+- **Performance testing**: Use built-in performance monitor for optimization verification
+- **Service Worker updates**: Test update flow in production environment
+- **WebGPU fallbacks**: Ensure graceful fallback on devices without WebGPU support
