@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Bind mount the workspace
+      - ../:/workspace:cached
+      # Use named volumes for performance
+      - node-modules:/workspace/node_modules
+      - next-cache:/workspace/.next
+      - yarn-cache:/home/vscode/.cache/yarn
+      # VS Code extensions
+      - vscode-extensions:/home/vscode/.vscode-server/extensions
+      - vscode-extensions-insiders:/home/vscode/.vscode-server-insiders/extensions
+    
+    # Overrides default command so things don't shut down after the process ends
+    command: sleep infinity
+    
+    # Network mode for better performance in development
+    network_mode: host
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - REDIS_URL=redis://localhost:6379
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-devcontainer123}@localhost:5432/${POSTGRES_DB:-v1z3r_dev}
+    
+    # Run init script
+    entrypoint: ["/usr/local/bin/init-firewall.sh"]
+    
+    # Capabilities for debugging
+    cap_add:
+      - SYS_PTRACE
+      - NET_ADMIN  # Required for firewall rules
+    
+    security_opt:
+      - seccomp:unconfined
+  
+  # Optional: Redis service for development
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --protected-mode no
+    
+  # Optional: PostgreSQL for future database needs
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-devcontainer123}
+      - POSTGRES_DB=${POSTGRES_DB:-v1z3r_dev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  node-modules:
+  next-cache:
+  yarn-cache:
+  vscode-extensions:
+  vscode-extensions-insiders:
+  redis-data:
+  postgres-data:

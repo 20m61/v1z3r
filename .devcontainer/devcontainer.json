@@ -1,0 +1,130 @@
+{
+  "name": "v1z3r Development Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "shutdownAction": "stopCompose",
+  
+  // Forward ports for development
+  "forwardPorts": [3000, 6379],
+  "portsAttributes": {
+    "3000": {
+      "label": "VJ Application",
+      "onAutoForward": "notify"
+    },
+    "6379": {
+      "label": "Redis (optional)",
+      "onAutoForward": "silent"
+    }
+  },
+  
+  // Environment variables
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "CHOKIDAR_USEPOLLING": "true"
+  },
+  
+  // Mount workspace at /workspace
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+  
+  // VS Code settings
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Essential extensions
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next",
+        
+        // React/Next.js development
+        "dsznajder.es7-react-js-snippets",
+        "prisma.prisma",
+        "formulahendry.auto-rename-tag",
+        
+        // Testing
+        "orta.vscode-jest",
+        "firsttris.vscode-jest-runner",
+        
+        // Docker support
+        "ms-azuretools.vscode-docker",
+        
+        // Git
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+        
+        // AWS
+        "amazonwebservices.aws-toolkit-vscode",
+        
+        // Other helpful extensions
+        "christian-kohler.path-intellisense",
+        "naumovs.color-highlight",
+        "wayou.vscode-todo-highlight",
+        "gruntfuggly.todo-tree"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": true
+        },
+        "typescript.preferences.importModuleSpecifier": "non-relative",
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        "jest.autoRun": {
+          "watch": false,
+          "onSave": "test-file"
+        },
+        "files.exclude": {
+          "**/node_modules": true,
+          "**/.next": true,
+          "**/dist": true,
+          "**/.turbo": true
+        }
+      }
+    }
+  },
+  
+  // Run commands after container is created
+  "postCreateCommand": "yarn install && yarn build:modules",
+  
+  // Run commands after attaching to container
+  "postAttachCommand": "yarn dev",
+  
+  // Features to add to the dev container
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/aws-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/jungaretti/features/ripgrep:1": {
+      "version": "latest"
+    }
+  },
+  
+  // Security settings
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  
+  // Capabilities
+  "capAdd": ["SYS_PTRACE"],
+  "securityOpt": ["seccomp=unconfined"],
+  
+  // Mount points for better performance
+  "mounts": [
+    "source=v1z3r-node-modules,target=/workspace/node_modules,type=volume",
+    "source=v1z3r-next,target=/workspace/.next,type=volume",
+    "source=v1z3r-yarn-cache,target=/home/vscode/.cache/yarn,type=volume"
+  ]
+}

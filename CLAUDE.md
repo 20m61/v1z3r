@@ -122,6 +122,30 @@ docker compose -f tools/docker/docker-compose.yml up prod     # Production-like 
 docker compose -f tools/docker/docker-compose.yml up test     # Run tests in Docker
 ```
 
+### Dev Container Development
+VS Code Dev Container with security-hardened configuration:
+```bash
+# Prerequisites: VS Code with Remote-Containers extension
+# 1. Open project in VS Code
+# 2. Click "Reopen in Container" when prompted
+# Or manually: Cmd/Ctrl+Shift+P → "Remote-Containers: Reopen in Container"
+```
+
+Features:
+- **Node.js 20** with essential development tools
+- **Security**: Custom firewall with whitelist-based network access
+- **Services**: Optional Redis and PostgreSQL containers
+- **Performance**: Named volumes for node_modules and build caches
+- **Extensions**: Pre-configured VS Code extensions for v1z3r development
+- **Tools**: git, ZSH, fzf, ripgrep, AWS CLI, GitHub CLI
+
+Configuration files in `.devcontainer/`:
+- `devcontainer.json`: Main configuration
+- `docker-compose.yml`: Multi-service setup
+- `Dockerfile`: Container image
+- `init-firewall.sh`: Security firewall rules
+- `README.md`: Detailed setup instructions
+
 ## Important Files
 - `next.config.js`: Next.js configuration (conditional export/standalone, EXPORT_MODE support)
 - `tsconfig.json`: TypeScript config with path aliases
