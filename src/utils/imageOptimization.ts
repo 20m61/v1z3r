@@ -311,6 +311,163 @@ export async function canvasToOptimizedBlob(
 }
 
 /**
+ * Optimize image with specified settings
+ */
+export async function optimizeImage(
+  src: string,
+  options: {
+    width?: number;
+    height?: number;
+    quality?: number;
+    format?: string;
+    maintainAspectRatio?: boolean;
+  } = {}
+): Promise<{
+  original: string;
+  optimized: string;
+  width: number;
+  height: number;
+  format: string;
+}> {
+  const {
+    width,
+    height,
+    quality = 0.8,
+    format = 'webp',
+    maintainAspectRatio = true
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+
+        let targetWidth = width || img.naturalWidth;
+        let targetHeight = height || img.naturalHeight;
+
+        if (maintainAspectRatio && width && !height) {
+          const aspectRatio = img.naturalHeight / img.naturalWidth;
+          targetHeight = Math.round(width * aspectRatio);
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        const optimized = canvas.toDataURL(`image/${format}`, quality);
+        
+        resolve({
+          original: src,
+          optimized,
+          width: targetWidth,
+          height: targetHeight,
+          format
+        });
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    img.onerror = () => {
+      reject(new Error('Failed to load image'));
+    };
+    
+    img.src = src;
+  });
+}
+
+/**
+ * Generate srcset for responsive images
+ */
+export async function generateSrcSet(
+  src: string,
+  options: {
+    widths?: number[];
+    format?: 'string' | 'object';
+    quality?: number;
+  } = {}
+): Promise<string | { src: string; width: number }[]> {
+  const { widths = [400, 800, 1200], format = 'object', quality = 0.8 } = options;
+  
+  const results = await Promise.all(
+    widths.map(async (width) => {
+      const optimized = await optimizeImage(src, { width, quality });
+      return { src: optimized.optimized, width };
+    })
+  );
+  
+  if (format === 'string') {
+    return results.map(r => `${r.src} ${r.width}w`).join(', ');
+  }
+  
+  return results;
+}
+
+/**
+ * Preload images
+ */
+export async function preloadImages(sources: string[]): Promise<void> {
+  await Promise.all(
+    sources.map(src => 
+      new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error(`Failed to preload: ${src}`));
+        img.src = src;
+      })
+    )
+  );
+}
+
+/**
+ * Convert to WebP format
+ */
+export async function convertToWebP(src: string, quality = 0.8): Promise<string> {
+  const result = await optimizeImage(src, { format: 'webp', quality });
+  return result.optimized;
+}
+
+/**
+ * Convert to AVIF format
+ */
+export async function convertToAVIF(src: string, quality = 0.8): Promise<string> {
+  const result = await optimizeImage(src, { format: 'avif', quality });
+  return result.optimized;
+}
+
+/**
+ * Image optimizer class
+ */
+export class ImageOptimizer {
+  private cache = new Map<string, any>();
+  
+  async optimize(src: string, options: any = {}): Promise<any> {
+    const cacheKey = `${src}-${JSON.stringify(options)}`;
+    
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+    
+    const result = await optimizeImage(src, options);
+    this.cache.set(cacheKey, result);
+    return result;
+  }
+  
+  clearCache(): void {
+    this.cache.clear();
+  }
+}
+
+/**
  * Get image dimensions without loading the full image
  */
 export function getImageDimensions(src: string): Promise<{ width: number; height: number }> {

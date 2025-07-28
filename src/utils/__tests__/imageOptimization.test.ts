@@ -45,19 +45,35 @@ afterAll(() => {
 });
 
 // Mock Image constructor
-global.Image = jest.fn(() => ({
-  onload: null,
-  onerror: null,
-  src: '',
-  width: 1920,
-  height: 1080,
-  addEventListener: jest.fn((event, handler) => {
-    if (event === 'load') {
-      setTimeout(() => handler(), 10);
+global.Image = jest.fn(() => {
+  const mockImg = {
+    onload: null as (() => void) | null,
+    onerror: null as (() => void) | null,
+    src: '',
+    naturalWidth: 1920,
+    naturalHeight: 1080,
+    width: 1920,
+    height: 1080,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+  };
+  
+  // Auto-trigger load when src is set
+  Object.defineProperty(mockImg, 'src', {
+    set: function(value: string) {
+      setTimeout(() => {
+        if (this.onload) {
+          this.onload();
+        }
+      }, 0);
+    },
+    get: function() {
+      return '';
     }
-  }),
-  removeEventListener: jest.fn(),
-})) as any;
+  });
+  
+  return mockImg;
+}) as any;
 
 describe('imageOptimization', () => {
   beforeEach(() => {

@@ -52,12 +52,18 @@ describe('Service Worker Registration', () => {
     (global as any).navigator = mockNavigator;
     
     delete (global as any).window;
+    const mockConfirm = jest.fn();
+    const mockReload = jest.fn();
     (global as any).window = {
-      confirm: jest.fn(),
+      confirm: mockConfirm,
       location: {
-        reload: jest.fn(),
+        reload: mockReload,
       },
     };
+    
+    // Store reference for test access
+    (global as any).mockConfirm = mockConfirm;
+    (global as any).mockReload = mockReload;
   });
 
   afterEach(() => {
@@ -151,7 +157,7 @@ describe('Service Worker Registration', () => {
       
       mockRegistration.installing = mockNewWorker;
       mockNavigator.serviceWorker.controller = {};
-      (global.window as any).confirm.mockReturnValue(true);
+      (global as any).mockConfirm.mockReturnValue(true);
 
       await registerServiceWorker();
 
@@ -169,11 +175,11 @@ describe('Service Worker Registration', () => {
       // Trigger statechange
       statechangeCallback();
 
-      expect((global.window as any).confirm).toHaveBeenCalledWith(
+      expect((global as any).mockConfirm).toHaveBeenCalledWith(
         '新しいバージョンが利用可能です。更新しますか？'
       );
       expect(mockNewWorker.postMessage).toHaveBeenCalledWith({ action: 'skipWaiting' });
-      expect((global.window as any).location.reload).toHaveBeenCalled();
+      expect((global as any).mockReload).toHaveBeenCalled();
 
       process.env.NODE_ENV = originalEnv;
     });
@@ -190,7 +196,7 @@ describe('Service Worker Registration', () => {
       
       mockRegistration.installing = mockNewWorker;
       mockNavigator.serviceWorker.controller = {};
-      (global.window as any).confirm.mockReturnValue(false);
+      (global as any).mockConfirm.mockReturnValue(false);
 
       await registerServiceWorker();
 
@@ -203,7 +209,7 @@ describe('Service Worker Registration', () => {
       statechangeCallback();
 
       expect(mockNewWorker.postMessage).not.toHaveBeenCalled();
-      expect((global.window as any).location.reload).not.toHaveBeenCalled();
+      expect((global as any).mockReload).not.toHaveBeenCalled();
 
       process.env.NODE_ENV = originalEnv;
     });
