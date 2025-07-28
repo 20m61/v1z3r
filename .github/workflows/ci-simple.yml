@@ -24,6 +24,9 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
       
+    - name: Build modules
+      run: yarn build:modules
+      
     - name: Run TypeScript type check
       run: yarn type-check
       
@@ -50,6 +53,9 @@ jobs:
         
     - name: Install dependencies
       run: yarn install --frozen-lockfile
+      
+    - name: Build modules
+      run: yarn build:modules
       
     - name: Build application
       run: yarn build
