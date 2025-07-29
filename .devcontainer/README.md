@@ -40,11 +40,11 @@ This directory contains the development container configuration for the v1z3r VJ
 
 ### Security Features
 
-Following Anthropic's recommendations:
-- Custom firewall with whitelist-based network access
-- Restricted outbound connections to necessary services only
-- Isolated development environment
-- Security capabilities limited to debugging needs
+Following development best practices:
+- Isolated development environment with Docker
+- Non-root user execution
+- Minimal required capabilities
+- Service-to-service communication via Docker networks
 
 ### VS Code Extensions
 
@@ -61,7 +61,7 @@ The container automatically installs:
 - Named volumes for `node_modules` and `.next` cache
 - Bind mount with cached consistency
 - Separate volume for Yarn cache
-- Host network mode for better performance
+- Bridge network for service communication
 
 ## 📁 File Structure
 
@@ -70,7 +70,8 @@ The container automatically installs:
 ├── devcontainer.json    # Main configuration
 ├── docker-compose.yml   # Multi-service setup
 ├── Dockerfile          # Container image definition
-├── init-firewall.sh    # Security firewall script
+├── init-container.sh   # Container initialization script
+├── test-devcontainer.sh # Test script for validation
 └── README.md          # This file
 ```
 
@@ -109,15 +110,13 @@ Modify `devcontainer.json` to customize VS Code:
 
 ## 🔒 Security Notes
 
-1. **Network Access**: The firewall restricts network access to:
-   - Package registries (npm, yarn)
-   - Git repositories (GitHub, GitLab, Bitbucket)
-   - AWS services (S3, DynamoDB, Lambda)
-   - Local development ports
+1. **Container Isolation**: Development environment is isolated via Docker containers
 
 2. **User Permissions**: Runs as non-root `vscode` user
 
-3. **Capabilities**: Only includes necessary capabilities for debugging
+3. **Capabilities**: Only includes necessary capabilities for debugging (SYS_PTRACE)
+
+4. **Network**: Uses Docker bridge network for service communication
 
 ## 🐛 Troubleshooting
 
