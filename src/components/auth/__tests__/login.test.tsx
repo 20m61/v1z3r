@@ -22,9 +22,7 @@ jest.mock('@/store/authStore', () => ({
 // Mock components
 jest.mock('@/components/auth/LoginForm', () => ({
   LoginForm: ({ redirectUrl }: { redirectUrl?: string }) => (
-    <div data-testid="login-form">
-      Login Form (redirectUrl: {redirectUrl || '/dashboard'})
-    </div>
+    <div data-testid="login-form">Login Form (redirectUrl: {redirectUrl || '/dashboard'})</div>
   ),
 }));
 
@@ -49,7 +47,7 @@ describe('LoginPage', () => {
 
   it('renders login page with all components', () => {
     render(<LoginPage />);
-    
+
     expect(screen.getByText('v1z3r')).toBeInTheDocument(); // Logo text
     expect(screen.getByTestId('login-form')).toBeInTheDocument();
     expect(screen.getByText(/sign in to your account/i)).toBeInTheDocument();
@@ -57,23 +55,23 @@ describe('LoginPage', () => {
 
   it('passes default redirect URL to login form', () => {
     render(<LoginPage />);
-    
+
     expect(screen.getByText(/redirectUrl: \/dashboard/)).toBeInTheDocument();
   });
 
   it('passes redirect prop to login form', () => {
     render(<LoginPage redirect="/visualizer" />);
-    
+
     expect(screen.getByText(/redirectUrl: \/visualizer/)).toBeInTheDocument();
   });
 
   it('has correct page layout structure', () => {
     const { container } = render(<LoginPage />);
-    
+
     // Check for centered layout
     const mainContainer = container.querySelector('.min-h-screen.flex');
     expect(mainContainer).toBeInTheDocument();
-    
+
     // Check for auth card styling
     const authCard = container.querySelector('.bg-white.dark\\:bg-gray-800');
     expect(authCard).toBeInTheDocument();
@@ -81,7 +79,7 @@ describe('LoginPage', () => {
 
   it('applies dark mode classes', () => {
     const { container } = render(<LoginPage />);
-    
+
     const darkModeElements = container.querySelectorAll('[class*="dark:"]');
     expect(darkModeElements.length).toBeGreaterThan(0);
   });

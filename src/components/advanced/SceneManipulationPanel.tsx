@@ -5,7 +5,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
-import { SceneManipulationService, SceneObject, SceneManipulationConfig } from '@/services/scene/sceneManipulation';
+import {
+  SceneManipulationService,
+  SceneObject,
+  SceneManipulationConfig,
+} from '@/services/scene/sceneManipulation';
 import { errorHandler } from '@/utils/errorHandler';
 
 interface SceneManipulationPanelProps {
@@ -57,7 +61,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
     // Initialize object library
     const library = sceneService.getObjectLibrary();
     const libraryItems: ObjectLibraryItem[] = [];
-    
+
     library.forEach((object, key) => {
       const [geometry, material] = key.split('-');
       libraryItems.push({
@@ -69,19 +73,19 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
         material,
       });
     });
-    
+
     setObjectLibrary(libraryItems);
 
     // Set up callbacks
     sceneService.setCallbacks({
-      onObjectSelect: (object) => {
+      onObjectSelect: object => {
         setSelectedObject(object);
       },
-      onObjectTransform: (object) => {
+      onObjectTransform: object => {
         // Update properties panel
         updateSceneObjects();
       },
-      onSceneUpdate: (scene) => {
+      onSceneUpdate: scene => {
         updateSceneObjects();
         updateMetrics();
         onSceneUpdate?.(scene);
@@ -113,7 +117,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
 
   const handleConfigChange = (newConfig: Partial<SceneManipulationConfig>) => {
     if (!sceneService) return;
-    
+
     const updatedConfig = { ...config, ...newConfig };
     setConfig(updatedConfig);
     sceneService.setConfig(updatedConfig);
@@ -121,13 +125,13 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
 
   const handleAddObject = (libraryKey: string) => {
     if (!sceneService) return;
-    
+
     const position = new THREE.Vector3(
       (Math.random() - 0.5) * 10,
       Math.random() * 5,
       (Math.random() - 0.5) * 10
     );
-    
+
     const object = sceneService.addObjectToScene(libraryKey, position);
     if (object) {
       sceneService.selectObject(object);
@@ -137,7 +141,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
 
   const handleDeleteObject = (objectId: string) => {
     if (!sceneService) return;
-    
+
     const objectToDelete = sceneObjects.find(obj => obj.id === objectId);
     if (objectToDelete) {
       // Find the actual THREE.Object3D in the scene
@@ -173,7 +177,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
 
   const handleExportScene = () => {
     if (!sceneService) return;
-    
+
     const sceneData = sceneService.exportScene();
     const blob = new Blob([JSON.stringify(sceneData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -182,16 +186,16 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
     a.download = `scene_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     errorHandler.info('Scene exported');
   };
 
   const handleImportScene = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !sceneService) return;
-    
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       try {
         const sceneData = JSON.parse(e.target?.result as string);
         sceneService.importScene(sceneData);
@@ -206,7 +210,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
   const renderLibraryTab = () => (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        {objectLibrary.map((item) => (
+        {objectLibrary.map(item => (
           <button
             key={item.key}
             onClick={() => handleAddObject(item.key)}
@@ -224,11 +228,11 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
           </button>
         ))}
       </div>
-      
+
       <div className="border-t border-gray-700 pt-4">
         <h4 className="text-sm font-medium text-gray-300 mb-3">Special Objects</h4>
         <div className="grid grid-cols-2 gap-3">
-          {['ambient-light', 'directional-light', 'point-light', 'spot-light'].map((lightType) => (
+          {['ambient-light', 'directional-light', 'point-light', 'spot-light'].map(lightType => (
             <button
               key={lightType}
               onClick={() => handleAddObject(lightType)}
@@ -240,7 +244,10 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                 </div>
                 <div>
                   <div className="text-sm font-medium text-white">
-                    {lightType.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    {lightType
+                      .split('-')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ')}
                   </div>
                   <div className="text-xs text-gray-400">Light</div>
                 </div>
@@ -255,9 +262,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
   const renderObjectsTab = () => (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-300">
-          Objects ({sceneObjects.length})
-        </span>
+        <span className="text-sm font-medium text-gray-300">Objects ({sceneObjects.length})</span>
         <button
           onClick={handleClearScene}
           className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
@@ -265,7 +270,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
           Clear All
         </button>
       </div>
-      
+
       <div className="max-h-64 overflow-y-auto space-y-2">
         {sceneObjects.map((object, index) => (
           <div
@@ -288,7 +293,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => object.visible = !object.visible}
+                  onClick={() => (object.visible = !object.visible)}
                   className={`text-xs px-2 py-1 rounded ${
                     object.visible ? 'bg-green-600' : 'bg-gray-600'
                   }`}
@@ -316,7 +321,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
           <h4 className="text-sm font-medium text-gray-300 mb-3">
             Selected: {selectedObject.name || 'Unnamed Object'}
           </h4>
-          
+
           <div className="space-y-4">
             {/* Transform */}
             <div>
@@ -326,7 +331,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="0.1"
                   value={selectedObject.position.x.toFixed(2)}
-                  onChange={(e) => {
+                  onChange={e => {
                     selectedObject.position.x = parseFloat(e.target.value);
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
@@ -335,7 +340,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="0.1"
                   value={selectedObject.position.y.toFixed(2)}
-                  onChange={(e) => {
+                  onChange={e => {
                     selectedObject.position.y = parseFloat(e.target.value);
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
@@ -344,7 +349,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="0.1"
                   value={selectedObject.position.z.toFixed(2)}
-                  onChange={(e) => {
+                  onChange={e => {
                     selectedObject.position.z = parseFloat(e.target.value);
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
@@ -354,14 +359,18 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
 
             {/* Rotation */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-2">Rotation (degrees)</label>
+              <label className="block text-xs font-medium text-gray-400 mb-2">
+                Rotation (degrees)
+              </label>
               <div className="grid grid-cols-3 gap-2">
                 <input
                   type="number"
                   step="1"
                   value={THREE.MathUtils.radToDeg(selectedObject.rotation.x).toFixed(0)}
-                  onChange={(e) => {
-                    selectedObject.rotation.x = THREE.MathUtils.degToRad(parseFloat(e.target.value));
+                  onChange={e => {
+                    selectedObject.rotation.x = THREE.MathUtils.degToRad(
+                      parseFloat(e.target.value)
+                    );
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
                 />
@@ -369,8 +378,10 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="1"
                   value={THREE.MathUtils.radToDeg(selectedObject.rotation.y).toFixed(0)}
-                  onChange={(e) => {
-                    selectedObject.rotation.y = THREE.MathUtils.degToRad(parseFloat(e.target.value));
+                  onChange={e => {
+                    selectedObject.rotation.y = THREE.MathUtils.degToRad(
+                      parseFloat(e.target.value)
+                    );
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
                 />
@@ -378,8 +389,10 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="1"
                   value={THREE.MathUtils.radToDeg(selectedObject.rotation.z).toFixed(0)}
-                  onChange={(e) => {
-                    selectedObject.rotation.z = THREE.MathUtils.degToRad(parseFloat(e.target.value));
+                  onChange={e => {
+                    selectedObject.rotation.z = THREE.MathUtils.degToRad(
+                      parseFloat(e.target.value)
+                    );
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
                 />
@@ -394,7 +407,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="0.1"
                   value={selectedObject.scale.x.toFixed(2)}
-                  onChange={(e) => {
+                  onChange={e => {
                     selectedObject.scale.x = parseFloat(e.target.value);
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
@@ -403,7 +416,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="0.1"
                   value={selectedObject.scale.y.toFixed(2)}
-                  onChange={(e) => {
+                  onChange={e => {
                     selectedObject.scale.y = parseFloat(e.target.value);
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
@@ -412,7 +425,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
                   type="number"
                   step="0.1"
                   value={selectedObject.scale.z.toFixed(2)}
-                  onChange={(e) => {
+                  onChange={e => {
                     selectedObject.scale.z = parseFloat(e.target.value);
                   }}
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs"
@@ -436,7 +449,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
           <span className="text-2xl">🎭</span>
           3D Scene
         </h3>
-        
+
         <div className="flex items-center gap-4">
           {/* Performance Metrics */}
           <div className="text-sm text-gray-400">
@@ -444,7 +457,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
               {metrics.objectCount} objects, {metrics.polygonCount} triangles
             </span>
           </div>
-          
+
           {/* Import/Export */}
           <div className="flex items-center gap-2">
             <button
@@ -473,13 +486,13 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
       {/* Transform Controls */}
       <div className="mb-6 p-4 bg-gray-800 rounded-lg">
         <h4 className="text-sm font-medium text-gray-300 mb-3">Transform Controls</h4>
-        
+
         <div className="grid grid-cols-2 gap-4">
           {/* Transform Mode */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-2">Mode</label>
             <div className="flex gap-1">
-              {['translate', 'rotate', 'scale'].map((mode) => (
+              {['translate', 'rotate', 'scale'].map(mode => (
                 <button
                   key={mode}
                   onClick={() => handleTransformModeChange(mode as any)}
@@ -499,7 +512,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-2">Space</label>
             <div className="flex gap-1">
-              {['world', 'local'].map((system) => (
+              {['world', 'local'].map(system => (
                 <button
                   key={system}
                   onClick={() => handleCoordinateSystemChange(system as any)}
@@ -526,12 +539,12 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
             />
             Snap to Grid
           </label>
-          
+
           <label className="flex items-center gap-2 text-sm text-gray-300">
             <input
               type="checkbox"
               checked={config.enableGizmos}
-              onChange={(e) => handleConfigChange({ enableGizmos: e.target.checked })}
+              onChange={e => handleConfigChange({ enableGizmos: e.target.checked })}
               className="rounded"
             />
             Show Gizmos
@@ -545,7 +558,7 @@ export const SceneManipulationPanel: React.FC<SceneManipulationPanelProps> = ({
           { id: 'library', label: 'Library', icon: '📚' },
           { id: 'objects', label: 'Objects', icon: '🧊' },
           { id: 'properties', label: 'Properties', icon: '⚙️' },
-        ].map((tab) => (
+        ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}

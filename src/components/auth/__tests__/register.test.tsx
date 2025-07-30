@@ -37,7 +37,7 @@ describe('RegisterPage', () => {
 
   it('renders register page with all components', () => {
     render(<RegisterPage />);
-    
+
     expect(screen.getByText('v1z3r')).toBeInTheDocument(); // Logo text
     expect(screen.getByTestId('register-form')).toBeInTheDocument();
     expect(screen.getByText(/create your account/i)).toBeInTheDocument();
@@ -45,11 +45,11 @@ describe('RegisterPage', () => {
 
   it('has correct page layout structure', () => {
     const { container } = render(<RegisterPage />);
-    
+
     // Check for centered layout
     const mainContainer = container.querySelector('.min-h-screen.flex');
     expect(mainContainer).toBeInTheDocument();
-    
+
     // Check for auth card styling
     const authCard = container.querySelector('.bg-white.dark\\:bg-gray-800');
     expect(authCard).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('RegisterPage', () => {
 
   it('includes registration benefits section', () => {
     render(<RegisterPage />);
-    
+
     // Check for benefits text
     expect(screen.getByText(/join the vj community/i)).toBeInTheDocument();
     expect(screen.getByText(/collaborate with other vjs/i)).toBeInTheDocument();
@@ -66,15 +66,17 @@ describe('RegisterPage', () => {
 
   it('applies responsive design classes', () => {
     const { container } = render(<RegisterPage />);
-    
+
     // Check for responsive padding
-    const responsiveElements = container.querySelectorAll('[class*="sm:"], [class*="md:"], [class*="lg:"]');
+    const responsiveElements = container.querySelectorAll(
+      '[class*="sm:"], [class*="md:"], [class*="lg:"]'
+    );
     expect(responsiveElements.length).toBeGreaterThan(0);
   });
 
   it('has proper semantic HTML structure', () => {
     const { container } = render(<RegisterPage />);
-    
+
     // Should have proper heading hierarchy
     const h2 = container.querySelector('h2');
     expect(h2).toBeInTheDocument();

@@ -4,7 +4,12 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { midiController, MidiDevice, MidiMapping, MidiMessage } from '@/services/midi/midiController';
+import {
+  midiController,
+  MidiDevice,
+  MidiMapping,
+  MidiMessage,
+} from '@/services/midi/midiController';
 import { errorHandler } from '@/utils/errorHandler';
 
 interface MidiControlPanelProps {
@@ -25,7 +30,9 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
   const [lastMessage, setLastMessage] = useState<MidiMessage | null>(null);
   const [activeTab, setActiveTab] = useState<'devices' | 'mappings' | 'learn'>('devices');
   const [isInitialized, setIsInitialized] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<
+    'disconnected' | 'connecting' | 'connected'
+  >('disconnected');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parameters available for mapping
@@ -59,21 +66,21 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
   const initializeMidi = useCallback(async () => {
     try {
       setConnectionStatus('connecting');
-      
+
       // Set up callbacks
       midiController.setCallbacks({
-        onDeviceConnect: (device) => {
+        onDeviceConnect: device => {
           setDevices(prev => [...prev.filter(d => d.id !== device.id), device]);
           errorHandler.info(`MIDI device connected: ${device.name}`);
         },
-        onDeviceDisconnect: (device) => {
+        onDeviceDisconnect: device => {
           setDevices(prev => prev.filter(d => d.id !== device.id));
           errorHandler.info(`MIDI device disconnected: ${device.name}`);
         },
-        onMidiMessage: (message) => {
+        onMidiMessage: message => {
           setLastMessage(message);
         },
-        onMappingLearn: (mapping) => {
+        onMappingLearn: mapping => {
           setMappings(prev => [...prev.filter(m => m.id !== mapping.id), mapping]);
           setIsLearning(false);
           errorHandler.info(`MIDI mapping learned: ${mapping.name}`);
@@ -85,12 +92,11 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
 
       // Initialize MIDI system
       await midiController.initialize();
-      
+
       setDevices(midiController.getDevices());
       setMappings(midiController.getMappings());
       setIsInitialized(true);
       setConnectionStatus('connected');
-      
     } catch (error) {
       errorHandler.error('Failed to initialize MIDI', error as Error);
       setConnectionStatus('disconnected');
@@ -115,7 +121,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
     );
 
     setMappings(midiController.getMappings());
-    
+
     // Select the new mapping
     const newMapping = midiController.getMapping(mappingId);
     if (newMapping) {
@@ -168,7 +174,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       try {
         const data = e.target?.result as string;
         midiController.importMappings(data);
@@ -186,10 +192,15 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="text-lg font-medium text-white">Connected Devices</h4>
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            connectionStatus === 'connected' ? 'bg-green-400' : 
-            connectionStatus === 'connecting' ? 'bg-yellow-400' : 'bg-red-400'
-          }`}></div>
+          <div
+            className={`w-2 h-2 rounded-full ${
+              connectionStatus === 'connected'
+                ? 'bg-green-400'
+                : connectionStatus === 'connecting'
+                  ? 'bg-yellow-400'
+                  : 'bg-red-400'
+            }`}
+          ></div>
           <span className="text-sm text-gray-400 capitalize">{connectionStatus}</span>
         </div>
       </div>
@@ -203,7 +214,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {devices.map((device) => (
+          {devices.map(device => (
             <div
               key={device.id}
               className={`p-4 rounded-lg border-2 transition-colors cursor-pointer ${
@@ -216,9 +227,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">
-                      {device.type === 'input' ? '🎹' : '🔊'}
-                    </span>
+                    <span className="text-xl">{device.type === 'input' ? '🎹' : '🔊'}</span>
                   </div>
                   <div>
                     <h5 className="font-medium text-white">{device.name}</h5>
@@ -228,15 +237,15 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    device.connected ? 'bg-green-600' : 'bg-red-600'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded ${
+                      device.connected ? 'bg-green-600' : 'bg-red-600'
+                    }`}
+                  >
                     {device.connected ? 'Connected' : 'Disconnected'}
                   </span>
                   {device.capabilities.midi2Support && (
-                    <span className="px-2 py-1 text-xs bg-purple-600 rounded">
-                      MIDI 2.0
-                    </span>
+                    <span className="px-2 py-1 text-xs bg-purple-600 rounded">MIDI 2.0</span>
                   )}
                 </div>
               </div>
@@ -251,27 +260,35 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
           <h5 className="font-medium text-white mb-3">Device Capabilities</h5>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${
-                selectedDevice.capabilities.supportsControlChange ? 'bg-green-400' : 'bg-gray-400'
-              }`}></span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  selectedDevice.capabilities.supportsControlChange ? 'bg-green-400' : 'bg-gray-400'
+                }`}
+              ></span>
               <span className="text-gray-300">Control Change</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${
-                selectedDevice.capabilities.supportsNoteOn ? 'bg-green-400' : 'bg-gray-400'
-              }`}></span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  selectedDevice.capabilities.supportsNoteOn ? 'bg-green-400' : 'bg-gray-400'
+                }`}
+              ></span>
               <span className="text-gray-300">Note Messages</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${
-                selectedDevice.capabilities.supportsPitchBend ? 'bg-green-400' : 'bg-gray-400'
-              }`}></span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  selectedDevice.capabilities.supportsPitchBend ? 'bg-green-400' : 'bg-gray-400'
+                }`}
+              ></span>
               <span className="text-gray-300">Pitch Bend</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${
-                selectedDevice.capabilities.supportsAftertouch ? 'bg-green-400' : 'bg-gray-400'
-              }`}></span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  selectedDevice.capabilities.supportsAftertouch ? 'bg-green-400' : 'bg-gray-400'
+                }`}
+              ></span>
               <span className="text-gray-300">Aftertouch</span>
             </div>
           </div>
@@ -316,7 +333,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {mappings.map((mapping) => (
+          {mappings.map(mapping => (
             <div
               key={mapping.id}
               className={`p-4 rounded-lg border transition-colors ${
@@ -329,15 +346,20 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
                     <span className="text-sm font-mono">
-                      {mapping.messageType === 'cc' ? 'CC' : 
-                       mapping.messageType === 'note' ? 'NT' : 
-                       mapping.messageType === 'pitchbend' ? 'PB' : 'AF'}
+                      {mapping.messageType === 'cc'
+                        ? 'CC'
+                        : mapping.messageType === 'note'
+                          ? 'NT'
+                          : mapping.messageType === 'pitchbend'
+                            ? 'PB'
+                            : 'AF'}
                     </span>
                   </div>
                   <div>
                     <h5 className="font-medium text-white">{mapping.name}</h5>
                     <p className="text-sm text-gray-400">
-                      {mapping.messageType.toUpperCase()} {mapping.control} → {mapping.parameterPath}
+                      {mapping.messageType.toUpperCase()} {mapping.control} →{' '}
+                      {mapping.parameterPath}
                     </p>
                   </div>
                 </div>
@@ -346,7 +368,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
                     <input
                       type="checkbox"
                       checked={mapping.enabled}
-                      onChange={(e) => handleMappingUpdate(mapping.id, { enabled: e.target.checked })}
+                      onChange={e => handleMappingUpdate(mapping.id, { enabled: e.target.checked })}
                       className="rounded"
                     />
                     Enabled
@@ -376,14 +398,14 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
           <h5 className="font-medium text-white mb-4">Edit Mapping</h5>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Message Type
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Message Type</label>
               <select
                 value={selectedMapping.messageType}
-                onChange={(e) => handleMappingUpdate(selectedMapping.id, { 
-                  messageType: e.target.value as any 
-                })}
+                onChange={e =>
+                  handleMappingUpdate(selectedMapping.id, {
+                    messageType: e.target.value as any,
+                  })
+                }
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               >
                 <option value="cc">Control Change</option>
@@ -393,57 +415,57 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Control/Note
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Control/Note</label>
               <input
                 type="number"
                 min="0"
                 max="127"
                 value={selectedMapping.control}
-                onChange={(e) => handleMappingUpdate(selectedMapping.id, { 
-                  control: parseInt(e.target.value) 
-                })}
+                onChange={e =>
+                  handleMappingUpdate(selectedMapping.id, {
+                    control: parseInt(e.target.value),
+                  })
+                }
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Min Value
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Min Value</label>
               <input
                 type="number"
                 step="0.1"
                 value={selectedMapping.minValue}
-                onChange={(e) => handleMappingUpdate(selectedMapping.id, { 
-                  minValue: parseFloat(e.target.value) 
-                })}
+                onChange={e =>
+                  handleMappingUpdate(selectedMapping.id, {
+                    minValue: parseFloat(e.target.value),
+                  })
+                }
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Max Value
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Max Value</label>
               <input
                 type="number"
                 step="0.1"
                 value={selectedMapping.maxValue}
-                onChange={(e) => handleMappingUpdate(selectedMapping.id, { 
-                  maxValue: parseFloat(e.target.value) 
-                })}
+                onChange={e =>
+                  handleMappingUpdate(selectedMapping.id, {
+                    maxValue: parseFloat(e.target.value),
+                  })
+                }
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Curve
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Curve</label>
               <select
                 value={selectedMapping.curve}
-                onChange={(e) => handleMappingUpdate(selectedMapping.id, { 
-                  curve: e.target.value as any 
-                })}
+                onChange={e =>
+                  handleMappingUpdate(selectedMapping.id, {
+                    curve: e.target.value as any,
+                  })
+                }
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               >
                 <option value="linear">Linear</option>
@@ -475,12 +497,8 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
         <div className="p-6 bg-blue-900/20 border border-blue-500 rounded-lg text-center">
           <div className="animate-pulse">
             <span className="text-2xl mb-4 block">🎯</span>
-            <h5 className="text-lg font-medium text-white mb-2">
-              Learning: {learningParameter}
-            </h5>
-            <p className="text-gray-300">
-              Move a control on your MIDI device to create a mapping
-            </p>
+            <h5 className="text-lg font-medium text-white mb-2">Learning: {learningParameter}</h5>
+            <p className="text-gray-300">Move a control on your MIDI device to create a mapping</p>
           </div>
         </div>
       ) : (
@@ -488,9 +506,9 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
           <p className="text-gray-300 text-sm">
             Click &quot;Learn&quot; next to a parameter to map it to a MIDI control
           </p>
-          
+
           <div className="grid grid-cols-1 gap-3">
-            {availableParameters.map((param) => (
+            {availableParameters.map(param => (
               <div
                 key={param.path}
                 className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-600"
@@ -576,7 +594,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
           <span className="text-2xl">🎹</span>
           MIDI Control
         </h3>
-        
+
         <div className="flex items-center gap-4">
           <div className="text-sm text-gray-400">
             {devices.length} devices, {mappings.length} mappings
@@ -590,7 +608,7 @@ export const MidiControlPanel: React.FC<MidiControlPanelProps> = ({
           { id: 'devices', label: 'Devices', icon: '🔌' },
           { id: 'mappings', label: 'Mappings', icon: '🔗' },
           { id: 'learn', label: 'Learn', icon: '🎯' },
-        ].map((tab) => (
+        ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}

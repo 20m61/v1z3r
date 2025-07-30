@@ -17,7 +17,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
-  
+
   const { isMicrophoneEnabled, setMicrophoneEnabled } = useVisualizerStore();
 
   // オーディオ解析を開始
@@ -34,16 +34,16 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
 
       // iOS Safari対応: ユーザージェスチャー後のみAudioContext作成
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      
+
       // マイクへのアクセスを要求（iOS制限を考慮）
       let stream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
+        stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: false, // iOS最適化
             noiseSuppression: false,
-            autoGainControl: false
-          } 
+            autoGainControl: false,
+          },
         });
       } catch (micError) {
         // Silent fallback on mobile - this is expected behavior
@@ -53,42 +53,42 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
         setError('マイクアクセスが拒否されました。視覚エフェクトはデモモードで動作します。');
         return;
       }
-      
+
       // AudioContextの作成（iOS Safari対応）
       audioContextRef.current = new AudioContextClass();
       const audioContext = audioContextRef.current;
-      
+
       // iOS Safari: AudioContextの状態確認と再開
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
-      
+
       // アナライザーノードの作成
       analyserRef.current = audioContext.createAnalyser();
       const analyser = analyserRef.current;
       analyser.fftSize = 1024; // iOS最適化: より小さなFFTサイズ
-      
+
       // マイク入力のソースノードを作成
       sourceRef.current = audioContext.createMediaStreamSource(stream);
       const source = sourceRef.current;
-      
+
       // ソースをアナライザーに接続
       source.connect(analyser);
-      
+
       setIsAnalyzing(true);
       setMicrophoneEnabled(true);
       setError(null);
-      
+
       // Get reusable audio buffer for analysis data
       const dataArray = getReusableAudioBuffer(analyser.frequencyBinCount);
       dataArrayRef.current = dataArray;
-      
+
       const updateData = () => {
         if (!analyser) return;
-        
+
         try {
           analyser.getByteFrequencyData(dataArray);
-          
+
           // Rate limit audio data updates
           const clientId = 'audio-analyzer'; // Could be user-specific in a multi-user context
           if (!globalRateLimiters.audioData.isAllowed(clientId)) {
@@ -96,7 +96,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
             animationFrameRef.current = requestAnimationFrame(updateData);
             return;
           }
-          
+
           // Validate audio data before passing to callback
           try {
             const validatedData = validateAudioData(dataArray);
@@ -115,25 +115,29 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
               throw validationError;
             }
           }
-          
+
           animationFrameRef.current = requestAnimationFrame(updateData);
         } catch (err) {
           console.error('オーディオデータの取得中にエラーが発生しました:', err);
           stopAnalyzing();
         }
       };
-      
+
       updateData();
     } catch (error) {
       const errorMessage = 'オーディオの解析中にエラーが発生しました';
       // エラーハンドラを使用してログ記録
       const { errorHandler } = await import('@/utils/errorHandler');
-      errorHandler.audioError(errorMessage, error instanceof Error ? error : new Error(String(error)), {
-        isAnalyzing,
-        isMicrophoneEnabled,
-        timestamp: new Date().toISOString()
-      });
-      
+      errorHandler.audioError(
+        errorMessage,
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          isAnalyzing,
+          isMicrophoneEnabled,
+          timestamp: new Date().toISOString(),
+        }
+      );
+
       setError('マイクへのアクセスが拒否されたか、エラーが発生しました。');
       setIsAnalyzing(false);
       setMicrophoneEnabled(false);
@@ -147,12 +151,12 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-    
+
     if (sourceRef.current) {
       sourceRef.current.disconnect();
       sourceRef.current = null;
     }
-    
+
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       try {
         audioContextRef.current.close();
@@ -169,7 +173,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
       returnAudioBuffer(dataArrayRef.current);
       dataArrayRef.current = null;
     }
-    
+
     setIsAnalyzing(false);
     setMicrophoneEnabled(false);
   }, [setMicrophoneEnabled]);
@@ -194,11 +198,17 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
   // エラーメッセージを表示
   if (error) {
     return (
-      <div className="p-4 bg-red-500 bg-opacity-20 text-red-200 rounded mb-4" data-testid="error-message">
+      <div
+        className="p-4 bg-red-500 bg-opacity-20 text-red-200 rounded mb-4"
+        data-testid="error-message"
+      >
         <p className="font-medium">エラー:</p>
         <p>{error}</p>
-        <Button 
-          onClick={() => { setError(null); startAnalyzing(); }}
+        <Button
+          onClick={() => {
+            setError(null);
+            startAnalyzing();
+          }}
           className="mt-2"
           variant="outline"
           size="sm"

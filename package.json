@@ -17,6 +17,9 @@
     "build:prod": "cp .env.prod .env && next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\" \"modules/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\" \"modules/**/*.{ts,tsx,js,jsx,json,md}\"",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -36,7 +39,7 @@
     "env:dev": "cp .env.dev .env",
     "env:prod": "cp .env.prod .env",
     "prepare": "husky install",
-    "ci:quick": "yarn type-check && yarn lint",
+    "ci:quick": "yarn type-check && yarn lint && yarn format:check",
     "ci:core-tests": "yarn test src/store/__tests__/authStore.test.ts src/utils/__tests__/errorHandler.test.ts src/components/auth/__tests__/RoleGuard.test.tsx src/services/webgpu/__tests__/webgpuService.test.ts --passWithNoTests"
   },
   "resolutions": {
@@ -54,6 +57,8 @@
     "@react-three/fiber": "^9.2.0",
     "@tensorflow/tfjs": "^4.11.0",
     "@types/qrcode.react": "^3.0.0",
+    "@vj-app/types": "1.0.0",
+    "@vj-app/ui-components": "1.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.5.0",
     "next": "^14.2.30",
@@ -68,6 +73,7 @@
     "zustand": "^4.4.3"
   },
   "devDependencies": {
+    "@jest/globals": "^30.0.0",
     "@playwright/test": "^1.54.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -79,6 +85,7 @@
     "@types/react": "^18.2.33",
     "@types/react-dom": "^18.2.14",
     "@types/three": "^0.158.1",
+    "@vj-app/test-utils": "1.0.0",
     "autoprefixer": "^10.4.16",
     "aws-cdk": "^2.1019.2",
     "aws-cdk-lib": "^2.202.0",
@@ -89,6 +96,7 @@
     "jest": "^30.0.3",
     "jest-environment-jsdom": "^30.0.2",
     "postcss": "^8.4.31",
+    "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.2.2"

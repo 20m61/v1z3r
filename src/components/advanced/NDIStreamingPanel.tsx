@@ -4,7 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ndiStreamingService, NDIConfig, NDISource, NDIReceiver, NDIMetrics } from '@/services/streaming/ndiStreaming';
+import {
+  ndiStreamingService,
+  NDIConfig,
+  NDISource,
+  NDIReceiver,
+  NDIMetrics,
+} from '@/services/streaming/ndiStreaming';
 import { errorHandler } from '@/utils/errorHandler';
 
 interface NDIStreamingPanelProps {
@@ -22,8 +28,12 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
   const [receivers, setReceivers] = useState<NDIReceiver[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [activeTab, setActiveTab] = useState<'config' | 'sources' | 'receivers' | 'metrics'>('config');
-  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [activeTab, setActiveTab] = useState<'config' | 'sources' | 'receivers' | 'metrics'>(
+    'config'
+  );
+  const [connectionStatus, setConnectionStatus] = useState<
+    'disconnected' | 'connecting' | 'connected'
+  >('disconnected');
 
   useEffect(() => {
     initializeNDI();
@@ -35,7 +45,7 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
   const initializeNDI = async () => {
     try {
       setConnectionStatus('connecting');
-      
+
       // Set up callbacks
       ndiStreamingService.setCallbacks({
         onStreamStart: () => {
@@ -46,31 +56,30 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
           setIsStreaming(false);
           errorHandler.info('NDI streaming stopped');
         },
-        onSourceDiscovered: (source) => {
+        onSourceDiscovered: source => {
           setSources(prev => [...prev.filter(s => s.id !== source.id), source]);
           errorHandler.info(`NDI source discovered: ${source.name}`);
         },
-        onReceiverConnected: (receiver) => {
+        onReceiverConnected: receiver => {
           setReceivers(prev => [...prev.filter(r => r.id !== receiver.id), receiver]);
           errorHandler.info(`NDI receiver connected: ${receiver.name}`);
         },
-        onReceiverDisconnected: (receiver) => {
+        onReceiverDisconnected: receiver => {
           setReceivers(prev => prev.filter(r => r.id !== receiver.id));
           errorHandler.info(`NDI receiver disconnected: ${receiver.name}`);
         },
-        onMetricsUpdate: (newMetrics) => {
+        onMetricsUpdate: newMetrics => {
           setMetrics(newMetrics);
         },
       });
 
       // Initialize NDI service
       await ndiStreamingService.initialize();
-      
+
       setSources(ndiStreamingService.getDiscoveredSources());
       setReceivers(ndiStreamingService.getConnectedReceivers());
       setIsInitialized(true);
       setConnectionStatus('connected');
-      
     } catch (error) {
       errorHandler.error('Failed to initialize NDI', error as Error);
       setConnectionStatus('disconnected');
@@ -104,10 +113,14 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'connected': return 'text-green-400';
-      case 'connecting': return 'text-yellow-400';
-      case 'disconnected': return 'text-red-400';
-      default: return 'text-gray-400';
+      case 'connected':
+        return 'text-green-400';
+      case 'connecting':
+        return 'text-yellow-400';
+      case 'disconnected':
+        return 'text-red-400';
+      default:
+        return 'text-gray-400';
     }
   };
 
@@ -131,25 +144,21 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
         <h4 className="text-lg font-medium text-white mb-4">Stream Settings</h4>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Source Name
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Source Name</label>
             <input
               type="text"
               value={config.sourceName}
-              onChange={(e) => handleConfigChange({ sourceName: e.target.value })}
+              onChange={e => handleConfigChange({ sourceName: e.target.value })}
               className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter source name..."
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Group Name
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Group Name</label>
             <input
               type="text"
               value={config.groupName}
-              onChange={(e) => handleConfigChange({ groupName: e.target.value })}
+              onChange={e => handleConfigChange({ groupName: e.target.value })}
               className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter group name..."
             />
@@ -162,12 +171,10 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
         <h4 className="text-lg font-medium text-white mb-4">Video Settings</h4>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Resolution
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Resolution</label>
             <select
               value={config.resolution}
-              onChange={(e) => handleConfigChange({ resolution: e.target.value as any })}
+              onChange={e => handleConfigChange({ resolution: e.target.value as any })}
               className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="1080p">1080p (1920x1080)</option>
@@ -177,12 +184,10 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Frame Rate
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Frame Rate</label>
             <select
               value={config.frameRate}
-              onChange={(e) => handleConfigChange({ frameRate: parseInt(e.target.value) as any })}
+              onChange={e => handleConfigChange({ frameRate: parseInt(e.target.value) as any })}
               className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="30">30 FPS</option>
@@ -191,30 +196,26 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
             </select>
           </div>
         </div>
-        
+
         {config.resolution === 'custom' && (
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Custom Width
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Custom Width</label>
               <input
                 type="number"
                 value={config.customWidth || 1920}
-                onChange={(e) => handleConfigChange({ customWidth: parseInt(e.target.value) })}
+                onChange={e => handleConfigChange({ customWidth: parseInt(e.target.value) })}
                 className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="320"
                 max="4096"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Custom Height
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Custom Height</label>
               <input
                 type="number"
                 value={config.customHeight || 1080}
-                onChange={(e) => handleConfigChange({ customHeight: parseInt(e.target.value) })}
+                onChange={e => handleConfigChange({ customHeight: parseInt(e.target.value) })}
                 className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="240"
                 max="2160"
@@ -233,19 +234,19 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
               <input
                 type="checkbox"
                 checked={config.enableAudio}
-                onChange={(e) => handleConfigChange({ enableAudio: e.target.checked })}
+                onChange={e => handleConfigChange({ enableAudio: e.target.checked })}
                 className="rounded"
               />
               Enable Audio
             </label>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Sample Rate
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Sample Rate</label>
             <select
               value={config.audioSampleRate}
-              onChange={(e) => handleConfigChange({ audioSampleRate: parseInt(e.target.value) as any })}
+              onChange={e =>
+                handleConfigChange({ audioSampleRate: parseInt(e.target.value) as any })
+              }
               className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={!config.enableAudio}
             >
@@ -266,7 +267,7 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
               <input
                 type="checkbox"
                 checked={config.enableAlpha}
-                onChange={(e) => handleConfigChange({ enableAlpha: e.target.checked })}
+                onChange={e => handleConfigChange({ enableAlpha: e.target.checked })}
                 className="rounded"
               />
               Enable Alpha Channel
@@ -275,7 +276,7 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
               <input
                 type="checkbox"
                 checked={config.clockSync}
-                onChange={(e) => handleConfigChange({ clockSync: e.target.checked })}
+                onChange={e => handleConfigChange({ clockSync: e.target.checked })}
                 className="rounded"
               />
               Clock Synchronization
@@ -284,13 +285,13 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
               <input
                 type="checkbox"
                 checked={config.multicast}
-                onChange={(e) => handleConfigChange({ multicast: e.target.checked })}
+                onChange={e => handleConfigChange({ multicast: e.target.checked })}
                 className="rounded"
               />
               Multicast
             </label>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Bandwidth Limit: {config.bandwidth} Mbps
@@ -300,7 +301,7 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
               min="1"
               max="1000"
               value={config.bandwidth}
-              onChange={(e) => handleConfigChange({ bandwidth: parseInt(e.target.value) })}
+              onChange={e => handleConfigChange({ bandwidth: parseInt(e.target.value) })}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none slider"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -329,11 +330,8 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {sources.map((source) => (
-            <div
-              key={source.id}
-              className="p-4 bg-gray-800 rounded-lg border border-gray-600"
-            >
+          {sources.map(source => (
+            <div key={source.id} className="p-4 bg-gray-800 rounded-lg border border-gray-600">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
@@ -347,15 +345,15 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    source.active ? 'bg-green-600' : 'bg-gray-600'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded ${
+                      source.active ? 'bg-green-600' : 'bg-gray-600'
+                    }`}
+                  >
                     {source.active ? 'Active' : 'Inactive'}
                   </span>
                   {source.hasAudio && (
-                    <span className="px-2 py-1 text-xs bg-blue-600 rounded">
-                      Audio
-                    </span>
+                    <span className="px-2 py-1 text-xs bg-blue-600 rounded">Audio</span>
                   )}
                 </div>
               </div>
@@ -376,17 +374,12 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
       {receivers.length === 0 ? (
         <div className="text-center py-8">
           <span className="text-gray-400">No receivers connected</span>
-          <p className="text-sm text-gray-500 mt-2">
-            Start streaming to see connected receivers
-          </p>
+          <p className="text-sm text-gray-500 mt-2">Start streaming to see connected receivers</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {receivers.map((receiver) => (
-            <div
-              key={receiver.id}
-              className="p-4 bg-gray-800 rounded-lg border border-gray-600"
-            >
+          {receivers.map(receiver => (
+            <div key={receiver.id} className="p-4 bg-gray-800 rounded-lg border border-gray-600">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
@@ -400,9 +393,11 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    receiver.connected ? 'bg-green-600' : 'bg-red-600'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded ${
+                      receiver.connected ? 'bg-green-600' : 'bg-red-600'
+                    }`}
+                  >
                     {receiver.connected ? 'Connected' : 'Disconnected'}
                   </span>
                   <span className="px-2 py-1 text-xs bg-blue-600 rounded">
@@ -425,7 +420,9 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-400">Status:</span>
-              <span className={`font-medium ${metrics.isStreaming ? 'text-green-400' : 'text-gray-400'}`}>
+              <span
+                className={`font-medium ${metrics.isStreaming ? 'text-green-400' : 'text-gray-400'}`}
+              >
                 {metrics.isStreaming ? 'Streaming' : 'Stopped'}
               </span>
             </div>
@@ -467,7 +464,9 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-gray-400">Dropped Frames:</span>
-              <span className={`font-medium ${metrics.droppedFrames > 0 ? 'text-red-400' : 'text-green-400'}`}>
+              <span
+                className={`font-medium ${metrics.droppedFrames > 0 ? 'text-red-400' : 'text-green-400'}`}
+              >
                 {metrics.droppedFrames}
               </span>
             </div>
@@ -518,18 +517,23 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
           <span className="text-2xl">📡</span>
           NDI Streaming
         </h3>
-        
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              connectionStatus === 'connected' ? 'bg-green-400' : 
-              connectionStatus === 'connecting' ? 'bg-yellow-400' : 'bg-red-400'
-            }`}></div>
+            <div
+              className={`w-2 h-2 rounded-full ${
+                connectionStatus === 'connected'
+                  ? 'bg-green-400'
+                  : connectionStatus === 'connecting'
+                    ? 'bg-yellow-400'
+                    : 'bg-red-400'
+              }`}
+            ></div>
             <span className={`text-sm ${getStatusColor(connectionStatus)}`}>
               {connectionStatus}
             </span>
           </div>
-          
+
           <button
             onClick={isStreaming ? handleStopStreaming : handleStartStreaming}
             disabled={!isInitialized || connectionStatus !== 'connected'}
@@ -551,7 +555,7 @@ export const NDIStreamingPanel: React.FC<NDIStreamingPanelProps> = ({
           { id: 'sources', label: 'Sources', icon: '📺' },
           { id: 'receivers', label: 'Receivers', icon: '📡' },
           { id: 'metrics', label: 'Metrics', icon: '📊' },
-        ].map((tab) => (
+        ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}

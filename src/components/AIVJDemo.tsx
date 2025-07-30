@@ -35,12 +35,7 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
     connectedControllers: 0,
   });
 
-  const {
-    isPlaying,
-    setIsPlaying,
-    audioSource,
-    setAudioContext,
-  } = useVisualizerStore();
+  const { isPlaying, setIsPlaying, audioSource, setAudioContext } = useVisualizerStore();
 
   // Initialize AI VJ Master
   const initializeVJMaster = async () => {
@@ -164,7 +159,7 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioContext = vjMasterRef.current.getAudioContext();
       const source = audioContext.createMediaStreamSource(stream);
-      
+
       vjMasterRef.current.connectAudioSource(source);
       setIsPlaying(true);
     } catch (err) {
@@ -181,11 +176,11 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
       const audioContext = vjMasterRef.current.getAudioContext();
       const arrayBuffer = await file.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
+
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.loop = true;
-      
+
       vjMasterRef.current.connectAudioSource(source);
       source.start();
       setIsPlaying(true);
@@ -207,16 +202,12 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
   return (
     <div className={`relative ${className}`}>
       {/* Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full"
-        style={{ background: '#000' }}
-      />
+      <canvas ref={canvasRef} className="w-full h-full" style={{ background: '#000' }} />
 
       {/* Controls Overlay */}
       <div className="absolute top-4 left-4 bg-black/80 text-white p-4 rounded-lg">
         <h3 className="text-lg font-bold mb-2">AI VJ Controller</h3>
-        
+
         {!isInitialized ? (
           <button
             onClick={initializeVJMaster}
@@ -233,22 +224,20 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
             >
               Use Microphone
             </button>
-            
+
             <label className="block">
               <span className="block mb-1 text-sm">Or upload audio file:</span>
               <input
                 type="file"
                 accept="audio/*"
-                onChange={(e) => e.target.files?.[0] && handleFileInput(e.target.files[0])}
+                onChange={e => e.target.files?.[0] && handleFileInput(e.target.files[0])}
                 className="block w-full text-sm"
               />
             </label>
           </div>
         )}
-        
-        {error && (
-          <div className="mt-2 text-red-400 text-sm">{error}</div>
-        )}
+
+        {error && <div className="mt-2 text-red-400 text-sm">{error}</div>}
       </div>
 
       {/* Performance Stats */}
@@ -256,12 +245,32 @@ export const AIVJDemo: React.FC<AIVJDemoProps> = ({ className }) => {
         <div className="absolute top-4 right-4 bg-black/80 text-white p-4 rounded-lg font-mono text-sm">
           <h4 className="font-bold mb-2">Performance</h4>
           <div className="space-y-1">
-            <div>FPS: <span className="text-green-400">{performanceStats.fps}</span></div>
-            <div>AI Processing: <span className="text-yellow-400">{performanceStats.aiProcessingTime}ms</span></div>
-            <div>Particles: <span className="text-blue-400">{performanceStats.particleCount.toLocaleString()}</span></div>
-            <div>Tempo: <span className="text-purple-400">{Math.round(performanceStats.currentTempo)} BPM</span></div>
-            <div>Style: <span className="text-pink-400">{performanceStats.currentStyle}</span></div>
-            <div>MIDI Controllers: <span className="text-orange-400">{performanceStats.connectedControllers}</span></div>
+            <div>
+              FPS: <span className="text-green-400">{performanceStats.fps}</span>
+            </div>
+            <div>
+              AI Processing:{' '}
+              <span className="text-yellow-400">{performanceStats.aiProcessingTime}ms</span>
+            </div>
+            <div>
+              Particles:{' '}
+              <span className="text-blue-400">
+                {performanceStats.particleCount.toLocaleString()}
+              </span>
+            </div>
+            <div>
+              Tempo:{' '}
+              <span className="text-purple-400">
+                {Math.round(performanceStats.currentTempo)} BPM
+              </span>
+            </div>
+            <div>
+              Style: <span className="text-pink-400">{performanceStats.currentStyle}</span>
+            </div>
+            <div>
+              MIDI Controllers:{' '}
+              <span className="text-orange-400">{performanceStats.connectedControllers}</span>
+            </div>
           </div>
         </div>
       )}

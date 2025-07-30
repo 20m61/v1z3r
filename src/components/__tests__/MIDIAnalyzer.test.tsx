@@ -61,7 +61,7 @@ describe('MIDIAnalyzer', () => {
 
   it('should handle MIDI message parsing correctly', () => {
     const mockOnMIDIMessage = jest.fn();
-    
+
     render(<MIDIAnalyzer onMIDIMessage={mockOnMIDIMessage} />);
 
     // Since the component is mostly invisible, we'll test the internal logic
@@ -71,13 +71,8 @@ describe('MIDIAnalyzer', () => {
 
   it('should call onMIDIDeviceChange when devices are updated', () => {
     const mockOnMIDIDeviceChange = jest.fn();
-    
-    render(
-      <MIDIAnalyzer 
-        onMIDIMessage={jest.fn()}
-        onMIDIDeviceChange={mockOnMIDIDeviceChange}
-      />
-    );
+
+    render(<MIDIAnalyzer onMIDIMessage={jest.fn()} onMIDIDeviceChange={mockOnMIDIDeviceChange} />);
 
     // Component should render without errors
     expect(mockOnMIDIDeviceChange).not.toHaveBeenCalled();
@@ -90,7 +85,7 @@ describe('MIDIAnalyzer', () => {
 
   it('should parse MIDI messages correctly', () => {
     const component = render(<MIDIAnalyzer />);
-    
+
     // Test internal message parsing logic
     const testData = new Uint8Array([0x90, 60, 127]); // Note On, C4, velocity 127
     const timestamp = Date.now();
@@ -104,12 +99,12 @@ describe('MIDIAnalyzer', () => {
 describe('MIDI Message Types', () => {
   it('should have correct MIDI message type constants', () => {
     const { MIDI_MESSAGE_TYPES } = require('../MIDIAnalyzer');
-    
+
     expect(MIDI_MESSAGE_TYPES.NOTE_OFF).toBe(0x80);
     expect(MIDI_MESSAGE_TYPES.NOTE_ON).toBe(0x90);
-    expect(MIDI_MESSAGE_TYPES.CONTROL_CHANGE).toBe(0xB0);
-    expect(MIDI_MESSAGE_TYPES.PROGRAM_CHANGE).toBe(0xC0);
-    expect(MIDI_MESSAGE_TYPES.CHANNEL_PRESSURE).toBe(0xD0);
-    expect(MIDI_MESSAGE_TYPES.PITCH_BEND).toBe(0xE0);
+    expect(MIDI_MESSAGE_TYPES.CONTROL_CHANGE).toBe(0xb0);
+    expect(MIDI_MESSAGE_TYPES.PROGRAM_CHANGE).toBe(0xc0);
+    expect(MIDI_MESSAGE_TYPES.CHANNEL_PRESSURE).toBe(0xd0);
+    expect(MIDI_MESSAGE_TYPES.PITCH_BEND).toBe(0xe0);
   });
 });
