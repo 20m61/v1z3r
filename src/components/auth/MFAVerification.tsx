@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthStore } from '@/store/authStore';
-import Button from '@/components/ui/Button';
+import { Button } from '@vj-app/ui-components';
 import { errorHandler } from '@/utils/errorHandler';
 
 interface MFAVerificationProps {

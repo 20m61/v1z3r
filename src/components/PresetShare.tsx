@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { FaShare, FaCopy, FaDownload, FaExternalLinkAlt, FaTwitter, FaFacebook } from 'react-icons/fa';
-import Button from './ui/Button';
+import { Button } from '@vj-app/ui-components';
 
 export interface PresetShareData {
   id: string;

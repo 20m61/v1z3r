@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useVisualizerStore, MIDIControllerMapping } from '@/store/visualizerStore';
-import Button from './ui/Button';
+import { Button } from '@vj-app/ui-components';
 
 const MIDIControls: React.FC = () => {
   const {

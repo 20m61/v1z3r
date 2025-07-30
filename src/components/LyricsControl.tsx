@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useVisualizerStore, FontType, AnimationType } from '@/store/visualizerStore';
-import Button from './ui/Button';
-import Slider from './ui/Slider';
-import ColorPicker from './ui/ColorPicker';
+import { Button, Slider, ColorPicker } from '@vj-app/ui-components';
 import { FiType, FiPlayCircle, FiStopCircle, FiRefreshCw, FiInfo } from 'react-icons/fi';
 
 interface LyricsControlProps {

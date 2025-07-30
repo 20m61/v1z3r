@@ -2,9 +2,7 @@ import React, { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff, FiTrash, FiPlusCircle, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import { useVisualizerStore, LayerType, EffectType } from '@/store/visualizerStore';
-import Button from './ui/Button';
-import { Slider } from '@vj-app/ui-components';
-import ColorPicker from './ui/ColorPicker';
+import { Button, Slider, ColorPicker } from '@vj-app/ui-components';
 import { validateOpacity, validateSensitivity, ValidationError } from '@/utils/validation';
 
 interface LayerManagerProps {
@@ -126,7 +124,7 @@ const LayerManager: React.FC<LayerManagerProps> = ({ className = '' }) => {
 
         <ColorPicker
           color={layer.colorTheme}
-          onChange={(color) => updateLayer(layer.id, { colorTheme: color })}
+          onChange={(color: string) => updateLayer(layer.id, { colorTheme: color })}
           label="レイヤーカラー"
         />
 
