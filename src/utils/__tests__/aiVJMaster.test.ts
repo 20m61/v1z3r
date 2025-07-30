@@ -87,9 +87,21 @@ describe('AIVJMaster', () => {
       sampleRate: 44100,
       currentTime: 0,
       state: 'running',
-      createAnalyser: jest.fn(),
+      createAnalyser: jest.fn(() => ({
+        fftSize: 2048,
+        smoothingTimeConstant: 0.0,
+        frequencyBinCount: 1024,
+        connect: jest.fn(),
+        disconnect: jest.fn(),
+        getByteFrequencyData: jest.fn(),
+        getFloatFrequencyData: jest.fn(),
+      })),
       resume: jest.fn(),
     } as unknown as AudioContext;
+
+    // Mock global AudioContext
+    global.AudioContext = jest.fn(() => mockAudioContext);
+    global.webkitAudioContext = jest.fn(() => mockAudioContext);
   });
 
   afterEach(() => {

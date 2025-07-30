@@ -55,7 +55,12 @@ global.document.createElement = jest.fn((tag) => {
 // Mock modules
 jest.mock('@vj-app/visual-renderer', () => ({
   VisualRenderer: jest.fn().mockImplementation(() => ({
-    initialize: jest.fn().mockResolvedValue(true),
+    initialize: jest.fn().mockImplementation(async (config) => {
+      if (config?.canvas) {
+        config.canvas.getContext('webgl2');
+      }
+      return true;
+    }),
     render: jest.fn(),
     updateEffect: jest.fn(),
     setAudioData: jest.fn(),
@@ -120,7 +125,11 @@ describe('Module Integration Tests', () => {
     visualRenderer.updateEffect = jest.fn();
     visualRenderer.setAudioData = jest.fn();
     visualRenderer.render = jest.fn();
-    visualRenderer.initialize = jest.fn(async () => {});
+    visualRenderer.initialize = jest.fn(async (config) => {
+      if (config?.canvas) {
+        config.canvas.getContext('webgl2');
+      }
+    });
     visualRenderer.dispose = jest.fn(async () => {});
     
     // Add spy methods for syncCore
@@ -138,6 +147,7 @@ describe('Module Integration Tests', () => {
         maxParticipants: config.maxParticipants,
       })),
       joinRoom: jest.fn(async (roomId) => ({
+        id: 'room-123',
         roomId,
         success: true,
       })),
@@ -147,12 +157,14 @@ describe('Module Integration Tests', () => {
     presetStorage.initialize = jest.fn(async () => {});
     presetStorage.destroy = jest.fn(async () => {});
     presetStorage.getRepository = jest.fn(() => ({
-      create: jest.fn(async (data) => ({ id: 'test-id', ...data })),
+      create: jest.fn(async (data) => ({ id: 'preset-123', ...data })),
       findById: jest.fn(async (id) => ({ 
         id, 
         effectType: 'waveform',
         name: 'Test Preset' 
       })),
+      update: jest.fn(async (id, data) => ({ id, ...data })),
+      delete: jest.fn(async (id) => true),
     }));
   });
 
