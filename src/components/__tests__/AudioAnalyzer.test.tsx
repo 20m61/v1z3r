@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AudioAnalyzer from '../AudioAnalyzer';
 import { useVisualizerStore } from '../../store/visualizerStore';
+import { setupWebAudioMocks, cleanupWebAudioMocks, createAudioContextMock } from '../../__mocks__/webAudioMock';
 
 // Mock the store
 jest.mock('../../store/visualizerStore');
@@ -35,29 +36,26 @@ jest.mock('../../utils/errorHandler', () => ({
   },
 }));
 
-// Mock AudioContext and related APIs
-const mockAnalyserNode = {
-  fftSize: 2048,
-  frequencyBinCount: 1024,
-  getByteFrequencyData: jest.fn(),
-  connect: jest.fn(),
-  disconnect: jest.fn(),
-};
+// Set up comprehensive Web Audio mocks
+let mockAudioContext: any;
+let mockAnalyserNode: any;
+let mockMediaStreamAudioSourceNode: any;
 
-const mockMediaStreamAudioSourceNode = {
-  connect: jest.fn(),
-  disconnect: jest.fn(),
-};
+beforeAll(() => {
+  setupWebAudioMocks();
+  
+  // Get references to mocked objects for testing
+  mockAudioContext = createAudioContextMock();
+  mockAnalyserNode = mockAudioContext.createAnalyser();
+  mockMediaStreamAudioSourceNode = mockAudioContext.createMediaStreamSource();
+  
+  // Override global AudioContext to return our mock
+  (global.AudioContext as jest.Mock).mockImplementation(() => mockAudioContext);
+});
 
-const mockAudioContext = {
-  createAnalyser: jest.fn().mockReturnValue(mockAnalyserNode),
-  createMediaStreamSource: jest.fn().mockReturnValue(mockMediaStreamAudioSourceNode),
-  close: jest.fn().mockResolvedValue(undefined),
-  state: 'running',
-};
-
-// Mock AudioContext constructor
-global.AudioContext = jest.fn().mockImplementation(() => mockAudioContext);
+afterAll(() => {
+  cleanupWebAudioMocks();
+});
 
 const mockStore = {
   isMicrophoneEnabled: false,
@@ -69,23 +67,22 @@ beforeEach(() => {
   jest.clearAllMocks();
 
   // Reset AudioContext state
-  mockAudioContext.state = 'running';
-  mockAudioContext.close.mockClear();
-  mockAnalyserNode.getByteFrequencyData.mockClear();
-  mockMediaStreamAudioSourceNode.connect.mockClear();
-  mockMediaStreamAudioSourceNode.disconnect.mockClear();
+  if (mockAudioContext) {
+    mockAudioContext.state = 'running';
+    mockAudioContext.close.mockClear();
+  }
+  if (mockAnalyserNode) {
+    mockAnalyserNode.getByteFrequencyData.mockClear();
+  }
+  if (mockMediaStreamAudioSourceNode) {
+    mockMediaStreamAudioSourceNode.connect.mockClear();
+    mockMediaStreamAudioSourceNode.disconnect.mockClear();
+  }
 });
 
 describe('AudioAnalyzer', () => {
   beforeAll(() => {
-    // Mock getUserMedia
-    global.navigator.mediaDevices = {
-      getUserMedia: jest.fn().mockResolvedValue({
-        getTracks: () => [],
-        addTrack: jest.fn(),
-        removeTrack: jest.fn(),
-      }),
-    } as any;
+    // getUserMedia is already mocked by setupWebAudioMocks
   });
   it('renders without errors when microphone is disabled', () => {
     const { container } = render(<AudioAnalyzer />);
@@ -106,11 +103,9 @@ describe('AudioAnalyzer', () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     // Mock getUserMedia to reject
-    const mockGetUserMedia = jest.fn().mockRejectedValue(new Error('Permission denied'));
-    Object.defineProperty(global.navigator, 'mediaDevices', {
-      value: { getUserMedia: mockGetUserMedia },
-      writable: true,
-    });
+    (navigator.mediaDevices.getUserMedia as jest.Mock).mockRejectedValueOnce(
+      new Error('Permission denied')
+    );
 
     mockStore.isMicrophoneEnabled = true;
     render(<AudioAnalyzer />);
@@ -126,11 +121,10 @@ describe('AudioAnalyzer', () => {
   });
 
   it('shows retry button when error occurs', async () => {
-    const mockGetUserMedia = jest.fn().mockRejectedValue(new Error('Permission denied'));
-    Object.defineProperty(global.navigator, 'mediaDevices', {
-      value: { getUserMedia: mockGetUserMedia },
-      writable: true,
-    });
+    // Mock getUserMedia to reject
+    (navigator.mediaDevices.getUserMedia as jest.Mock).mockRejectedValueOnce(
+      new Error('Permission denied')
+    );
 
     mockStore.isMicrophoneEnabled = true;
     render(<AudioAnalyzer />);
