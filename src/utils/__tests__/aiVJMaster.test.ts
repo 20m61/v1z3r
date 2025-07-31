@@ -4,6 +4,10 @@
 
 import { AIVJMaster, AIVJConfig } from '../aiVJMaster';
 import { webgpuDetector } from '../webgpuDetection';
+import { setupMocksForJest, createWebGPUDetectorMock, createMIDIManagerMock } from '../../__mocks__/setupMocks';
+
+// Setup comprehensive mocks
+setupMocksForJest();
 
 // Mock dependencies
 jest.mock('../webgpuRenderer', () => ({
@@ -13,6 +17,11 @@ jest.mock('../webgpuRenderer', () => ({
         domElement: document.createElement('canvas'),
         setSize: jest.fn(),
         render: jest.fn(),
+        getCapabilities: jest.fn().mockReturnValue({
+          isWebGL2: true,
+          maxTextures: 16,
+          maxTextureSize: 4096
+        })
       },
       isWebGPU: true
     }),
@@ -24,6 +33,11 @@ jest.mock('../webgpuRenderer', () => ({
       domElement: document.createElement('canvas'),
       setSize: jest.fn(),
       render: jest.fn(),
+      getCapabilities: jest.fn().mockReturnValue({
+        isWebGL2: true,
+        maxTextures: 16,
+        maxTextureSize: 4096
+      })
     })),
     dispose: jest.fn()
   }))
@@ -44,11 +58,18 @@ jest.mock('../aiMusicAnalyzer', () => ({
 jest.mock('../aiStyleTransfer');
 jest.mock('../webgpuParticles');
 jest.mock('../professionalMIDI', () => ({
-  ProfessionalMIDI: jest.fn().mockImplementation(() => ({
-    initialize: jest.fn().mockResolvedValue(undefined),
-    setCallbacks: jest.fn(),
-    dispose: jest.fn()
-  })),
+  ProfessionalMIDI: jest.fn().mockImplementation(() => {
+    const mockManager = createMIDIManagerMock();
+    return {
+      initialize: mockManager.initialize,
+      setCallbacks: jest.fn(),
+      setParameterChangeHandler: mockManager.setParameterChangeHandler,
+      sendControlChange: mockManager.sendControlChange,
+      sendNoteOn: mockManager.sendNoteOn,
+      sendNoteOff: mockManager.sendNoteOff,
+      dispose: mockManager.dispose
+    };
+  }),
   ProfessionalMIDIManager: jest.fn().mockImplementation(() => ({
     initialize: jest.fn().mockResolvedValue(undefined),
     setCallbacks: jest.fn(),
@@ -156,10 +177,13 @@ describe('AIVJMaster', () => {
     });
 
     it('should handle initialization failure gracefully', async () => {
-      // Mock WebGPU detector to fail
-      (webgpuDetector.detect as jest.Mock).mockRejectedValue(new Error('WebGPU not supported'));
-
-      await expect(aiVJMaster.initialize()).rejects.toThrow();
+      // Mock renderer initialization to fail completely
+      const V1z3rRenderer = require('../webgpuRenderer').V1z3rRenderer;
+      V1z3rRenderer.mockImplementationOnce(() => ({
+        initialize: jest.fn().mockRejectedValue(new Error('Renderer initialization failed'))
+      }));
+      
+      await expect(aiVJMaster.initialize()).rejects.toThrow('Renderer initialization failed');
     });
 
     it('should not initialize twice', async () => {
@@ -347,15 +371,19 @@ describe('AIVJMaster', () => {
 
   describe('Error Handling', () => {
     it('should handle WebGPU initialization failure', async () => {
-      (webgpuDetector.detect as jest.Mock).mockRejectedValue(new Error('WebGPU not supported'));
-
+      // Mock renderer to fail initialization
+      const V1z3rRenderer = require('../webgpuRenderer').V1z3rRenderer;
+      V1z3rRenderer.mockImplementationOnce(() => ({
+        initialize: jest.fn().mockRejectedValue(new Error('WebGPU initialization failed'))
+      }));
+      
       aiVJMaster = new AIVJMaster({
         canvas: mockCanvas,
         audioContext: mockAudioContext,
         enableWebGPU: true,
       });
 
-      await expect(aiVJMaster.initialize()).rejects.toThrow();
+      await expect(aiVJMaster.initialize()).rejects.toThrow('WebGPU initialization failed');
     });
 
     it('should handle audio context suspension', async () => {
@@ -401,11 +429,38 @@ describe('AIVJMaster', () => {
     });
 
     it('should fallback to WebGL when WebGPU not supported', async () => {
-      (webgpuDetector.detect as jest.Mock).mockResolvedValue({
-        isSupported: false,
-        device: null,
-        capabilities: null,
-      });
+      // Mock renderer to return WebGL fallback
+      const V1z3rRenderer = require('../webgpuRenderer').V1z3rRenderer;
+      V1z3rRenderer.mockImplementationOnce(() => ({
+        initialize: jest.fn().mockResolvedValue({
+          renderer: {
+            domElement: document.createElement('canvas'),
+            setSize: jest.fn(),
+            render: jest.fn(),
+            getCapabilities: jest.fn().mockReturnValue({
+              isWebGL2: true,
+              maxTextures: 16,
+              maxTextureSize: 4096
+            })
+          },
+          isWebGPU: false // WebGL fallback
+        }),
+        render: jest.fn(),
+        updateEffects: jest.fn(),
+        setCanvasSize: jest.fn(),
+        setSize: jest.fn(),
+        getThreeRenderer: jest.fn(() => ({
+          domElement: document.createElement('canvas'),
+          setSize: jest.fn(),
+          render: jest.fn(),
+          getCapabilities: jest.fn().mockReturnValue({
+            isWebGL2: true,
+            maxTextures: 16,
+            maxTextureSize: 4096
+          })
+        })),
+        dispose: jest.fn()
+      }));
 
       aiVJMaster = new AIVJMaster({
         canvas: mockCanvas,
@@ -450,6 +505,19 @@ describe('AIVJMaster', () => {
 
   describe('MIDI Integration', () => {
     it('should enable MIDI when configured', async () => {
+      // Ensure MIDI manager mock is properly set up
+      const ProfessionalMIDI = require('../professionalMIDI').ProfessionalMIDI;
+      const mockMIDIInstance = {
+        initialize: jest.fn().mockResolvedValue(undefined),
+        setParameterChangeHandler: jest.fn(),
+        setButtonPressHandler: jest.fn(),
+        setPadHitHandler: jest.fn(),
+        setControllerConnectedHandler: jest.fn(),
+        setControllerDisconnectedHandler: jest.fn(),
+        dispose: jest.fn()
+      };
+      ProfessionalMIDI.mockImplementationOnce(() => mockMIDIInstance);
+      
       aiVJMaster = new AIVJMaster({
         canvas: mockCanvas,
         audioContext: mockAudioContext,
@@ -464,9 +532,11 @@ describe('AIVJMaster', () => {
 
     it('should handle MIDI initialization failure', async () => {
       // Mock MIDI to fail
-      const mockMIDI = {
+      const ProfessionalMIDI = require('../professionalMIDI').ProfessionalMIDI;
+      ProfessionalMIDI.mockImplementationOnce(() => ({
         initialize: jest.fn().mockRejectedValue(new Error('MIDI not supported')),
-      };
+        dispose: jest.fn()
+      }));
 
       aiVJMaster = new AIVJMaster({
         canvas: mockCanvas,

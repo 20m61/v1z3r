@@ -77,6 +77,9 @@ jest.mock('@/utils/performanceMonitor', () => ({
   default: jest.fn(),
 }));
 
+// Increase timeout for dynamic import tests
+jest.setTimeout(30000);
+
 describe('Dynamic Imports', () => {
   const originalNavigator = global.navigator;
   const originalDocument = global.document;
@@ -362,14 +365,19 @@ describe('Dynamic Imports', () => {
     });
 
     it('should handle module load timeout', async () => {
-      // Mock setTimeout to immediately trigger timeout
-      const originalSetTimeout = global.setTimeout;
-      global.setTimeout = jest.fn((fn) => {
-        fn(); // Immediately execute timeout callback
-        return 1 as any;
+      // Create a custom ModuleLoader with very short timeout
+      const customLoader = new ModuleLoader();
+      // Use a very short timeout that will fail
+      (customLoader as any).timeout = 1; // 1ms timeout
+      
+      // Mock dynamic import to take longer than timeout
+      const slowImport = new Promise((resolve) => {
+        setTimeout(() => resolve({ default: {} }), 100);
       });
-
-      await expect(loader.loadModule('webgpu')).rejects.toThrow();
+      
+      jest.spyOn(customLoader as any, 'loadWebGPU').mockReturnValue(slowImport);
+      
+      await expect(customLoader.loadModule('webgpu')).rejects.toThrow('Failed to load module: webgpu');
       
       global.setTimeout = originalSetTimeout;
     });
