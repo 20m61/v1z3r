@@ -65,11 +65,9 @@ describe('AuthGuard', () => {
     );
 
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith(
-        '/auth/login?redirect=%2Fdashboard'
-      );
+      expect(mockRouter.push).toHaveBeenCalledWith('/auth/login?redirect=%2Fdashboard');
     });
-    
+
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
   });
 
@@ -97,10 +95,10 @@ describe('AuthGuard', () => {
     (useAuthStore as unknown as jest.Mock).mockReturnValue({
       ...mockAuthStore,
       isAuthenticated: true,
-      user: { 
-        id: 'user-123', 
+      user: {
+        id: 'user-123',
         email: 'test@example.com',
-        tier: 'free'
+        tier: 'free',
       },
       hasRole: hasRoleMock,
     });
@@ -122,10 +120,10 @@ describe('AuthGuard', () => {
     (useAuthStore as unknown as jest.Mock).mockReturnValue({
       ...mockAuthStore,
       isAuthenticated: true,
-      user: { 
-        id: 'user-123', 
+      user: {
+        id: 'user-123',
         email: 'test@example.com',
-        tier: 'premium'
+        tier: 'premium',
       },
       hasRole: hasRoleMock,
     });
@@ -143,7 +141,7 @@ describe('AuthGuard', () => {
   it('refreshes expired token', async () => {
     mockAuthStore.isTokenExpired.mockReturnValue(true);
     mockAuthStore.refreshSession.mockResolvedValue(true);
-    
+
     (useAuthStore as unknown as jest.Mock).mockReturnValue({
       ...mockAuthStore,
       isAuthenticated: true,
@@ -166,7 +164,7 @@ describe('AuthGuard', () => {
   it('redirects if token refresh fails', async () => {
     mockAuthStore.isTokenExpired.mockReturnValue(true);
     mockAuthStore.refreshSession.mockResolvedValue(false);
-    
+
     (useAuthStore as unknown as jest.Mock).mockReturnValue({
       ...mockAuthStore,
       isAuthenticated: true,
@@ -181,9 +179,7 @@ describe('AuthGuard', () => {
 
     await waitFor(() => {
       expect(mockAuthStore.refreshSession).toHaveBeenCalled();
-      expect(mockRouter.push).toHaveBeenCalledWith(
-        '/auth/login?redirect=%2Fdashboard'
-      );
+      expect(mockRouter.push).toHaveBeenCalledWith('/auth/login?redirect=%2Fdashboard');
     });
   });
 
@@ -199,7 +195,7 @@ describe('AuthGuard', () => {
 
   it('handles custom loading component', () => {
     const CustomLoader = () => <div>Custom Loading...</div>;
-    
+
     (useAuthStore as unknown as jest.Mock).mockReturnValue({
       ...mockAuthStore,
       isLoading: true,
@@ -222,9 +218,7 @@ describe('AuthGuard', () => {
     );
 
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith(
-        '/home?redirect=%2Fdashboard'
-      );
+      expect(mockRouter.push).toHaveBeenCalledWith('/home?redirect=%2Fdashboard');
     });
   });
 

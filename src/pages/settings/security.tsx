@@ -9,7 +9,7 @@ import { useRouter } from 'next/router';
 import { useAuthStore } from '@/store/authStore';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { MFASetup } from '@/components/auth/MFASetup';
-import Button from '@/components/ui/Button';
+import { Button } from '@vj-app/ui-components';
 import { errorHandler } from '@/utils/errorHandler';
 
 export default function SecuritySettingsPage() {

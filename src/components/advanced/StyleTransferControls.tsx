@@ -17,9 +17,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
   onConfigChange,
   className = '',
 }) => {
-  const [config, setConfig] = useState<StyleTransferConfig>(
-    styleTransferService.getConfig()
-  );
+  const [config, setConfig] = useState<StyleTransferConfig>(styleTransferService.getConfig());
   const [metrics, setMetrics] = useState(styleTransferService.getMetrics());
   const [isLoading, setIsLoading] = useState(false);
   const [presetStyles] = useState(styleTransferService.getPresetStyles());
@@ -42,10 +40,10 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
 
   const handleStyleSelect = async (styleKey: string) => {
     if (styleKey === 'none') {
-      handleConfigChange({ 
-        styleName: 'none', 
-        styleUrl: '', 
-        enabled: false 
+      handleConfigChange({
+        styleName: 'none',
+        styleUrl: '',
+        enabled: false,
       });
       return;
     }
@@ -58,7 +56,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
         styleUrl: style.url,
         enabled: true,
       });
-      
+
       errorHandler.info(`Style changed to ${style.name}`);
     } catch (error) {
       errorHandler.error('Failed to change style', error as Error);
@@ -92,28 +90,28 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
           <span className="text-2xl">🎨</span>
           AI Style Transfer
         </h3>
-        
+
         <div className="flex items-center gap-4">
           {/* Performance Metrics */}
           <div className="text-sm text-gray-400">
             <span className={`font-mono ${getPerformanceColor(metrics.fps)}`}>
               {metrics.fps.toFixed(1)} FPS
             </span>
-            <span className="ml-2">
-              {metrics.processingTime.toFixed(1)}ms
-            </span>
+            <span className="ml-2">{metrics.processingTime.toFixed(1)}ms</span>
           </div>
-          
+
           {/* Model Status */}
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              metrics.modelLoaded ? 'bg-green-400' : 'bg-yellow-400'
-            }`}></div>
+            <div
+              className={`w-2 h-2 rounded-full ${
+                metrics.modelLoaded ? 'bg-green-400' : 'bg-yellow-400'
+              }`}
+            ></div>
             <span className="text-sm text-gray-400">
               {metrics.modelLoaded ? 'AI Model' : 'Filters'}
             </span>
           </div>
-          
+
           {/* Enable/Disable Toggle */}
           <button
             onClick={handleToggle}
@@ -131,9 +129,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
 
       {/* Style Selection */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-300 mb-3">
-          Artistic Style
-        </label>
+        <label className="block text-sm font-medium text-gray-300 mb-3">Artistic Style</label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {/* None option */}
           <button
@@ -174,7 +170,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
                     className="w-full h-full object-cover"
                     width={64}
                     height={64}
-                    onError={(e) => {
+                    onError={e => {
                       // Fallback to text if image fails
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
@@ -199,7 +195,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
           max="1"
           step="0.05"
           value={config.strength}
-          onChange={(e) => handleStrengthChange(parseFloat(e.target.value))}
+          onChange={e => handleStrengthChange(parseFloat(e.target.value))}
           className="w-full h-2 bg-gray-700 rounded-lg appearance-none slider"
           disabled={!config.enabled || isLoading}
         />
@@ -211,12 +207,10 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
 
       {/* Blend Mode */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-300 mb-3">
-          Blend Mode
-        </label>
+        <label className="block text-sm font-medium text-gray-300 mb-3">Blend Mode</label>
         <select
           value={config.blendMode}
-          onChange={(e) => handleBlendModeChange(e.target.value as StyleTransferConfig['blendMode'])}
+          onChange={e => handleBlendModeChange(e.target.value as StyleTransferConfig['blendMode'])}
           className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={!config.enabled || isLoading}
         >
@@ -235,7 +229,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
             <span className="transition-transform group-open:rotate-90">▶</span>
             Advanced Settings
           </summary>
-          
+
           <div className="space-y-4 ml-6">
             {/* Memory Usage */}
             <div>
@@ -243,10 +237,10 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
                 Memory Usage: {(metrics.memoryUsage / 1024 / 1024).toFixed(1)} MB
               </label>
               <div className="w-full bg-gray-700 rounded-full h-2">
-                <div 
+                <div
                   className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${Math.min(100, (metrics.memoryUsage / (256 * 1024 * 1024)) * 100)}%` 
+                  style={{
+                    width: `${Math.min(100, (metrics.memoryUsage / (256 * 1024 * 1024)) * 100)}%`,
                   }}
                 ></div>
               </div>
@@ -254,9 +248,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
 
             {/* Processing Time */}
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
-                Processing Time
-              </label>
+              <label className="block text-sm text-gray-400 mb-1">Processing Time</label>
               <div className="text-sm font-mono text-gray-300">
                 {metrics.processingTime.toFixed(2)}ms per frame
               </div>
@@ -264,9 +256,7 @@ export const StyleTransferControls: React.FC<StyleTransferControlsProps> = ({
 
             {/* Quality Settings */}
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
-                Quality Mode
-              </label>
+              <label className="block text-sm text-gray-400 mb-1">Quality Mode</label>
               <select
                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={!config.enabled || isLoading}

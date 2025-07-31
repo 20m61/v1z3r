@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useVisualizerStore } from '@/store/visualizerStore';
-import Button from './ui/Button';
+import { Button } from '@vj-app/ui-components';
 import { globalRateLimiters } from '@/utils/rateLimiter';
 
 // MIDI message types

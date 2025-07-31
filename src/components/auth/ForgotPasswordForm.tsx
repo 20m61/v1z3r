@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
-import Button from '@/components/ui/Button';
+import { Button } from '@vj-app/ui-components';
 import { errorHandler } from '@/utils/errorHandler';
 
 interface ForgotPasswordFormProps {

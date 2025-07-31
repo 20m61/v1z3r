@@ -7,7 +7,7 @@ import React from 'react';
 import Head from 'next/head';
 import { withAuth } from '@/components/auth/AuthGuard';
 import { useAuthStore } from '@/store/authStore';
-import Button from '@/components/ui/Button';
+import { Button } from '@vj-app/ui-components';
 import { useRouter } from 'next/router';
 
 function DashboardPage() {

@@ -38,7 +38,7 @@ describe('LoginForm', () => {
 
   it('renders login form with all fields', () => {
     render(<LoginForm />);
-    
+
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
@@ -49,38 +49,38 @@ describe('LoginForm', () => {
   it('validates email format', async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
-    
+
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    
+
     // Invalid email - use a format that passes HTML5 validation but fails our custom validation
     await user.type(emailInput, 'invalid@email'); // Missing .com makes it invalid for our regex
     await user.type(passwordInput, 'password123'); // Valid password to isolate email validation
-    
+
     // Submit the form
     await user.click(submitButton);
-    
+
     // Wait for validation to run and check for error display
     await waitFor(() => {
       expect(screen.getByText('Invalid email format')).toBeInTheDocument();
     });
-    
+
     expect(mockAuthStore.signIn).not.toHaveBeenCalled();
   });
 
   it('validates password requirements', async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
-    
+
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, '123'); // Too short
     await user.click(submitButton);
-    
+
     expect(await screen.findByText(/password must be at least 8 characters/i)).toBeInTheDocument();
     expect(mockAuthStore.signIn).not.toHaveBeenCalled();
   });
@@ -88,17 +88,17 @@ describe('LoginForm', () => {
   it('handles successful login', async () => {
     const user = userEvent.setup();
     mockAuthStore.signIn.mockResolvedValueOnce({ success: true });
-    
+
     render(<LoginForm />);
-    
+
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'Test123!@#');
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(mockAuthStore.signIn).toHaveBeenCalledWith('test@example.com', 'Test123!@#');
       expect(mockRouter.push).toHaveBeenCalledWith('/dashboard');
@@ -112,17 +112,17 @@ describe('LoginForm', () => {
       challengeName: 'SOFTWARE_TOKEN_MFA',
       session: 'test-session',
     });
-    
+
     render(<LoginForm />);
-    
+
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'Test123!@#');
     await user.click(submitButton);
-    
+
     // Should redirect to MFA page
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/auth/mfa?session=test-session');
@@ -132,17 +132,17 @@ describe('LoginForm', () => {
   it('handles login errors', async () => {
     const user = userEvent.setup();
     mockAuthStore.signIn.mockRejectedValueOnce(new Error('NotAuthorizedException'));
-    
+
     render(<LoginForm />);
-    
+
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'WrongPassword');
     await user.click(submitButton);
-    
+
     expect(await screen.findByText(/incorrect password/i)).toBeInTheDocument();
   });
 
@@ -151,26 +151,26 @@ describe('LoginForm', () => {
       ...mockAuthStore,
       isLoading: true,
     });
-    
+
     render(<LoginForm />);
-    
+
     expect(screen.getByRole('button', { name: /sign in/i })).toBeDisabled();
   });
 
   it('redirects to custom URL after login', async () => {
     const user = userEvent.setup();
     mockAuthStore.signIn.mockResolvedValueOnce({ success: true });
-    
+
     render(<LoginForm redirectUrl="/visualizer" />);
-    
+
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'Test123!@#');
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/visualizer');
     });
@@ -179,17 +179,17 @@ describe('LoginForm', () => {
   it('handles user not confirmed error', async () => {
     const user = userEvent.setup();
     mockAuthStore.signIn.mockRejectedValueOnce(new Error('UserNotConfirmedException'));
-    
+
     render(<LoginForm />);
-    
+
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    
+
     await user.type(emailInput, 'unconfirmed@example.com');
     await user.type(passwordInput, 'Test123!@#');
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/auth/verify?email=unconfirmed%40example.com');
     });
@@ -197,7 +197,7 @@ describe('LoginForm', () => {
 
   it('shows social login buttons', () => {
     render(<LoginForm />);
-    
+
     expect(screen.getByRole('button', { name: /google/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /github/i })).toBeInTheDocument();
   });
