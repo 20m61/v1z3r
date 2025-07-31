@@ -25,23 +25,19 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install global Node.js packages
+# Install only essential global Node.js packages
 RUN npm install -g \
-    @aws-sdk/client-s3 \
-    @aws-sdk/client-dynamodb \
-    aws-cdk \
     typescript@latest \
-    @types/node@latest \
+    aws-cdk \
     pm2 \
-    concurrently \
-    wait-on
+    concurrently
 
 # Create workspace directory
 RUN mkdir -p /workspace
 
-# Copy firewall initialization script
-COPY init-firewall.sh /usr/local/bin/init-firewall.sh
-RUN chmod +x /usr/local/bin/init-firewall.sh
+# Copy initialization script (firewall removed for simplicity)
+COPY init-container.sh /usr/local/bin/init-container.sh
+RUN chmod +x /usr/local/bin/init-container.sh
 
 # Switch to vscode user
 USER vscode

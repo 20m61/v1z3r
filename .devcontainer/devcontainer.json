@@ -24,8 +24,7 @@
     "CHOKIDAR_USEPOLLING": "true"
   },
   
-  // Mount workspace at /workspace
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  // Workspace configuration (handled by docker-compose volumes)
   "workspaceFolder": "/workspace",
   
   // VS Code settings
@@ -121,10 +120,5 @@
   "capAdd": ["SYS_PTRACE"],
   "securityOpt": ["seccomp=unconfined"],
   
-  // Mount points for better performance
-  "mounts": [
-    "source=v1z3r-node-modules,target=/workspace/node_modules,type=volume",
-    "source=v1z3r-next,target=/workspace/.next,type=volume",
-    "source=v1z3r-yarn-cache,target=/home/vscode/.cache/yarn,type=volume"
-  ]
+  // Note: Volume mounts are handled by docker-compose.yml for better service integration
 }
