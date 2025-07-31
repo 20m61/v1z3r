@@ -1,10 +1,8 @@
-name: Staged CI Pipeline
+name: Staged CI Pipeline (DEPRECATED - Use Simple CI)
+# This workflow is deprecated. Please use .github/workflows/ci-simple.yml
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_dispatch: # Only manual trigger
 
 # Cancel previous runs on the same branch
 concurrency:
