@@ -14,10 +14,6 @@ const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 const setIntervalSpy = jest.fn();
 global.setInterval = setIntervalSpy;
 
-jest.useFakeTimers({
-  legacyFakeTimers: true
-});
-
 import {
   AlertManager,
   alertManager,
@@ -33,7 +29,9 @@ describe('Alerting System', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.clearAllTimers();
+    jest.useFakeTimers({
+      legacyFakeTimers: true
+    });
     
     // Create fresh instance for each test
     manager = new AlertManager();
@@ -197,18 +195,20 @@ describe('Alerting System', () => {
         responseTime: 1500, // Above 1000 threshold
       };
 
-      // Add sufficient historical data to meet duration requirement
-      const history = (manager as any).metricsHistory;
+      // First, process metrics multiple times to build history with violations
       const now = Date.now();
       
-      // Add 35 seconds of historical data showing sustained violation
-      for (let i = 0; i < 35; i++) {
-        history.push({
-          timestamp: now - ((35 - i) * 1000),
-          metrics: highResponseMetrics,
-        });
+      // Process metrics over 35 seconds period to exceed 30-second duration requirement
+      for (let i = 0; i <= 35; i++) {
+        // Manually set timestamp for consistent testing
+        jest.setSystemTime(now - (35 - i) * 1000);
+        await manager.processMetrics(highResponseMetrics);
       }
-
+      
+      // Reset time to current
+      jest.setSystemTime(now);
+      
+      // Process one more time to trigger the alert
       await manager.processMetrics(highResponseMetrics);
       
       const alerts = manager.getActiveAlerts();
@@ -225,18 +225,20 @@ describe('Alerting System', () => {
         responseTime: 4000, // Above 3000 critical threshold
       };
 
-      // Add sufficient historical data to meet duration requirement (10 seconds)
-      const history = (manager as any).metricsHistory;
+      // Process metrics multiple times to build history with violations
       const now = Date.now();
       
-      // Add 12 seconds of historical data showing sustained violation
-      for (let i = 0; i < 12; i++) {
-        history.push({
-          timestamp: now - ((12 - i) * 1000),
-          metrics: criticalMetrics,
-        });
+      // Process metrics over 12 seconds period to exceed 10-second duration requirement
+      for (let i = 0; i <= 12; i++) {
+        // Manually set timestamp for consistent testing
+        jest.setSystemTime(now - (12 - i) * 1000);
+        await manager.processMetrics(criticalMetrics);
       }
-
+      
+      // Reset time to current
+      jest.setSystemTime(now);
+      
+      // Process one more time to trigger the alert
       await manager.processMetrics(criticalMetrics);
       
       const alerts = manager.getActiveAlerts();

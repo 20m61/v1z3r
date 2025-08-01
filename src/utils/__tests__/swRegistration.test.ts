@@ -7,6 +7,7 @@ import {
   unregisterServiceWorker,
   clearServiceWorkerCache
 } from '../swRegistration';
+import { setupDOMMocks, cleanupDOMMocks } from '../../__mocks__/domMock';
 
 describe('Service Worker Registration', () => {
   const originalWindow = global.window;
@@ -23,6 +24,9 @@ describe('Service Worker Registration', () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     
+    // Setup comprehensive DOM mocks
+    setupDOMMocks();
+    
     // Mock console methods
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
@@ -33,31 +37,28 @@ describe('Service Worker Registration', () => {
       update: jest.fn(),
       installing: null,
       unregister: jest.fn().mockResolvedValue(true),
+      scope: '/',
+      waiting: null,
+      active: null
     };
     
-    // Mock service worker
+    // Override the default service worker mocks with our custom ones
     mockServiceWorker = {
       register: jest.fn().mockResolvedValue(mockRegistration),
       getRegistrations: jest.fn().mockResolvedValue([mockRegistration]),
       controller: null,
+      ready: Promise.resolve(mockRegistration),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      getRegistration: jest.fn().mockResolvedValue(mockRegistration)
     };
     
-    // Mock navigator
-    mockNavigator = {
-      serviceWorker: mockServiceWorker,
-    };
-    
-    // Set up global objects using delete and assignment
-    delete (global as any).navigator;
-    (global as any).navigator = mockNavigator;
-    
-    delete (global as any).window;
-    (global as any).window = {
-      confirm: jest.fn(),
-      location: {
-        reload: jest.fn(),
-      },
-    };
+    // Update navigator.serviceWorker
+    Object.defineProperty(global.navigator, 'serviceWorker', {
+      value: mockServiceWorker,
+      writable: true,
+      configurable: true
+    });
   });
 
   afterEach(() => {
@@ -65,9 +66,8 @@ describe('Service Worker Registration', () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     
-    // Restore globals
-    (global as any).window = originalWindow;
-    (global as any).navigator = originalNavigator;
+    // Cleanup DOM mocks
+    cleanupDOMMocks();
   });
 
   describe('registerServiceWorker', () => {
@@ -151,7 +151,8 @@ describe('Service Worker Registration', () => {
       
       mockRegistration.installing = mockNewWorker;
       mockNavigator.serviceWorker.controller = {};
-      (global.window as any).confirm.mockReturnValue(true);
+      // window.confirm is already mocked by setupDOMMocks
+      (global.window.confirm as jest.Mock).mockReturnValue(true);
 
       await registerServiceWorker();
 
@@ -190,7 +191,8 @@ describe('Service Worker Registration', () => {
       
       mockRegistration.installing = mockNewWorker;
       mockNavigator.serviceWorker.controller = {};
-      (global.window as any).confirm.mockReturnValue(false);
+      // window.confirm is already mocked by setupDOMMocks
+      (global.window.confirm as jest.Mock).mockReturnValue(false);
 
       await registerServiceWorker();
 

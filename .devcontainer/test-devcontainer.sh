@@ -84,12 +84,12 @@ test_command ".next cache volume" "test -d /workspace/.next || true"
 
 echo
 
-# 4. Network connectivity tests (if firewall is active)
-echo "🔒 Network Security"
-echo "------------------"
-test_command "Can reach npm registry" "curl -s https://registry.npmjs.org/ -o /dev/null"
-test_command "Can reach GitHub" "curl -s https://api.github.com/ -o /dev/null"
-test_command "Can reach AWS S3" "curl -s https://s3.amazonaws.com/ -o /dev/null"
+# 4. Network connectivity tests
+echo "🌐 Network Connectivity"
+echo "-----------------------"
+test_command "Can reach npm registry" "curl -s --max-time 10 https://registry.npmjs.org/ -o /dev/null"
+test_command "Can reach GitHub" "curl -s --max-time 10 https://api.github.com/ -o /dev/null"
+test_command "Can reach AWS (basic)" "curl -s --max-time 10 https://aws.amazon.com/ -o /dev/null"
 
 echo
 
@@ -110,18 +110,18 @@ echo
 echo "🐳 Optional Services"
 echo "-------------------"
 echo -n "Testing: Redis connectivity... "
-if redis-cli ping &>/dev/null; then
+if command -v redis-cli >/dev/null && redis-cli -h redis ping &>/dev/null; then
     echo -e "${GREEN}✓${NC}"
     ((TESTS_PASSED++))
 else
-    echo -e "${YELLOW}○ (Redis not running - optional service)${NC}"
+    echo -e "${YELLOW}○ (Redis not available - optional service)${NC}"
 fi
 echo -n "Testing: PostgreSQL connectivity... "
-if pg_isready -h localhost &>/dev/null; then
+if command -v pg_isready >/dev/null && pg_isready -h postgres &>/dev/null; then
     echo -e "${GREEN}✓${NC}"
     ((TESTS_PASSED++))
 else
-    echo -e "${YELLOW}○ (PostgreSQL not running - optional service)${NC}"
+    echo -e "${YELLOW}○ (PostgreSQL not available - optional service)${NC}"
 fi
 
 echo
