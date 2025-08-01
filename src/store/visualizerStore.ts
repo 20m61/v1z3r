@@ -512,6 +512,12 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
         updateInterval: 1000,
         historyLength: 300,
         enableAutoOptimization: true,
+        thresholds: {
+          fps: { critical: 15, warning: 30 },
+          memory: { critical: 500 * 1024 * 1024, warning: 300 * 1024 * 1024 },
+          audio: { critical: 200, warning: 100 }
+        },
+        collectors: []
       });
       
       // Create adaptive quality manager
