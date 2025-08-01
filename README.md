@@ -48,6 +48,28 @@ v1z3r is a cutting-edge, AI-powered VJ (Visual Jockey) application with WebGPU a
 - **Extensive Testing**: 300+ tests including AI/WebGPU feature coverage
 - **TypeScript**: Full type safety across all modules
 
+### 📊 Performance Monitoring (New in Phase 2)
+
+v1z3r now includes a comprehensive real-time performance monitoring system designed for professional VJ performances:
+
+#### Real-time Metrics
+- **FPS Monitoring**: Frame rate tracking with dropped frame detection
+- **Memory Tracking**: Heap usage, GPU memory, and resource leak detection
+- **Audio Performance**: Latency measurement and buffer underrun detection
+- **Mobile Optimization**: Battery level, touch responsiveness, and network monitoring
+
+#### Adaptive Quality Management
+- **Automatic Optimization**: Dynamic quality adjustment based on device performance
+- **Device Tier Detection**: Intelligent low/mid/high-end device classification
+- **Quality Profiles**: Five presets from Ultra Low to Ultra High
+- **Manual Override**: Professional controls for quality settings
+
+#### Performance Dashboard
+- **Real-time Visualization**: Live charts for FPS, memory, and audio metrics
+- **Alert System**: Configurable alerts for performance issues
+- **Compact Mode**: Mobile-optimized interface for live performances
+- **Auto-show on Critical**: Dashboard automatically appears during performance issues
+
 ### 🛠️ Tech Stack
 
 **Frontend**
@@ -103,6 +125,34 @@ v1z3r/
 ├── infra/               # AWS CDK infrastructure
 └── docs/                # Documentation
 ```
+
+### ⚙️ Performance Monitoring Usage
+
+The performance monitoring system automatically starts when the application loads. You can access it through:
+
+```typescript
+// Toggle performance dashboard visibility
+const { togglePerformanceDashboard } = useVisualizerStore();
+togglePerformanceDashboard();
+
+// Set quality profile manually
+const { setQualityProfile } = useVisualizerStore();
+setQualityProfile('high'); // Options: 'potato', 'low', 'medium', 'high', 'ultra'
+
+// Access performance metrics
+const { performanceMetrics, performanceAlerts } = useVisualizerStore();
+```
+
+**Keyboard Shortcuts:**
+- `P` - Toggle performance dashboard
+- `Q` - Cycle through quality profiles
+- `Escape` - Dismiss alerts
+
+**Dashboard Features:**
+- Real-time FPS, memory, and audio latency charts
+- Alert notifications with severity levels
+- Manual quality controls
+- Compact mode for mobile devices
 
 ### 🧪 Testing
 

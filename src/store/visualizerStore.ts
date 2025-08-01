@@ -10,6 +10,18 @@ import {
   MIDIMessage
 } from '@vj-app/types';
 import { validateVJParameters, ValidationError } from '@/utils/validation';
+import { 
+  PerformanceMonitor as V1Z3RPerformanceMonitor, 
+  AdaptiveQualityManager,
+  PerformanceSnapshot,
+  PerformanceAlert,
+  QualityProfile,
+  RenderingCollector,
+  MemoryCollector,
+  AudioCollector,
+  MobileCollector,
+  QUALITY_PROFILES
+} from '@/utils/performanceMonitor';
 
 // Re-export types for backward compatibility
 export type { 
@@ -63,6 +75,18 @@ interface VisualizerState {
   lyricsAnimation: AnimationType;
   lyricsColor: string;
   
+  // パフォーマンス監視関連
+  performanceMonitor?: V1Z3RPerformanceMonitor;
+  adaptiveQualityManager?: AdaptiveQualityManager;
+  performanceMetrics?: PerformanceSnapshot;
+  performanceAlerts: PerformanceAlert[];
+  performanceProfile: QualityProfile;
+  performanceDashboardVisible: boolean;
+  maxParticles: number;
+  effectComplexity: number;
+  renderScale: number;
+  qualityLevel: string;
+  
   // アクション
   setEffectType: (type: EffectType) => void;
   setColorTheme: (color: string) => void;
@@ -108,6 +132,17 @@ interface VisualizerState {
   removeMIDIMapping: (id: string) => void;
   updateMIDIMapping: (id: string, updates: Partial<Omit<MIDIControllerMapping, 'id'>>) => void;
   toggleMIDIMapping: (id: string) => void;
+  
+  // パフォーマンス監視関連のアクション
+  initializePerformanceMonitoring: (renderer?: any) => Promise<void>;
+  updatePerformanceMetrics: (metrics: PerformanceSnapshot) => void;
+  updatePerformanceAlerts: (alerts: PerformanceAlert[]) => void;
+  updatePerformanceProfile: (profile: QualityProfile) => void;
+  togglePerformanceDashboard: () => void;
+  acknowledgePerformanceAlert: (alertId: string) => void;
+  resolvePerformanceAlert: (alertId: string) => void;
+  setQualityProfile: (profileName: string) => void;
+  setAdaptiveQualityEnabled: (enabled: boolean) => void;
 }
 
 export const useVisualizerStore = create<VisualizerState>((set, get) => ({
@@ -157,6 +192,18 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   lyricsFont: 'teko',
   lyricsAnimation: 'glow',
   lyricsColor: '#ffffff',
+  
+  // パフォーマンス監視関連の初期状態
+  performanceMonitor: undefined,
+  adaptiveQualityManager: undefined,
+  performanceMetrics: undefined,
+  performanceAlerts: [],
+  performanceProfile: QUALITY_PROFILES.medium,
+  performanceDashboardVisible: false,
+  maxParticles: 1000,
+  effectComplexity: 3,
+  renderScale: 1.0,
+  qualityLevel: 'Medium',
   
   // アクション
   setEffectType: (type) => set({ currentEffectType: type }),
@@ -453,5 +500,127 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
         mapping.id === id ? { ...mapping, enabled: !mapping.enabled } : mapping
       )
     }));
+  },
+  
+  // パフォーマンス監視関連のアクション実装
+  initializePerformanceMonitoring: async (renderer) => {
+    try {
+      console.log('Initializing performance monitoring system...');
+      
+      // Create performance monitor
+      const monitor = new V1Z3RPerformanceMonitor({
+        updateInterval: 1000,
+        historyLength: 300,
+        enableAutoOptimization: true,
+      });
+      
+      // Create adaptive quality manager
+      const qualityManager = new AdaptiveQualityManager(
+        renderer,
+        get().audioContext,
+        { setState: set, getState: get }
+      );
+      
+      // Add collectors
+      const renderingCollector = new RenderingCollector(renderer);
+      const memoryCollector = new MemoryCollector(renderer);
+      const audioCollector = new AudioCollector(get().audioContext);
+      const mobileCollector = new MobileCollector();
+      
+      monitor.addCollector(renderingCollector);
+      monitor.addCollector(memoryCollector);
+      monitor.addCollector(audioCollector);
+      monitor.addCollector(mobileCollector);
+      
+      // Subscribe to metrics updates
+      monitor.subscribe((metrics, alerts) => {
+        set({
+          performanceMetrics: metrics,
+          performanceAlerts: alerts,
+        });
+        
+        // Process metrics with adaptive quality manager
+        qualityManager.processMetrics(metrics);
+      });
+      
+      // Start monitoring
+      await monitor.start();
+      
+      // Update store
+      set({
+        performanceMonitor: monitor,
+        adaptiveQualityManager: qualityManager,
+      });
+      
+      console.log('Performance monitoring system initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize performance monitoring:', error);
+    }
+  },
+  
+  updatePerformanceMetrics: (metrics) => {
+    set({ performanceMetrics: metrics });
+  },
+  
+  updatePerformanceAlerts: (alerts) => {
+    set({ performanceAlerts: alerts });
+  },
+  
+  updatePerformanceProfile: (profile) => {
+    set({ 
+      performanceProfile: profile,
+      maxParticles: profile.particleCount,
+      effectComplexity: profile.effectComplexity,
+      renderScale: profile.renderScale,
+      qualityLevel: profile.name,
+    });
+  },
+  
+  togglePerformanceDashboard: () => {
+    set(state => ({ 
+      performanceDashboardVisible: !state.performanceDashboardVisible 
+    }));
+  },
+  
+  acknowledgePerformanceAlert: (alertId) => {
+    const monitor = get().performanceMonitor;
+    if (monitor) {
+      monitor.acknowledgeAlert(alertId);
+    }
+  },
+  
+  resolvePerformanceAlert: (alertId) => {
+    const monitor = get().performanceMonitor;
+    if (monitor) {
+      monitor.resolveAlert(alertId);
+    }
+  },
+  
+  setQualityProfile: (profileName) => {
+    const profile = QUALITY_PROFILES[profileName];
+    if (!profile) {
+      console.warn(`Unknown quality profile: ${profileName}`);
+      return;
+    }
+    
+    const qualityManager = get().adaptiveQualityManager;
+    if (qualityManager) {
+      qualityManager.setQualityProfile(profileName);
+    }
+    
+    set({
+      performanceProfile: profile,
+      maxParticles: profile.particleCount,
+      effectComplexity: profile.effectComplexity,
+      renderScale: profile.renderScale,
+      qualityLevel: profile.name,
+    });
+  },
+  
+  setAdaptiveQualityEnabled: (enabled) => {
+    const qualityManager = get().adaptiveQualityManager;
+    if (qualityManager) {
+      qualityManager.setEnabled(enabled);
+    }
   }
 }));
