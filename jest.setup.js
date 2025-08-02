@@ -28,6 +28,20 @@ global.AudioContext = global.AudioContext || function() {
       connect: jest.fn(),
       disconnect: jest.fn(),
     })),
+    createOscillator: jest.fn(() => ({
+      connect: jest.fn(),
+      disconnect: jest.fn(),
+      start: jest.fn(),
+      stop: jest.fn(),
+      frequency: { value: 440 },
+    })),
+    createGain: jest.fn(() => ({
+      connect: jest.fn(),
+      disconnect: jest.fn(),
+      gain: { value: 1 },
+    })),
+    currentTime: 0,
+    sampleRate: 44100,
     resume: jest.fn(),
     close: jest.fn(),
     state: 'running',
@@ -70,6 +84,7 @@ global.requestAnimationFrame = global.requestAnimationFrame || function(callback
 global.cancelAnimationFrame = global.cancelAnimationFrame || function(id) {
   clearTimeout(id)
 }
+
 
 // Mock WebGL for visual renderer tests
 global.HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {
@@ -140,6 +155,35 @@ global.navigator.permissions = global.navigator.permissions || {
   query: jest.fn(() => Promise.resolve({ state: 'granted' }))
 }
 
+// Mock Touch API for mobile tests
+global.Touch = global.Touch || function(touchInit) {
+  return {
+    identifier: touchInit.identifier || 0,
+    target: touchInit.target || null,
+    clientX: touchInit.clientX || 0,
+    clientY: touchInit.clientY || 0,
+    pageX: touchInit.pageX || touchInit.clientX || 0,
+    pageY: touchInit.pageY || touchInit.clientY || 0,
+    screenX: touchInit.screenX || touchInit.clientX || 0,
+    screenY: touchInit.screenY || touchInit.clientY || 0,
+    radiusX: touchInit.radiusX || 1,
+    radiusY: touchInit.radiusY || 1,
+    rotationAngle: touchInit.rotationAngle || 0,
+    force: touchInit.force || 1,
+  }
+}
+
+global.TouchEvent = global.TouchEvent || function(type, touchEventInit) {
+  return {
+    type: type,
+    touches: touchEventInit?.touches || [],
+    targetTouches: touchEventInit?.targetTouches || [],
+    changedTouches: touchEventInit?.changedTouches || [],
+    preventDefault: jest.fn(),
+    stopPropagation: jest.fn(),
+  }
+}
+
 // Note: AWS SDK mocks are handled in individual test files to avoid dependency issues
 
 // Mock WebGPU API
@@ -177,6 +221,77 @@ global.GPUColorWrite = {
   ALPHA: 0x8,
   ALL: 0xF,
 }
+
+// Mock WebGPU navigator API
+global.navigator.gpu = global.navigator.gpu || {
+  requestAdapter: jest.fn(() => Promise.resolve({
+    name: 'Mock WebGPU Adapter',
+    features: new Set(['texture-compression-bc']),
+    limits: {
+      maxTextureDimension1D: 8192,
+      maxTextureDimension2D: 8192,
+      maxTextureDimension3D: 2048,
+    },
+    requestDevice: jest.fn(() => Promise.resolve({
+      features: new Set(['texture-compression-bc']),
+      limits: {
+        maxTextureDimension1D: 8192,
+        maxTextureDimension2D: 8192,
+      },
+      queue: {
+        submit: jest.fn(),
+        writeBuffer: jest.fn(),
+        writeTexture: jest.fn(),
+      },
+      createShaderModule: jest.fn(() => ({
+        compilationInfo: jest.fn(() => Promise.resolve({ messages: [] })),
+      })),
+      createBindGroup: jest.fn(() => ({})),
+      createBindGroupLayout: jest.fn(() => ({})),
+      createPipelineLayout: jest.fn(() => ({})),
+      createComputePipeline: jest.fn(() => ({
+        getBindGroupLayout: jest.fn(() => ({})),
+      })),
+      createRenderPipeline: jest.fn(() => ({
+        getBindGroupLayout: jest.fn(() => ({})),
+      })),
+      createCommandEncoder: jest.fn(() => ({
+        beginComputePass: jest.fn(() => ({
+          setPipeline: jest.fn(),
+          setBindGroup: jest.fn(),
+          dispatchWorkgroups: jest.fn(),
+          end: jest.fn(),
+        })),
+        beginRenderPass: jest.fn(() => ({
+          setPipeline: jest.fn(),
+          setBindGroup: jest.fn(),
+          setVertexBuffer: jest.fn(),
+          setIndexBuffer: jest.fn(),
+          draw: jest.fn(),
+          drawIndexed: jest.fn(),
+          end: jest.fn(),
+        })),
+        finish: jest.fn(() => ({})),
+      })),
+      createBuffer: jest.fn(() => ({
+        size: 1024,
+        usage: 0,
+        mapState: 'unmapped',
+        mapAsync: jest.fn(() => Promise.resolve()),
+        getMappedRange: jest.fn(() => new ArrayBuffer(1024)),
+        unmap: jest.fn(),
+        destroy: jest.fn(),
+      })),
+      createTexture: jest.fn(() => ({
+        createView: jest.fn(() => ({})),
+        destroy: jest.fn(),
+      })),
+      destroy: jest.fn(),
+      lost: new Promise(() => {}), // Never resolves in tests
+    })),
+  })),
+  getPreferredCanvasFormat: jest.fn(() => 'bgra8unorm'),
+};
 
 // Mock react-icons for better test readability
 jest.mock('react-icons/fi', () => ({

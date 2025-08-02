@@ -109,31 +109,37 @@ describe('Dynamic Imports', () => {
 
   describe('loadWebGPURenderer', () => {
     it('should throw error if WebGPU is not supported', async () => {
-      // Mock navigator without defineProperty
-      global.navigator = {} as any;
+      // Remove WebGPU support from navigator
+      delete (global.navigator as any).gpu;
 
       await expect(loadWebGPURenderer()).rejects.toThrow('WebGPU not supported');
     });
 
     it('should throw error if adapter is not available', async () => {
-      // Mock navigator with gpu without defineProperty
-      global.navigator = {
-        gpu: {
+      // Override the GPU requestAdapter to return null
+      Object.defineProperty(global.navigator, 'gpu', {
+        value: {
           requestAdapter: jest.fn().mockResolvedValue(null),
+          getPreferredCanvasFormat: jest.fn().mockReturnValue('bgra8unorm'),
         },
-      } as any;
+        writable: true,
+        configurable: true,
+      });
 
       await expect(loadWebGPURenderer()).rejects.toThrow('WebGPU adapter not available');
     });
 
     it('should load WebGPU modules successfully', async () => {
-      const mockAdapter = {};
-      // Mock navigator with successful adapter
-      global.navigator = {
-        gpu: {
+      const mockAdapter = { name: 'Mock Adapter' };
+      // Override the GPU requestAdapter to return successful adapter
+      Object.defineProperty(global.navigator, 'gpu', {
+        value: {
           requestAdapter: jest.fn().mockResolvedValue(mockAdapter),
+          getPreferredCanvasFormat: jest.fn().mockReturnValue('bgra8unorm'),
         },
-      } as any;
+        writable: true,
+        configurable: true,
+      });
 
       const result = await loadWebGPURenderer();
 
@@ -143,20 +149,30 @@ describe('Dynamic Imports', () => {
     });
 
     it('should handle import errors gracefully', async () => {
-      const mockAdapter = {};
-      // Mock navigator with successful adapter
-      global.navigator = {
-        gpu: {
+      const mockAdapter = { name: 'Mock Adapter' };
+      // Override the GPU requestAdapter to return successful adapter
+      Object.defineProperty(global.navigator, 'gpu', {
+        value: {
           requestAdapter: jest.fn().mockResolvedValue(mockAdapter),
+          getPreferredCanvasFormat: jest.fn().mockReturnValue('bgra8unorm'),
         },
-      } as any;
+        writable: true,
+        configurable: true,
+      });
 
-      // Mock import failure
+      // Mock the dynamic import to fail
+      const originalImport = jest.requireActual('module')._load;
       jest.doMock('@/utils/webgpuRenderer', () => {
         throw new Error('Import failed');
       });
 
-      await expect(loadWebGPURenderer()).rejects.toThrow();
+      // Clear the module cache to force re-import
+      jest.resetModules();
+
+      // Re-import the function to get the new mocked module
+      const { loadWebGPURenderer: newLoadWebGPURenderer } = require('../dynamicImports');
+
+      await expect(newLoadWebGPURenderer()).rejects.toThrow();
       expect(consoleWarnSpy).toHaveBeenCalledWith('WebGPU import failed:', expect.any(Error));
     });
   });

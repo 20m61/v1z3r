@@ -91,7 +91,9 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
   const [featureHealth, setFeatureHealth] = useState<{
     [key: string]: 'healthy' | 'degraded' | 'unavailable';
   }>({});
+  const [isClient, setIsClient] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const healthIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const {
     setAudioContext,
@@ -106,16 +108,29 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
     setEffectType,
   } = useVisualizerStore();
 
+  // Handle client-side hydration
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     checkWebGPUSupport();
     setupAudioContext();
     updateFeatureHealth();
     
     // Monitor feature health every 30 seconds
-    const healthInterval = setInterval(updateFeatureHealth, 30000);
-    return () => clearInterval(healthInterval);
+    healthIntervalRef.current = setInterval(updateFeatureHealth, 30000);
+    
+    return () => {
+      if (healthIntervalRef.current) {
+        clearInterval(healthIntervalRef.current);
+        healthIntervalRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isClient]);
 
   const updateFeatureHealth = useCallback(() => {
     setFeatureHealth({
@@ -236,6 +251,26 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
       </Suspense>
     );
   };
+
+  // Don't render client-only content until hydrated
+  if (!isClient) {
+    return (
+      <>
+        <Head>
+          <title>Advanced Features - v1z3r</title>
+          <meta name="description" content="Advanced VJ features: AI Style Transfer, 3D Scene Manipulation, MIDI Control, and NDI Streaming" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </Head>
+        <div className="min-h-screen bg-black text-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <p className="text-lg">Loading Advanced Features...</p>
+            <p className="text-sm text-gray-400 mt-2">Initializing WebGPU and AI services...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -452,10 +487,10 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
   );
 };
 
-export const getStaticProps = async () => {
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   return {
     props: {
-      userAgent: '',
+      userAgent: req.headers['user-agent'] || '',
     },
   };
 };

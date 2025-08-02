@@ -1,0 +1,85 @@
+.performanceSection {
+  background: #151515;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric {
+  background: #0a0a0a;
+  padding: 1rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.metricLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.metricValue {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #00ffff;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.modeSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.modeLabel {
+  font-size: 0.875rem;
+  color: #999;
+}
+
+.modeButtons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+}
+
+.modeButton {
+  background: #222;
+  border: 1px solid #444;
+  color: #999;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.modeButton:hover {
+  background: #333;
+  border-color: #666;
+  color: #fff;
+}
+
+.modeButton.active {
+  background: #00ffff;
+  border-color: #00ffff;
+  color: #000;
+  font-weight: 600;
+}

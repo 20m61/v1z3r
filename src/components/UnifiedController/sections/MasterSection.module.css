@@ -1,0 +1,245 @@
+/**
+ * Master Section Styles
+ * Professional VJ master control styling
+ */
+
+.masterSection {
+  background: linear-gradient(180deg, #1a1a1a 0%, #151515 100%);
+  border-bottom: 2px solid #333;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  min-height: 120px;
+}
+
+/* Master Intensity Control */
+.intensityControl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.intensityWrapper {
+  position: relative;
+  height: 80px;
+  width: 60px;
+}
+
+.intensityMeter {
+  position: absolute;
+  inset: 0;
+  background: #0a0a0a;
+  border: 2px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.intensityFill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, #00ffff 0%, #0088ff 100%);
+  transition: height 0.1s ease-out;
+}
+
+.intensitySlider {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: ns-resize;
+  -webkit-appearance: slider-vertical;
+}
+
+.intensityValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #00ffff;
+  font-family: 'SF Mono', Monaco, monospace;
+  min-width: 60px;
+  text-align: center;
+}
+
+.quickButtons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.quickButton {
+  background: #222;
+  border: 1px solid #444;
+  color: #999;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 32px;
+}
+
+.quickButton:hover {
+  background: #333;
+  color: #fff;
+  border-color: #666;
+}
+
+.quickButton:active {
+  background: #00ffff;
+  color: #000;
+}
+
+/* Crossfader Control */
+.crossfaderControl {
+  flex: 1;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crossfaderLabels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.channelLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  min-width: 30px;
+  text-align: center;
+}
+
+.crossfaderWrapper {
+  position: relative;
+  height: 40px;
+}
+
+.crossfaderTrack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #222;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.crossfaderIndicator {
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #ff00ff 0%, #ff0088 100%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 0.1s ease-out;
+  box-shadow: 0 2px 8px rgba(255, 0, 255, 0.4);
+}
+
+.crossfaderSlider {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 40px;
+  opacity: 0;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+}
+
+.centerButton {
+  background: #222;
+  border: 1px solid #444;
+  color: #999;
+  padding: 0.25rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: center;
+}
+
+.centerButton:hover {
+  background: #333;
+  color: #fff;
+  border-color: #666;
+}
+
+/* Visual Indicators */
+.indicators {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.channelIndicator {
+  width: 48px;
+  height: 48px;
+  background: #111;
+  border: 2px solid #333;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.channelIndicator.active {
+  border-color: #00ffff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.channelIndicator span {
+  transition: color 0.2s;
+}
+
+.channelIndicator.active span {
+  color: #00ffff;
+}
+
+.mixIndicator {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ff00ff;
+  text-transform: uppercase;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .masterSection {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem 0.5rem;
+  }
+  
+  .crossfaderControl {
+    width: 100%;
+  }
+  
+  .indicators {
+    display: none;
+  }
+}

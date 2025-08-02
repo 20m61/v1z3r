@@ -1,0 +1,122 @@
+.layerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+}
+
+.layerItem:hover {
+  border-color: #555;
+}
+
+.layerItem.active {
+  border-color: #00ffff;
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.layerItem.locked {
+  opacity: 0.7;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: #666;
+  font-size: 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.visibilityToggle {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 24px;
+  text-align: center;
+}
+
+.visibilityToggle.visible {
+  color: #00ffff;
+}
+
+.layerNumber {
+  font-size: 0.75rem;
+  color: #666;
+  min-width: 20px;
+  text-align: center;
+}
+
+.layerName {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.opacitySlider {
+  width: 80px;
+  -webkit-appearance: none;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  outline: none;
+}
+
+.opacitySlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #00ffff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.opacitySlider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.opacityValue {
+  font-size: 0.75rem;
+  color: #999;
+  min-width: 40px;
+  text-align: right;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.blendModeSelect {
+  background: #222;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.blendModeSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lockToggle {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.lockToggle:hover {
+  color: #999;
+}

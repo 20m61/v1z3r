@@ -270,11 +270,12 @@ describe('PerformanceMonitor', () => {
       
       await monitor.start();
       
-      // Advance timers to trigger collection
+      // Advance timers to trigger collection (default interval is 1000ms)
       jest.advanceTimersByTime(1000);
       
-      // Wait for async operations
-      await new Promise(resolve => setTimeout(resolve, 0));
+      // Flush any pending promises
+      await Promise.resolve();
+      await Promise.resolve();
       
       expect(callback).toHaveBeenCalled();
     });
@@ -385,7 +386,7 @@ describe('PerformanceMonitor', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it('should handle cleanup errors gracefully', () => {
+    it('should handle cleanup errors gracefully', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       
       // Create a collector that fails during cleanup
@@ -401,9 +402,14 @@ describe('PerformanceMonitor', () => {
       };
       
       monitor.addCollector(badCollector);
+      
+      // Start monitoring so there are collectors to clean up
+      await monitor.start();
+      
+      // Now stop, which should trigger cleanup
       monitor.stop();
       
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to cleanup collector bad:', expect.any(Error));
       
       consoleErrorSpy.mockRestore();
     });

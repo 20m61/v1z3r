@@ -4,7 +4,7 @@
  * Provides real-time communication for VJ Application modules.
  * Handles connection management, message passing, room management, and state synchronization.
  * 
- * Following TDD principles: implementing minimal functionality to pass tests.
+ * Enhanced with reliability features for production use.
  */
 
 import { v4 as uuidv4 } from 'uuid'
@@ -28,6 +28,14 @@ import {
   MessageType
 } from '../types'
 
+// Enhanced WebSocket configuration for reliability
+interface ReliabilityConfig {
+  maxReconnectAttempts: number
+  reconnectDelay: number
+  heartbeatInterval: number
+  messageTimeout: number
+}
+
 export class SyncClient implements ISyncClient {
   private ws: WebSocket | null = null
   private connectionInfo: ConnectionInfo
@@ -37,6 +45,7 @@ export class SyncClient implements ISyncClient {
   private reconnectTimeout: NodeJS.Timeout | null = null
   private pendingRequests: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }> = new Map()
   private pingStartTime: number = 0
+  private reliabilityConfig: ReliabilityConfig
 
   constructor() {
     this.connectionInfo = {
@@ -44,13 +53,29 @@ export class SyncClient implements ISyncClient {
       state: 'disconnected',
       reconnectCount: 0
     }
+    
+    // Initialize reliability configuration
+    this.reliabilityConfig = {
+      maxReconnectAttempts: 10,
+      reconnectDelay: 1000,
+      heartbeatInterval: 30000,
+      messageTimeout: 5000
+    }
   }
 
-  // Connection Management
+  // Connection Management with Enhanced Reliability
   async connect(config: ConnectionConfig): Promise<void> {
     this.config = config
     this.connectionInfo.state = 'connecting'
     this.connectionInfo.error = undefined
+
+    // Update reliability config with user settings
+    this.reliabilityConfig = {
+      maxReconnectAttempts: config.reconnectAttempts || this.reliabilityConfig.maxReconnectAttempts,
+      reconnectDelay: config.reconnectDelay || this.reliabilityConfig.reconnectDelay,
+      heartbeatInterval: config.heartbeatInterval || this.reliabilityConfig.heartbeatInterval,
+      messageTimeout: config.timeout || this.reliabilityConfig.messageTimeout
+    }
 
     return new Promise((resolve, reject) => {
       try {
@@ -427,10 +452,10 @@ export class SyncClient implements ISyncClient {
   }
 
   private startHeartbeat(): void {
-    if (this.config && this.config.heartbeatInterval > 0) {
+    if (this.reliabilityConfig.heartbeatInterval > 0) {
       this.heartbeatInterval = setInterval(() => {
         this.sendPing()
-      }, this.config.heartbeatInterval)
+      }, this.reliabilityConfig.heartbeatInterval)
     }
   }
 
@@ -465,7 +490,7 @@ export class SyncClient implements ISyncClient {
   }
 
   private handleReconnection(): void {
-    if (!this.config || this.connectionInfo.reconnectCount >= this.config.reconnectAttempts) {
+    if (!this.config || this.connectionInfo.reconnectCount >= this.reliabilityConfig.maxReconnectAttempts) {
       this.connectionInfo.state = 'error'
       this.connectionInfo.error = new ConnectionError('Max reconnection attempts reached')
       return
@@ -485,12 +510,19 @@ export class SyncClient implements ISyncClient {
       }
     })
 
+    // Enhanced exponential backoff with jitter
+    const baseDelay = this.reliabilityConfig.reconnectDelay
+    const exponentialDelay = baseDelay * Math.pow(2, this.connectionInfo.reconnectCount - 1)
+    const maxDelay = 30000 // 30 seconds max
+    const jitter = Math.random() * 0.3 * exponentialDelay
+    const actualDelay = Math.min(exponentialDelay + jitter, maxDelay)
+
     this.reconnectTimeout = setTimeout(() => {
       this.reconnect().catch(error => {
         this.connectionInfo.error = error
         this.handleReconnection() // Try again
       })
-    }, this.config.reconnectDelay)
+    }, actualDelay)
   }
 
   private clearReconnectTimeout(): void {

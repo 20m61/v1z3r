@@ -1,0 +1,268 @@
+/**
+ * Unified Controller Styles
+ * Dark theme optimized for VJ performance environments
+ */
+
+.container {
+  background: #0a0a0a;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+/* Header */
+.header {
+  background: #151515;
+  border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-right: 2rem;
+}
+
+.logoText {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, #00ffff, #ff00ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.version {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: #666;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+}
+
+.tab:hover {
+  color: #999;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00ffff, #ff00ff);
+}
+
+/* Header Controls */
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.metrics {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: #999;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.lockButton,
+.fullscreenButton {
+  background: none;
+  border: 1px solid #333;
+  color: #999;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.lockButton:hover,
+.fullscreenButton:hover {
+  border-color: #666;
+  color: #fff;
+}
+
+/* Content Area */
+.content {
+  flex: 1;
+  overflow: hidden;
+  background: #0f0f0f;
+}
+
+/* Main Tab Layout */
+.mainTab {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  height: 100%;
+  gap: 1px;
+  background: #1a1a1a;
+}
+
+.leftPanel,
+.rightPanel {
+  background: #0f0f0f;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.rightPanel {
+  border-left: 1px solid #222;
+}
+
+/* Effects Tab */
+.effectsTab {
+  padding: 1.5rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Presets Tab */
+.presetsTab {
+  padding: 1.5rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Status Bar */
+.statusBar {
+  background: #151515;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  height: 40px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.statusLeft,
+.statusRight {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.bpmIndicator {
+  color: #00ffff;
+  font-weight: 500;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.presetName {
+  color: #999;
+}
+
+.midiStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.performanceMode {
+  color: #666;
+  text-transform: capitalize;
+}
+
+/* Scrollbar Styling */
+.content ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.content ::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+.content ::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+.content ::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animation for transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.container > * {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .mainTab {
+    grid-template-columns: 1fr;
+  }
+  
+  .rightPanel {
+    border-left: none;
+    border-top: 1px solid #222;
+  }
+}
+
+/* Performance optimizations */
+.container * {
+  will-change: auto;
+}
+
+.container *:hover {
+  will-change: transform, opacity;
+}

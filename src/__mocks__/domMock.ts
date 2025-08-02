@@ -190,6 +190,7 @@ export const createWindowMock = () => {
       setItem: jest.fn(),
       removeItem: jest.fn(),
       clear: jest.fn(),
+      key: jest.fn(),
       length: 0
     },
     sessionStorage: {
@@ -197,6 +198,7 @@ export const createWindowMock = () => {
       setItem: jest.fn(),
       removeItem: jest.fn(),
       clear: jest.fn(),
+      key: jest.fn(),
       length: 0
     },
     addEventListener: jest.fn((type: string, listener: Function) => {
@@ -249,8 +251,21 @@ export const createWindowMock = () => {
       measure: jest.fn(),
       getEntriesByType: jest.fn().mockReturnValue([]),
       clearMarks: jest.fn(),
-      clearMeasures: jest.fn()
-    },
+      clearMeasures: jest.fn(),
+      getEntries: jest.fn().mockReturnValue([]),
+      getEntriesByName: jest.fn().mockReturnValue([]),
+      clearResourceTimings: jest.fn(),
+      setResourceTimingBufferSize: jest.fn(),
+      timeOrigin: Date.now(),
+      timing: {} as PerformanceTiming,
+      navigation: {} as PerformanceNavigation,
+      eventCounts: new Map(),
+      onresourcetimingbufferfull: null,
+      toJSON: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn()
+    } as unknown as Performance,
     fetch: jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
