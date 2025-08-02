@@ -79,27 +79,8 @@ export default function App({ Component, pageProps }: AppProps) {
       });
     }
 
-    if (typeof window !== 'undefined') {
-      // フォントの事前読み込み
-      const fontFamilies = ['Teko', 'Prompt', 'Audiowide', 'Russo One', 'Orbitron'];
-      fontFamilies.forEach(fontFamily => {
-        // FontFace APIを使用したロードは限定的なブラウザでしか動作しないため、
-        // エラーハンドリングを含め、またフォールバックとしてlinkタグによるロードも行う
-        try {
-          // @ts-ignore - FontFace APIのサポートを確認
-          if (window.FontFace) {
-            const font = new FontFace(fontFamily, `url(https://fonts.gstatic.com/s/${fontFamily.toLowerCase().replace(' ', '')}/v1/regular.woff2)`);
-            font.load().then(() => {
-              document.fonts.add(font);
-            }).catch(err => {
-              errorHandler.warn(`Failed to preload font: ${fontFamily}`, err, { fontFamily });
-            });
-          }
-        } catch (e) {
-          errorHandler.warn('FontFace API not supported', e instanceof Error ? e : new Error(String(e)));
-        }
-      });
-    }
+    // フォント読み込みは _document.tsx で行うため、ここでは削除
+    // フォントは Google Fonts CDN から直接読み込まれる
 
     // アプリケーション終了時のクリーンアップ
     return () => {
