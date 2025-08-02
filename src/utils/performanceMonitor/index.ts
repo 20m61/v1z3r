@@ -37,3 +37,6 @@ export { RenderingCollector } from './collectors/renderingCollector';
 export { MemoryCollector } from './collectors/memoryCollector';
 export { AudioCollector } from './collectors/audioCollector';
 export { MobileCollector } from './collectors/mobileCollector';
+
+// Legacy exports for backward compatibility
+export { performanceMonitor, usePerformanceMonitor } from '../performanceMonitorLegacy';

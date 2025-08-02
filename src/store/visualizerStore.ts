@@ -513,9 +513,12 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
         historyLength: 300,
         enableAutoOptimization: true,
         thresholds: {
-          fps: { critical: 15, warning: 30 },
-          memory: { critical: 500 * 1024 * 1024, warning: 300 * 1024 * 1024 },
-          audio: { critical: 200, warning: 100 }
+          fps: { critical: 15, warning: 30, target: 60 },
+          memory: { critical: 90, warning: 75 },
+          audio: {
+            latency: { critical: 200, warning: 100 },
+            underruns: { critical: 10, warning: 5 }
+          }
         },
         collectors: []
       });
@@ -523,14 +526,14 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
       // Create adaptive quality manager
       const qualityManager = new AdaptiveQualityManager(
         renderer,
-        get().audioContext,
+        get().audioContext || undefined,
         { setState: set, getState: get }
       );
       
       // Add collectors
       const renderingCollector = new RenderingCollector(renderer);
       const memoryCollector = new MemoryCollector(renderer);
-      const audioCollector = new AudioCollector(get().audioContext);
+      const audioCollector = new AudioCollector(get().audioContext || undefined);
       const mobileCollector = new MobileCollector();
       
       monitor.addCollector(renderingCollector);

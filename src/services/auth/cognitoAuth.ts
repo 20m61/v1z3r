@@ -4,6 +4,7 @@
  */
 
 import { errorHandler } from '@/utils/errorHandler';
+import { cognitoAuthImpl } from './cognitoAuthImplementation';
 
 // Types for Cognito operations
 export interface CognitoUser {
@@ -121,13 +122,13 @@ export class CognitoAuthService {
     session?: string;
   }> {
     try {
-      // TODO: Implement actual AWS Cognito signIn
-      // For now, return mock data for development
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         return this.mockSignIn(email, password);
       }
 
-      throw new Error('AWS Cognito signIn not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.signIn(email, password);
     } catch (error) {
       errorHandler.error('Sign in failed', error as Error);
       throw error;
@@ -141,14 +142,15 @@ export class CognitoAuthService {
     username: string;
     password: string;
     attributes: UserAttributes;
-  }): Promise<{ success: boolean; userSub?: string }> {
+  }): Promise<{ success: boolean; userSub?: string; codeDeliveryDetails?: any }> {
     try {
-      // TODO: Implement actual AWS Cognito signUp
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         return this.mockSignUp(params);
       }
 
-      throw new Error('AWS Cognito signUp not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.signUp(params);
     } catch (error) {
       errorHandler.error('Sign up failed', error as Error);
       throw error;
@@ -160,13 +162,14 @@ export class CognitoAuthService {
    */
   async signOut(): Promise<void> {
     try {
-      // TODO: Implement actual AWS Cognito signOut
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 500));
         return;
       }
 
-      throw new Error('AWS Cognito signOut not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.signOut();
     } catch (error) {
       errorHandler.error('Sign out failed', error as Error);
       throw error;
@@ -178,12 +181,13 @@ export class CognitoAuthService {
    */
   async refreshSession(refreshToken: string): Promise<AuthTokens | null> {
     try {
-      // TODO: Implement actual AWS Cognito token refresh
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         return this.mockRefreshSession(refreshToken);
       }
 
-      throw new Error('AWS Cognito refreshSession not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.refreshSession(refreshToken);
     } catch (error) {
       errorHandler.error('Session refresh failed', error as Error);
       return null;
@@ -195,13 +199,14 @@ export class CognitoAuthService {
    */
   async verifyEmail(email: string, code: string): Promise<boolean> {
     try {
-      // TODO: Implement actual AWS Cognito confirmSignUp
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return code === '123456'; // Mock validation
       }
 
-      throw new Error('AWS Cognito verifyEmail not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.verifyEmail(email, code);
     } catch (error) {
       errorHandler.error('Email verification failed', error as Error);
       return false;
@@ -213,13 +218,14 @@ export class CognitoAuthService {
    */
   async resendVerificationCode(email: string): Promise<boolean> {
     try {
-      // TODO: Implement actual AWS Cognito resendConfirmationCode
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return true;
       }
 
-      throw new Error('AWS Cognito resendVerificationCode not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.resendVerificationCode(email);
     } catch (error) {
       errorHandler.error('Resend verification code failed', error as Error);
       return false;
@@ -231,13 +237,14 @@ export class CognitoAuthService {
    */
   async forgotPassword(email: string): Promise<boolean> {
     try {
-      // TODO: Implement actual AWS Cognito forgotPassword
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return true;
       }
 
-      throw new Error('AWS Cognito forgotPassword not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.forgotPassword(email);
     } catch (error) {
       errorHandler.error('Forgot password request failed', error as Error);
       return false;
@@ -249,13 +256,14 @@ export class CognitoAuthService {
    */
   async confirmForgotPassword(email: string, code: string, newPassword: string): Promise<boolean> {
     try {
-      // TODO: Implement actual AWS Cognito confirmForgotPassword
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return true;
       }
 
-      throw new Error('AWS Cognito confirmForgotPassword not implemented');
+      // Use real implementation
+      return cognitoAuthImpl.confirmForgotPassword(email, code, newPassword);
     } catch (error) {
       errorHandler.error('Password reset failed', error as Error);
       return false;
@@ -267,13 +275,14 @@ export class CognitoAuthService {
    */
   async changePassword(accessToken: string, oldPassword: string, newPassword: string): Promise<boolean> {
     try {
-      // TODO: Implement actual AWS Cognito changePassword
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return true;
       }
 
-      throw new Error('AWS Cognito changePassword not implemented');
+      // Use real implementation (Note: real implementation doesn't need accessToken as it uses current session)
+      return cognitoAuthImpl.changePassword(oldPassword, newPassword);
     } catch (error) {
       errorHandler.error('Password change failed', error as Error);
       return false;
@@ -285,8 +294,8 @@ export class CognitoAuthService {
    */
   async setupMFA(accessToken: string): Promise<{ secret: string; qrCode: string }> {
     try {
-      // TODO: Implement actual AWS Cognito MFA setup
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return {
           secret: 'MOCK_SECRET_KEY_123456',
@@ -294,7 +303,9 @@ export class CognitoAuthService {
         };
       }
 
-      throw new Error('AWS Cognito setupMFA not implemented');
+      // MFA setup requires additional AWS SDK methods
+      // For now, throw not implemented
+      throw new Error('AWS Cognito MFA setup not yet implemented');
     } catch (error) {
       errorHandler.error('MFA setup failed', error as Error);
       throw error;
@@ -306,8 +317,8 @@ export class CognitoAuthService {
    */
   async verifyMFA(session: string, code: string): Promise<AuthTokens | null> {
     try {
-      // TODO: Implement actual AWS Cognito MFA verification
-      if (process.env.NODE_ENV === 'development') {
+      // Use mock in development with explicit flag
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (code === '123456') {
           return {
@@ -320,7 +331,9 @@ export class CognitoAuthService {
         return null;
       }
 
-      throw new Error('AWS Cognito verifyMFA not implemented');
+      // MFA verification requires additional AWS SDK methods
+      // For now, throw not implemented
+      throw new Error('AWS Cognito MFA verification not yet implemented');
     } catch (error) {
       errorHandler.error('MFA verification failed', error as Error);
       return null;
