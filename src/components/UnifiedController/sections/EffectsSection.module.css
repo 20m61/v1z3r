@@ -1,0 +1,55 @@
+.effectsSection {
+  padding: 2rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2rem;
+}
+
+.globalEffects,
+.layerEffects {
+  margin-bottom: 2rem;
+}
+
+.globalEffects h3,
+.layerEffects h3 {
+  font-size: 1.125rem;
+  color: #00ffff;
+  margin-bottom: 1rem;
+}
+
+.effectList {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.effectItem {
+  background: #1a1a1a;
+  padding: 1rem;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #333;
+}
+
+.effectItem:hover {
+  border-color: #666;
+}
+
+.effectStatus {
+  color: #00ffff;
+}
+
+.layerEffectGroup {
+  margin-bottom: 1.5rem;
+}
+
+.layerEffectGroup h4 {
+  font-size: 0.875rem;
+  color: #999;
+  margin-bottom: 0.5rem;
+}

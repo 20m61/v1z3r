@@ -1,0 +1,79 @@
+.presetSection {
+  padding: 2rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2rem;
+}
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.presetButton {
+  background: #1a1a1a;
+  border: 2px solid #333;
+  color: #fff;
+  padding: 2rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.presetButton:hover {
+  border-color: #666;
+  background: #222;
+}
+
+.presetButton.active {
+  border-color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.presetButton.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #00ffff;
+}
+
+.presetName {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.presetBpm {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.addPresetButton {
+  background: transparent;
+  border: 2px dashed #444;
+  color: #999;
+  padding: 2rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.addPresetButton:hover {
+  border-color: #666;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
