@@ -285,18 +285,18 @@ export const createWebGPUDetectorMock = (shouldSupport: boolean = true) => ({
 export const cleanupWebGPUMocks = () => {
   // @ts-ignore
   if (global.navigator && global.navigator.gpu) {
-    delete global.navigator.gpu;
+    (global.navigator as any).gpu = undefined;
   }
   // @ts-ignore
   if (global.OffscreenCanvas) {
-    delete global.OffscreenCanvas;
+    (global as any).OffscreenCanvas = undefined;
   }
   // @ts-ignore
   if (global.WebGL2RenderingContext) {
-    delete global.WebGL2RenderingContext;
+    (global as any).WebGL2RenderingContext = undefined;
   }
   // @ts-ignore
   if (global.WebGLRenderingContext) {
-    delete global.WebGLRenderingContext;
+    (global as any).WebGLRenderingContext = undefined;
   }
 };
