@@ -2,6 +2,7 @@
   "name": "v1z3r - Web VJ Application",
   "short_name": "v1z3r",
   "description": "Advanced Web-based VJ (Visual Jockey) Application with Real-time Audio-reactive Visuals",
+  "version": "2.0.0",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
@@ -84,7 +85,7 @@
   },
   "protocol_handlers": [
     {
-      "protocol": "web+v1z3r",
+      "protocol": "web+v1z3rpreset",
       "url": "/preset?id=%s"
     }
   ]

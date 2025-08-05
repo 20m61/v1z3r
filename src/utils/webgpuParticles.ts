@@ -220,18 +220,34 @@ export class WebGPUParticleSystem {
         return fract((p3.x + p3.y + p3.z) * p3_dot);
       }
 
+      fn lerp(a: f32, b: f32, t: f32) -> f32 {
+        return a + t * (b - a);
+      }
+
       fn noise(p: vec3<f32>) -> f32 {
         let i = floor(p);
         let f = fract(p);
         let u = f * f * (3.0 - 2.0 * f);
         
-        return mix(
-          mix(
-            mix(hash(i + vec3<f32>(0.0, 0.0, 0.0)), hash(i + vec3<f32>(1.0, 0.0, 0.0)), u.x),
-            mix(hash(i + vec3<f32>(0.0, 1.0, 0.0)), hash(i + vec3<f32>(1.0, 1.0, 0.0)), u.x), u.y),
-          mix(
-            mix(hash(i + vec3<f32>(0.0, 0.0, 1.0)), hash(i + vec3<f32>(1.0, 0.0, 1.0)), u.x),
-            mix(hash(i + vec3<f32>(0.0, 1.0, 1.0)), hash(i + vec3<f32>(1.0, 1.0, 1.0)), u.x), u.y), u.z);
+        // Use explicit lerp instead of nested mix calls for better compatibility
+        let h000 = hash(i + vec3<f32>(0.0, 0.0, 0.0));
+        let h100 = hash(i + vec3<f32>(1.0, 0.0, 0.0));
+        let h010 = hash(i + vec3<f32>(0.0, 1.0, 0.0));
+        let h110 = hash(i + vec3<f32>(1.0, 1.0, 0.0));
+        let h001 = hash(i + vec3<f32>(0.0, 0.0, 1.0));
+        let h101 = hash(i + vec3<f32>(1.0, 0.0, 1.0));
+        let h011 = hash(i + vec3<f32>(0.0, 1.0, 1.0));
+        let h111 = hash(i + vec3<f32>(1.0, 1.0, 1.0));
+        
+        let x00 = lerp(h000, h100, u.x);
+        let x10 = lerp(h010, h110, u.x);
+        let x01 = lerp(h001, h101, u.x);
+        let x11 = lerp(h011, h111, u.x);
+        
+        let y0 = lerp(x00, x10, u.y);
+        let y1 = lerp(x01, x11, u.y);
+        
+        return lerp(y0, y1, u.z);
       }
 
       fn turbulence(p: vec3<f32>) -> vec3<f32> {
