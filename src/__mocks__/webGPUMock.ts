@@ -283,20 +283,40 @@ export const createWebGPUDetectorMock = (shouldSupport: boolean = true) => ({
 
 // Cleanup function
 export const cleanupWebGPUMocks = () => {
-  // @ts-ignore
-  if (global.navigator && global.navigator.gpu) {
-    (global.navigator as any).gpu = undefined;
+  // Reset mocked properties
+  try {
+    // @ts-ignore - Allow property reassignment for cleanup
+    if (global.navigator && 'gpu' in global.navigator) {
+      (global.navigator as any).gpu = undefined;
+    }
+  } catch (e) {
+    // Ignore errors during cleanup
   }
-  // @ts-ignore
-  if (global.OffscreenCanvas) {
-    (global as any).OffscreenCanvas = undefined;
+  
+  try {
+    // @ts-ignore - Allow property reassignment for cleanup  
+    if ('OffscreenCanvas' in global) {
+      (global as any).OffscreenCanvas = undefined;
+    }
+  } catch (e) {
+    // Ignore errors during cleanup
   }
-  // @ts-ignore
-  if (global.WebGL2RenderingContext) {
-    (global as any).WebGL2RenderingContext = undefined;
+  
+  try {
+    // @ts-ignore - Allow property reassignment for cleanup
+    if ('WebGL2RenderingContext' in global) {
+      (global as any).WebGL2RenderingContext = undefined;
+    }
+  } catch (e) {
+    // Ignore errors during cleanup
   }
-  // @ts-ignore
-  if (global.WebGLRenderingContext) {
-    (global as any).WebGLRenderingContext = undefined;
+  
+  try {
+    // @ts-ignore - Allow property reassignment for cleanup
+    if ('WebGLRenderingContext' in global) {
+      (global as any).WebGLRenderingContext = undefined;
+    }
+  } catch (e) {
+    // Ignore errors during cleanup
   }
 };

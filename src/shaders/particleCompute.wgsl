@@ -122,7 +122,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   
   // Update size based on audio
   let avgAudio = (params.audioLevel + params.audioFrequency) * 0.5;
-  particle.size = mix(particle.size, 2.0 + avgAudio * 3.0, params.deltaTime * 2.0);
+  let targetSize = 2.0 + avgAudio * 3.0;
+  let lerpFactor = params.deltaTime * 2.0;
+  particle.size = particle.size + lerpFactor * (targetSize - particle.size);
   
   // Update color based on velocity and audio
   let speed = length(particle.velocity);

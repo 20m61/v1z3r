@@ -10,18 +10,18 @@ import {
   MIDIMessage
 } from '@vj-app/types';
 import { validateVJParameters, ValidationError } from '@/utils/validation';
+import { PerformanceMonitor as V1Z3RPerformanceMonitor } from '../utils/performanceMonitor/core';
+import { AdaptiveQualityManager } from '../utils/performanceMonitor/adaptiveQuality';
 import { 
-  PerformanceMonitor as V1Z3RPerformanceMonitor, 
-  AdaptiveQualityManager,
   PerformanceSnapshot,
   PerformanceAlert,
   QualityProfile,
-  RenderingCollector,
-  MemoryCollector,
-  AudioCollector,
-  MobileCollector,
   QUALITY_PROFILES
-} from '@/utils/performanceMonitor';
+} from '../utils/performanceMonitor/types';
+import { RenderingCollector } from '../utils/performanceMonitor/collectors/renderingCollector';
+import { MemoryCollector } from '../utils/performanceMonitor/collectors/memoryCollector';
+import { AudioCollector } from '../utils/performanceMonitor/collectors/audioCollector';
+import { MobileCollector } from '../utils/performanceMonitor/collectors/mobileCollector';
 
 // Re-export types for backward compatibility
 export type { 
@@ -515,7 +515,7 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => ({
         thresholds: {
           fps: { critical: 15, warning: 30, target: 60 },
           memory: { critical: 90, warning: 75 },
-          audio: {
+          audio: { 
             latency: { critical: 200, warning: 100 },
             underruns: { critical: 10, warning: 5 }
           }

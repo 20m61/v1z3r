@@ -21,8 +21,10 @@ const CACHE_STRATEGIES = {
     try {
       const networkResponse = await fetch(request);
       if (networkResponse.ok) {
+        // Clone BEFORE using the response
+        const responseToCache = networkResponse.clone();
         const cache = await caches.open(DYNAMIC_CACHE_NAME);
-        cache.put(request, networkResponse.clone());
+        cache.put(request, responseToCache);
       }
       return networkResponse;
     } catch (error) {
@@ -43,8 +45,10 @@ const CACHE_STRATEGIES = {
     
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
+      // Clone BEFORE using the response
+      const responseToCache = networkResponse.clone();
       const cache = await caches.open(STATIC_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+      cache.put(request, responseToCache);
     }
     return networkResponse;
   },
@@ -53,10 +57,12 @@ const CACHE_STRATEGIES = {
   staleWhileRevalidate: async (request) => {
     const cachedResponse = await caches.match(request);
     
-    const fetchPromise = fetch(request).then(networkResponse => {
+    const fetchPromise = fetch(request).then(async (networkResponse) => {
       if (networkResponse.ok) {
-        const cache = caches.open(DYNAMIC_CACHE_NAME);
-        cache.then(cache => cache.put(request, networkResponse.clone()));
+        // Clone BEFORE using the response
+        const responseToCache = networkResponse.clone();
+        const cache = await caches.open(DYNAMIC_CACHE_NAME);
+        cache.put(request, responseToCache);
       }
       return networkResponse;
     });
