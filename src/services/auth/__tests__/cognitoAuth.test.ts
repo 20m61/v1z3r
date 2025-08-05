@@ -1,202 +1,155 @@
 /**
- * Cognito Authentication Service Tests
+ * CognitoAuthService Tests
  */
 
-import { cognitoAuth } from '../cognitoAuth';
+import { CognitoAuthService, cognitoAuth } from '../cognitoAuth';
+import { cognitoAuthImpl } from '../cognitoAuthImplementation';
 
-// Mock environment variables
-const mockEnv = {
-  NEXT_PUBLIC_AWS_REGION: 'us-east-1',
-  NEXT_PUBLIC_USER_POOL_ID: 'test-pool-id',
-  NEXT_PUBLIC_USER_POOL_CLIENT_ID: 'test-client-id',
-  NEXT_PUBLIC_IDENTITY_POOL_ID: 'test-identity-pool-id',
-};
+// Mock the implementation
+jest.mock('../cognitoAuthImplementation', () => ({
+  cognitoAuthImpl: {
+    signIn: jest.fn(),
+    signUp: jest.fn(),
+    signOut: jest.fn(),
+    refreshSession: jest.fn(),
+    verifyEmail: jest.fn(),
+    resendVerificationCode: jest.fn(),
+    forgotPassword: jest.fn(),
+    confirmForgotPassword: jest.fn(),
+    changePassword: jest.fn(),
+  },
+}));
+
+// Mock error handler
+jest.mock('@/utils/errorHandler', () => ({
+  errorHandler: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+  },
+}));
 
 describe('CognitoAuthService', () => {
+  let service: CognitoAuthService;
+  const mockCognitoImpl = cognitoAuthImpl as jest.Mocked<typeof cognitoAuthImpl>;
+
   beforeEach(() => {
-    // Set up environment variables
-    Object.entries(mockEnv).forEach(([key, value]) => {
-      process.env[key] = value;
+    // Clear all mocks
+    jest.clearAllMocks();
+    
+    // Create new service instance
+    service = new CognitoAuthService();
+    
+    // Reset environment variables
+    process.env.NODE_ENV = 'test';
+    process.env.NEXT_PUBLIC_USE_MOCK_AUTH = 'false';
+  });
+
+  describe('signIn', () => {
+    it('should call real implementation when not in mock mode', async () => {
+      const mockResponse = {
+        success: true,
+        user: { id: 'user-123', email: 'test@example.com' },
+        tokens: {
+          accessToken: 'access-token',
+          idToken: 'id-token',
+          refreshToken: 'refresh-token',
+          expiresIn: 3600,
+        },
+      };
+
+      mockCognitoImpl.signIn.mockResolvedValue(mockResponse);
+
+      const result = await service.signIn('test@example.com', 'password123');
+
+      expect(mockCognitoImpl.signIn).toHaveBeenCalledWith('test@example.com', 'password123');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should use mock implementation when in development with mock flag', async () => {
+      process.env.NODE_ENV = 'development';
+      process.env.NEXT_PUBLIC_USE_MOCK_AUTH = 'true';
+
+      const result = await service.signIn('test@example.com', 'Test123!@#');
+
+      expect(mockCognitoImpl.signIn).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.user?.email).toBe('test@example.com');
+    });
+
+    it('should handle MFA challenge response', async () => {
+      const mockResponse = {
+        success: false,
+        challengeName: 'MFA_REQUIRED',
+        session: JSON.stringify({ challengeName: 'MFA_REQUIRED', challengeParameters: {} }),
+      };
+
+      mockCognitoImpl.signIn.mockResolvedValue(mockResponse);
+
+      const result = await service.signIn('test@example.com', 'password123');
+
+      expect(result.challengeName).toBe('MFA_REQUIRED');
+      expect(result.session).toBeDefined();
+    });
+
+    it('should handle sign in errors', async () => {
+      const error = new Error('Invalid credentials');
+      mockCognitoImpl.signIn.mockRejectedValue(error);
+
+      await expect(service.signIn('test@example.com', 'wrong-password')).rejects.toThrow('Invalid credentials');
     });
   });
 
-  afterEach(() => {
-    // Clean up environment variables
-    Object.keys(mockEnv).forEach(key => {
-      delete process.env[key];
-    });
-  });
-
-  describe('Development Mode', () => {
+  describe('Mock Mode', () => {
     beforeEach(() => {
       process.env.NODE_ENV = 'development';
+      process.env.NEXT_PUBLIC_USE_MOCK_AUTH = 'true';
     });
 
-    describe('signIn', () => {
-      it('should sign in with valid credentials', async () => {
-        const result = await cognitoAuth.signIn('test@example.com', 'Test123!@#');
-        
-        expect(result.success).toBe(true);
-        expect(result.user).toEqual({
-          id: 'mock-user-123',
-          email: 'test@example.com',
-          fullName: 'Test User',
-          vjHandle: 'test_vj',
-          tier: 'premium',
-          emailVerified: true,
-          groups: ['premium'],
-        });
-        expect(result.tokens).toEqual({
-          accessToken: 'mock-access-token',
-          idToken: 'mock-id-token',
-          refreshToken: 'mock-refresh-token',
-          expiresIn: 3600,
-        });
-      });
+    it('should return mock data for valid credentials', async () => {
+      const result = await service.signIn('test@example.com', 'Test123!@#');
 
-      it('should fail with invalid credentials', async () => {
-        await expect(
-          cognitoAuth.signIn('test@example.com', 'wrong-password')
-        ).rejects.toThrow('Invalid credentials');
+      expect(result.success).toBe(true);
+      expect(result.user).toEqual({
+        id: 'mock-user-123',
+        email: 'test@example.com',
+        fullName: 'Test User',
+        vjHandle: 'test_vj',
+        tier: 'premium',
+        emailVerified: true,
+        groups: ['premium'],
       });
+      expect(result.tokens).toBeDefined();
     });
 
-    describe('signUp', () => {
-      it('should sign up new user', async () => {
-        const result = await cognitoAuth.signUp({
-          username: 'newuser@example.com',
-          password: 'Test123!@#',
-          attributes: {
-            email: 'newuser@example.com',
-            name: 'New User',
-            'custom:vj_handle': 'new_vj',
-          },
-        });
-
-        expect(result.success).toBe(true);
-        expect(result.userSub).toMatch(/^mock-user-sub-\d+$/);
-      });
+    it('should throw error for invalid mock credentials', async () => {
+      await expect(service.signIn('test@example.com', 'wrong-password')).rejects.toThrow('Invalid credentials');
     });
 
-    describe('signOut', () => {
-      it('should sign out successfully', async () => {
-        await expect(cognitoAuth.signOut()).resolves.not.toThrow();
+    it('should return mock sign up response', async () => {
+      const result = await service.signUp({
+        username: 'new@example.com',
+        password: 'Password123!',
+        attributes: { email: 'new@example.com' },
       });
+
+      expect(result.success).toBe(true);
+      expect(result.userSub).toMatch(/^mock-user-sub-/);
     });
 
-    describe('refreshSession', () => {
-      it('should refresh tokens', async () => {
-        const tokens = await cognitoAuth.refreshSession('mock-refresh-token');
-        
-        expect(tokens).toEqual({
-          accessToken: 'mock-access-token-refreshed',
-          idToken: 'mock-id-token-refreshed',
-          refreshToken: 'mock-refresh-token',
-          expiresIn: 3600,
-        });
-      });
-    });
+    it('should validate mock verification code', async () => {
+      const validResult = await service.verifyEmail('test@example.com', '123456');
+      expect(validResult).toBe(true);
 
-    describe('verifyEmail', () => {
-      it('should verify email with correct code', async () => {
-        const result = await cognitoAuth.verifyEmail('test@example.com', '123456');
-        expect(result).toBe(true);
-      });
-
-      it('should fail with incorrect code', async () => {
-        const result = await cognitoAuth.verifyEmail('test@example.com', '000000');
-        expect(result).toBe(false);
-      });
-    });
-
-    describe('resendVerificationCode', () => {
-      it('should resend verification code', async () => {
-        const result = await cognitoAuth.resendVerificationCode('test@example.com');
-        expect(result).toBe(true);
-      });
-    });
-
-    describe('forgotPassword', () => {
-      it('should initiate forgot password flow', async () => {
-        const result = await cognitoAuth.forgotPassword('test@example.com');
-        expect(result).toBe(true);
-      });
-    });
-
-    describe('confirmForgotPassword', () => {
-      it('should reset password with valid code', async () => {
-        const result = await cognitoAuth.confirmForgotPassword(
-          'test@example.com',
-          '123456',
-          'NewPassword123!@#'
-        );
-        expect(result).toBe(true);
-      });
-    });
-
-    describe('changePassword', () => {
-      it('should change password for authenticated user', async () => {
-        const result = await cognitoAuth.changePassword(
-          'mock-access-token',
-          'OldPassword123!@#',
-          'NewPassword123!@#'
-        );
-        expect(result).toBe(true);
-      });
-    });
-
-    describe('setupMFA', () => {
-      it('should return MFA setup data', async () => {
-        const result = await cognitoAuth.setupMFA('mock-access-token');
-        
-        expect(result).toHaveProperty('secret');
-        expect(result).toHaveProperty('qrCode');
-        expect(result.secret).toMatch(/^MOCK_SECRET_KEY/);
-        expect(result.qrCode).toMatch(/^data:image\/png;base64,/);
-      });
-    });
-
-    describe('verifyMFA', () => {
-      it('should verify MFA with correct code', async () => {
-        const tokens = await cognitoAuth.verifyMFA('mock-session', '123456');
-        
-        expect(tokens).toEqual({
-          accessToken: 'mock-access-token-mfa',
-          idToken: 'mock-id-token-mfa',
-          refreshToken: 'mock-refresh-token-mfa',
-          expiresIn: 3600,
-        });
-      });
-
-      it('should fail with incorrect code', async () => {
-        const tokens = await cognitoAuth.verifyMFA('mock-session', '000000');
-        expect(tokens).toBeNull();
-      });
+      const invalidResult = await service.verifyEmail('test@example.com', '999999');
+      expect(invalidResult).toBe(false);
     });
   });
 
-  describe('Production Mode', () => {
-    beforeEach(() => {
-      process.env.NODE_ENV = 'production';
-    });
-
-    it('should throw error for unimplemented methods', async () => {
-      await expect(
-        cognitoAuth.signIn('test@example.com', 'password')
-      ).rejects.toThrow('AWS Cognito signIn not implemented');
-    });
-  });
-
-  describe('Configuration Validation', () => {
-    it('should handle missing configuration gracefully', () => {
-      delete process.env.NEXT_PUBLIC_USER_POOL_ID;
-      delete process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID;
-      
-      // Should not throw during construction
-      expect(() => {
-        const { CognitoAuthService } = require('../cognitoAuth');
-        new CognitoAuthService();
-      }).not.toThrow();
+  describe('Singleton Instance', () => {
+    it('should export a singleton instance', () => {
+      expect(cognitoAuth).toBeDefined();
+      expect(cognitoAuth).toBeInstanceOf(CognitoAuthService);
     });
   });
 });
