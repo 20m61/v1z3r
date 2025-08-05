@@ -51,7 +51,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   className = '',
   compact = false 
 }) => {
-  const { metrics, budgetStatus } = usePerformanceMonitor();
+  const metrics = usePerformanceMonitor();
+  const budgetStatus = null; // TODO: Implement budget status
   const [errorHistory, setErrorHistory] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -75,7 +76,9 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
   // Initialize WebGPU support check
   useEffect(() => {
-    performanceMonitor.measureWebGPUSupport();
+    if ('measureWebGPUSupport' in performanceMonitor) {
+      (performanceMonitor as any).measureWebGPUSupport();
+    }
   }, []);
 
   if (!metrics) {
@@ -241,7 +244,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               {Object.entries(metrics.renderModeStats).map(([mode, count]) => (
                 <div key={mode} className="text-center">
                   <div className={`text-2xl font-bold ${getRenderModeColor(mode)}`}>
-                    {count}
+                    {String(count)}
                   </div>
                   <div className="text-xs text-gray-400 uppercase">{mode}</div>
                 </div>
@@ -276,7 +279,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">Performance Issues</h3>
           <div className="space-y-2">
-            {budgetStatus.violations.map((violation, index) => (
+            {budgetStatus.violations.map((violation: any, index: number) => (
               <div key={index} className="bg-yellow-900/20 border border-yellow-500/30 rounded p-3">
                 <p className="text-yellow-300 text-sm">{violation}</p>
               </div>

@@ -22,7 +22,8 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
   const [showDetailedMetrics, setShowDetailedMetrics] = useState(false);
   
   // Performance monitoring
-  const { metrics: generalMetrics, budgetStatus } = usePerformanceMonitor();
+  const generalMetrics = usePerformanceMonitor();
+  const budgetStatus = null; // TODO: Implement budget status
   const { metrics: gpuMetrics, status: gpuStatus } = useWebGPUPerformanceMonitor();
   
   // WebGPU support check
@@ -260,12 +261,12 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
             <div>
               <h5 className="font-medium text-gray-400 mb-2">Performance Budget</h5>
               <div className="space-y-1">
-                {budgetStatus?.violations.map((violation, i) => (
+                {budgetStatus?.violations.map((violation: any, i: number) => (
                   <div key={i} className="text-red-400 text-xs">
                     ⚠️ {violation}
                   </div>
                 ))}
-                {gpuStatus?.violations.map((violation, i) => (
+                {gpuStatus?.violations.map((violation: any, i: number) => (
                   <div key={i} className="text-red-400 text-xs">
                     ⚠️ {violation}
                   </div>

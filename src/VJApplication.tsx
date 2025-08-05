@@ -92,8 +92,10 @@ export const VJApplication: React.FC<VJApplicationProps> = ({ config }) => {
         // Start real performance monitoring
         const stopPerformanceMonitoring = startPerformanceMonitoring()
         
-        // Initialize mobile-specific performance monitoring
-        performanceMonitor.initializeMobileMetrics()
+        // Initialize mobile-specific performance monitoring if available
+        if ('initializeMobileMetrics' in performanceMonitor) {
+          (performanceMonitor as any).initializeMobileMetrics()
+        }
         
         const interval = setInterval(() => {
           const currentFps = getCurrentFps()
