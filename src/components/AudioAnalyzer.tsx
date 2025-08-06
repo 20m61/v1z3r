@@ -87,6 +87,7 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ onAudioData }) => {
         if (!analyser) return;
 
         try {
+          // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
           analyser.getByteFrequencyData(dataArray);
 
           // Rate limit audio data updates

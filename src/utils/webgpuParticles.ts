@@ -787,7 +787,7 @@ export class WebGPUParticleSystem {
     });
 
     // Update view projection matrix
-    this.device.queue.writeBuffer(this.uniformBuffer!, 0, viewProjectionMatrix);
+    this.device.queue.writeBuffer(this.uniformBuffer!, 0, viewProjectionMatrix.buffer);
 
     // Render pass
     const renderPass = commandEncoder.beginRenderPass({

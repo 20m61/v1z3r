@@ -20,7 +20,7 @@ const createOffscreenCanvas = (width: number, height: number): HTMLCanvasElement
   if (typeof window !== 'undefined' && 'OffscreenCanvas' in window && !navigator.userAgent.includes('Safari')) {
     try {
       const offscreenCanvas = new OffscreenCanvas(width, height);
-      performanceMonitor.measureOffscreenCanvasFallback(false);
+      // performanceMonitor.measureOffscreenCanvasFallback(false); // TODO: Implement this method
       return offscreenCanvas;
     } catch (e) {
       fallbackUsed = true;
@@ -33,7 +33,7 @@ const createOffscreenCanvas = (width: number, height: number): HTMLCanvasElement
   }
   
   // Fallback to regular canvas
-  performanceMonitor.measureOffscreenCanvasFallback(fallbackUsed);
+  // performanceMonitor.measureOffscreenCanvasFallback(fallbackUsed); // TODO: Implement this method
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -99,7 +99,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
       setFps(actualFps);
       
       // Update performance monitor with real vs target FPS
-      performanceMonitor.updateRealFrameRate(actualFps, renderConfig.targetFps);
+      // performanceMonitor.updateRealFrameRate(actualFps, renderConfig.targetFps); // TODO: Implement this method
       
       fpsCounterRef.current.frames = 0;
       fpsCounterRef.current.lastUpdate = now;

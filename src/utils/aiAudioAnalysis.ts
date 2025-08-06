@@ -187,7 +187,9 @@ export class AIAudioAnalysis {
     if (!this.isAnalyzing || !this.analyserNode) return;
     
     // FFTデータ取得
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyserNode.getByteFrequencyData(this.frequencyData!);
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyserNode.getByteTimeDomainData(this.timeData!);
     
     // 音声分析実行
