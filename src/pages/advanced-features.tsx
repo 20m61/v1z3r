@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
-import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import { useVisualizerStore } from '@/store/visualizerStore';
@@ -79,11 +78,7 @@ const SafeWebGPUVisualizer = dynamic(
   }
 );
 
-interface AdvancedFeaturesProps {
-  userAgent: string;
-}
-
-const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) => {
+const AdvancedFeaturesPage: React.FC = () => {
   const [activePanel, setActivePanel] = useState<'style' | 'scene' | 'midi' | 'ndi'>('style');
   const [isWebGPUSupported, setIsWebGPUSupported] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -485,14 +480,6 @@ const AdvancedFeaturesPage: React.FC<AdvancedFeaturesProps> = ({ userAgent }) =>
       </div>
     </>
   );
-};
-
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  return {
-    props: {
-      userAgent: req.headers['user-agent'] || '',
-    },
-  };
 };
 
 export default AdvancedFeaturesPage;
