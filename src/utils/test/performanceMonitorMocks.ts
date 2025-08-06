@@ -325,14 +325,8 @@ export class MockAdaptiveQualityManager {
       particleCount: 1000,
       renderScale: 1.0,
       effectComplexity: 3,
+      fpsTarget: 60,
       audioLatency: 128,
-      rendering: {
-        particleCount: 1000,
-        shadowQuality: 'medium',
-        textureQuality: 'medium',
-        antialias: true,
-        postProcessing: true,
-      }
     };
   }
 
@@ -358,42 +352,24 @@ export class MockAdaptiveQualityManager {
         particleCount: 500,
         renderScale: 0.75,
         effectComplexity: 1,
+        fpsTarget: 30,
         audioLatency: 256,
-        rendering: {
-          particleCount: 500,
-          shadowQuality: 'low',
-          textureQuality: 'low',
-          antialias: false,
-          postProcessing: false,
-        }
       },
       'medium': {
         name: 'Medium',
         particleCount: 1000,
         renderScale: 1.0,
         effectComplexity: 3,
+        fpsTarget: 60,
         audioLatency: 128,
-        rendering: {
-          particleCount: 1000,
-          shadowQuality: 'medium',
-          textureQuality: 'medium',
-          antialias: true,
-          postProcessing: true,
-        }
       },
       'high': {
         name: 'High',
         particleCount: 2000,
         renderScale: 1.25,
         effectComplexity: 5,
+        fpsTarget: 60,
         audioLatency: 64,
-        rendering: {
-          particleCount: 2000,
-          shadowQuality: 'high',
-          textureQuality: 'high',
-          antialias: true,
-          postProcessing: true,
-        }
       }
     };
 
@@ -433,7 +409,7 @@ export function setupPerformanceMonitorMocks(config: PerformanceMonitorMockConfi
   mockQualityManager: MockAdaptiveQualityManager;
 } {
   // Mock performance.memory if not available
-  if (typeof performance !== 'undefined' && !performance.memory) {
+  if (typeof performance !== 'undefined' && !(performance as any).memory) {
     Object.defineProperty(performance, 'memory', {
       value: {
         usedJSHeapSize: config.memoryUsage || 100 * 1024 * 1024,

@@ -43,7 +43,7 @@ export function cleanupTestEnvironment() {
   resetWebGPUMocks();
   
   // Reset performance.memory to stable values
-  if (global.performance.memory) {
+  if ((global.performance as any).memory) {
     Object.defineProperty(global.performance, 'memory', {
       value: {
         usedJSHeapSize: 52428800, // 50MB

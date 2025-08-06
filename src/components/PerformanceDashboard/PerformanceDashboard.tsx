@@ -54,7 +54,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
     if (initialMetrics) setMetrics(initialMetrics);
     setAlerts(initialAlerts);
-    setHistory(initialHistory);
+    setHistory(initialHistory.entries);
 
     return () => {
       if (unsubscribeRef.current) {
