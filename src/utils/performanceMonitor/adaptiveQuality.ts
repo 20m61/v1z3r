@@ -141,7 +141,7 @@ export class AdaptiveQualityManager {
       offscreenCanvas: false,
       webWorkers: false,
       memoryInfo: false,
-      hardwareConcurrency: navigator.hardwareConcurrency || 2,
+      hardwareConcurrency: (typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined) || 2,
     };
 
     if (typeof window !== 'undefined') {
@@ -155,7 +155,7 @@ export class AdaptiveQualityManager {
       }
 
       // WebGPU detection
-      capabilities.webgpu = 'gpu' in navigator;
+      capabilities.webgpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
 
       // OffscreenCanvas detection
       capabilities.offscreenCanvas = 'OffscreenCanvas' in window;
@@ -167,7 +167,7 @@ export class AdaptiveQualityManager {
       capabilities.memoryInfo = !!(performance as any).memory;
       
       // Device memory (Chrome only)
-      if ('deviceMemory' in navigator) {
+      if (typeof navigator !== 'undefined' && 'deviceMemory' in navigator) {
         capabilities.deviceMemory = (navigator as any).deviceMemory;
       }
     }

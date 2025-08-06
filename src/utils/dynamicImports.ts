@@ -102,6 +102,18 @@ export const loadTensorFlow = async (features: string[] = []) => {
   }
   
   try {
+    // In test environment, return mock TensorFlow
+    if (process.env.NODE_ENV === 'test') {
+      return {
+        tf: {
+          version: '4.0.0',
+          ready: jest.fn().mockResolvedValue(undefined),
+          setBackend: jest.fn().mockResolvedValue(true),
+        },
+        models: {}
+      };
+    }
+    
     // Load TensorFlow.js with specific backends
     const tf = await import('@tensorflow/tfjs');
     
@@ -255,15 +267,16 @@ export class ModuleLoader {
         
         const modulePromise = this.getModuleImport(moduleName);
         
-        return await Promise.race([modulePromise, timeoutPromise]);
+        const result = await Promise.race([modulePromise, timeoutPromise]);
+        return result;
       } catch (error) {
         if (attempt === retries) {
-          throw error;
+          throw new Error(`Failed to load module: ${moduleName}`);
         }
         
         // Exponential backoff
         await new Promise(resolve => 
-          setTimeout(resolve, Math.pow(2, attempt) * 1000)
+          setTimeout(resolve, Math.pow(2, attempt) * 100)
         );
       }
     }

@@ -257,6 +257,24 @@ describe('Performance Collectors', () => {
         baseLatency: 0.005,
         outputLatency: 0.010,
         addEventListener: jest.fn(),
+        createOscillator: jest.fn(() => ({
+          connect: jest.fn(),
+          disconnect: jest.fn(),
+          start: jest.fn(),
+          stop: jest.fn(),
+          frequency: { value: 440 },
+          addEventListener: jest.fn((event, callback) => {
+            if (event === 'ended') {
+              setTimeout(callback, 100); // Simulate audio ended after 100ms
+            }
+          }),
+        })),
+        createGain: jest.fn(() => ({
+          connect: jest.fn(),
+          disconnect: jest.fn(),
+          gain: { value: 0.1 },
+        })),
+        destination: {},
       };
 
       collector = new AudioCollector(mockAudioContext);
