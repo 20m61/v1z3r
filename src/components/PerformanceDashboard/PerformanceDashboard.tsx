@@ -120,6 +120,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         className={`${getPositionClasses()} performance-toggle bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-sm font-mono hover:bg-opacity-90 transition-opacity`}
         onClick={() => setIsVisible(true)}
         title="Show Performance Dashboard"
+        aria-label="Show Performance Dashboard"
       >
         <div className="flex items-center space-x-2">
           <span>📊</span>
@@ -151,6 +152,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               <button
                 onClick={() => setIsVisible(false)}
                 className="text-gray-400 hover:text-white transition-colors text-sm"
+                aria-label="Minimize"
               >
                 <span className="sr-only">Minimize</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,6 +163,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
             <button
               onClick={() => setIsVisible(false)}
               className="text-gray-400 hover:text-white transition-colors"
+              aria-label="Close"
             >
               <span className="sr-only">Close</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
