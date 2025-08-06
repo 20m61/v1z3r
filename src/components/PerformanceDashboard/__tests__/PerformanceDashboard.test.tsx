@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { PerformanceDashboard } from '../PerformanceDashboard';
 import { PerformanceMonitor } from '@/utils/performanceMonitor/core';
@@ -242,8 +242,10 @@ describe('PerformanceDashboard', () => {
         rendering: { ...mockMetrics.rendering, fps: 30 },
       };
       
-      // Call the callback with new metrics
-      subscribeCallback(newMetrics, mockAlerts);
+      // Call the callback with new metrics wrapped in act
+      act(() => {
+        subscribeCallback(newMetrics, mockAlerts);
+      });
       
       await waitFor(() => {
         expect(screen.getByText('30 FPS')).toBeInTheDocument();
@@ -413,7 +415,9 @@ describe('PerformanceDashboard', () => {
           timestamp: Date.now() + i,
           rendering: { ...mockMetrics.rendering, fps: 60 - i % 30 },
         };
-        subscribeCallback(updatedMetrics, mockAlerts);
+        act(() => {
+          subscribeCallback(updatedMetrics, mockAlerts);
+        });
       }
       
       // Should handle updates without issues

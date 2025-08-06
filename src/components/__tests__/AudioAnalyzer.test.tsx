@@ -113,7 +113,7 @@ describe('AudioAnalyzer', () => {
     await waitFor(() => {
       expect(screen.getByText(/エラー:/)).toBeInTheDocument();
       expect(
-        screen.getByText(/マイクへのアクセスが拒否されたか、エラーが発生しました/)
+        screen.getByText(/マイクアクセスが拒否されました。視覚エフェクトはデモモードで動作します。/)
       ).toBeInTheDocument();
     });
 
