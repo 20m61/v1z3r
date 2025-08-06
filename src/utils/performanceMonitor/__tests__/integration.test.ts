@@ -121,7 +121,7 @@ describe('Performance Monitoring Integration', () => {
         expect(ackAlert?.acknowledged).toBe(true);
         
         monitor.resolveAlert(alertId);
-        const resolvedAlert = monitor.getActiveAlerts().find(a => a.id === alertId);
+        const resolvedAlert = monitor.getAllAlerts().find(a => a.id === alertId);
         expect(resolvedAlert?.resolved).toBe(true);
       }
     });

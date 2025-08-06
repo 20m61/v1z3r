@@ -115,15 +115,30 @@ export class PerformanceMonitor {
   }
 
   /**
+   * Check if monitoring is currently running
+   */
+  isRunning(): boolean {
+    return this.running;
+  }
+
+  /**
    * Get performance history for specified duration
    */
-  getHistory(duration?: number): PerformanceSnapshot[] {
+  getHistory(duration?: number): PerformanceHistory {
+    let entries: PerformanceSnapshot[];
+    
     if (!duration) {
-      return [...this.history.entries];
+      entries = [...this.history.entries];
+    } else {
+      const cutoffTime = Date.now() - duration;
+      entries = this.history.entries.filter(entry => entry.timestamp >= cutoffTime);
     }
 
-    const cutoffTime = Date.now() - duration;
-    return this.history.entries.filter(entry => entry.timestamp >= cutoffTime);
+    return {
+      entries,
+      maxLength: this.history.maxLength,
+      timeRange: this.history.timeRange
+    };
   }
 
   /**
@@ -164,6 +179,13 @@ export class PerformanceMonitor {
    */
   getActiveAlerts(): PerformanceAlert[] {
     return Array.from(this.alerts.values()).filter(alert => !alert.resolved);
+  }
+
+  /**
+   * Get all alerts (including resolved ones)
+   */
+  getAllAlerts(): PerformanceAlert[] {
+    return Array.from(this.alerts.values());
   }
 
   /**
@@ -222,10 +244,21 @@ export class PerformanceMonitor {
     this.subscribe((metrics, alerts) => {
       try {
         if (store.setState) {
-          store.setState({
+          const updateData: any = {
             performanceMetrics: metrics,
             performanceAlerts: alerts,
-          });
+          };
+
+          // Auto-show dashboard on critical alerts
+          const criticalAlerts = alerts.filter(alert => 
+            alert.severity === 'critical' && !alert.acknowledged
+          );
+
+          if (criticalAlerts.length > 0) {
+            updateData.showPerformanceDashboard = true;
+          }
+
+          store.setState(updateData);
         }
       } catch (error) {
         console.error('Failed to sync with store:', error);

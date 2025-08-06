@@ -173,7 +173,7 @@ describe('PerformanceMonitor', () => {
       jest.advanceTimersByTime(1000);
       
       const history = monitor.getHistory();
-      expect(history.length).toBeGreaterThan(0);
+      expect(history.entries.length).toBeGreaterThan(0);
     });
 
     it('should filter history by duration', async () => {
@@ -189,7 +189,7 @@ describe('PerformanceMonitor', () => {
       const recentHistory = monitor.getHistory(2000); // Last 2 seconds
       const allHistory = monitor.getHistory();
       
-      expect(recentHistory.length).toBeLessThanOrEqual(allHistory.length);
+      expect(recentHistory.entries.length).toBeLessThanOrEqual(allHistory.entries.length);
     });
   });
 

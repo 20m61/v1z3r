@@ -186,111 +186,223 @@ global.TouchEvent = global.TouchEvent || function(type, touchEventInit) {
 
 // Note: AWS SDK mocks are handled in individual test files to avoid dependency issues
 
-// Mock WebGPU API
-global.GPUBufferUsage = {
-  MAP_READ: 0x0001,
-  MAP_WRITE: 0x0002,
-  COPY_SRC: 0x0004,
-  COPY_DST: 0x0008,
-  INDEX: 0x0010,
-  VERTEX: 0x0020,
-  UNIFORM: 0x0040,
-  STORAGE: 0x0080,
-  INDIRECT: 0x0100,
-  QUERY_RESOLVE: 0x0200,
-}
+// Enhanced WebGPU mocking system
+// Import the comprehensive WebGPU mock system
+const setupWebGPUMocks = (() => {
+  // Define WebGPU constants
+  global.GPUBufferUsage = {
+    MAP_READ: 0x0001,
+    MAP_WRITE: 0x0002,
+    COPY_SRC: 0x0004,
+    COPY_DST: 0x0008,
+    INDEX: 0x0010,
+    VERTEX: 0x0020,
+    UNIFORM: 0x0040,
+    STORAGE: 0x0080,
+    INDIRECT: 0x0100,
+    QUERY_RESOLVE: 0x0200,
+  }
 
-global.GPUTextureUsage = {
-  COPY_SRC: 0x01,
-  COPY_DST: 0x02,
-  TEXTURE_BINDING: 0x04,
-  STORAGE_BINDING: 0x08,
-  RENDER_ATTACHMENT: 0x10,
-}
+  global.GPUTextureUsage = {
+    COPY_SRC: 0x01,
+    COPY_DST: 0x02,
+    TEXTURE_BINDING: 0x04,
+    STORAGE_BINDING: 0x08,
+    RENDER_ATTACHMENT: 0x10,
+  }
 
-global.GPUShaderStage = {
-  VERTEX: 0x1,
-  FRAGMENT: 0x2,
-  COMPUTE: 0x4,
-}
+  global.GPUShaderStage = {
+    VERTEX: 0x1,
+    FRAGMENT: 0x2,
+    COMPUTE: 0x4,
+  }
 
-global.GPUColorWrite = {
-  RED: 0x1,
-  GREEN: 0x2,
-  BLUE: 0x4,
-  ALPHA: 0x8,
-  ALL: 0xF,
-}
+  global.GPUColorWrite = {
+    RED: 0x1,
+    GREEN: 0x2,
+    BLUE: 0x4,
+    ALPHA: 0x8,
+    ALL: 0xF,
+  }
 
-// Mock WebGPU navigator API
-global.navigator.gpu = global.navigator.gpu || {
-  requestAdapter: jest.fn(() => Promise.resolve({
-    name: 'Mock WebGPU Adapter',
-    features: new Set(['texture-compression-bc']),
+  // Enhanced mock adapter with realistic behavior
+  const createMockAdapter = () => ({
+    name: 'Mock WebGPU Adapter v2',
+    features: new Set(['texture-compression-bc', 'depth-clamping']),
+    limits: {
+      maxTextureDimension1D: 8192,
+      maxTextureDimension2D: 8192,
+      maxTextureDimension3D: 2048,
+      maxTextureArrayLayers: 256,
+      maxBindGroups: 4,
+      maxDynamicUniformBuffersPerPipelineLayout: 8,
+      maxDynamicStorageBuffersPerPipelineLayout: 4,
+      maxSampledTexturesPerShaderStage: 16,
+      maxSamplersPerShaderStage: 16,
+      maxStorageBuffersPerShaderStage: 8,
+      maxStorageTexturesPerShaderStage: 4,
+      maxUniformBuffersPerShaderStage: 12,
+      maxUniformBufferBindingSize: 65536,
+      maxStorageBufferBindingSize: 134217728,
+    },
+    requestDevice: jest.fn(() => Promise.resolve(createMockDevice())),
+  });
+
+  const createMockDevice = () => ({
+    features: new Set(['texture-compression-bc', 'depth-clamping']),
     limits: {
       maxTextureDimension1D: 8192,
       maxTextureDimension2D: 8192,
       maxTextureDimension3D: 2048,
     },
-    requestDevice: jest.fn(() => Promise.resolve({
-      features: new Set(['texture-compression-bc']),
-      limits: {
-        maxTextureDimension1D: 8192,
-        maxTextureDimension2D: 8192,
-      },
-      queue: {
-        submit: jest.fn(),
-        writeBuffer: jest.fn(),
-        writeTexture: jest.fn(),
-      },
-      createShaderModule: jest.fn(() => ({
-        compilationInfo: jest.fn(() => Promise.resolve({ messages: [] })),
+    queue: {
+      submit: jest.fn(),
+      writeBuffer: jest.fn(),
+      writeTexture: jest.fn(),
+    },
+    createShaderModule: jest.fn((descriptor) => ({
+      compilationInfo: jest.fn(() => Promise.resolve({ messages: [] })),
+      label: descriptor.label,
+    })),
+    createBindGroup: jest.fn(() => ({})),
+    createBindGroupLayout: jest.fn(() => ({})),
+    createPipelineLayout: jest.fn(() => ({})),
+    createComputePipeline: jest.fn(() => ({
+      getBindGroupLayout: jest.fn(() => ({})),
+    })),
+    createRenderPipeline: jest.fn(() => ({
+      getBindGroupLayout: jest.fn(() => ({})),
+    })),
+    createCommandEncoder: jest.fn(() => ({
+      beginComputePass: jest.fn(() => ({
+        setPipeline: jest.fn(),
+        setBindGroup: jest.fn(),
+        dispatchWorkgroups: jest.fn(),
+        end: jest.fn(),
       })),
-      createBindGroup: jest.fn(() => ({})),
-      createBindGroupLayout: jest.fn(() => ({})),
-      createPipelineLayout: jest.fn(() => ({})),
-      createComputePipeline: jest.fn(() => ({
-        getBindGroupLayout: jest.fn(() => ({})),
+      beginRenderPass: jest.fn(() => ({
+        setPipeline: jest.fn(),
+        setBindGroup: jest.fn(),
+        setVertexBuffer: jest.fn(),
+        setIndexBuffer: jest.fn(),
+        draw: jest.fn(),
+        drawIndexed: jest.fn(),
+        end: jest.fn(),
       })),
-      createRenderPipeline: jest.fn(() => ({
-        getBindGroupLayout: jest.fn(() => ({})),
-      })),
-      createCommandEncoder: jest.fn(() => ({
-        beginComputePass: jest.fn(() => ({
-          setPipeline: jest.fn(),
-          setBindGroup: jest.fn(),
-          dispatchWorkgroups: jest.fn(),
-          end: jest.fn(),
-        })),
-        beginRenderPass: jest.fn(() => ({
-          setPipeline: jest.fn(),
-          setBindGroup: jest.fn(),
-          setVertexBuffer: jest.fn(),
-          setIndexBuffer: jest.fn(),
-          draw: jest.fn(),
-          drawIndexed: jest.fn(),
-          end: jest.fn(),
-        })),
-        finish: jest.fn(() => ({})),
-      })),
-      createBuffer: jest.fn(() => ({
-        size: 1024,
-        usage: 0,
-        mapState: 'unmapped',
-        mapAsync: jest.fn(() => Promise.resolve()),
-        getMappedRange: jest.fn(() => new ArrayBuffer(1024)),
-        unmap: jest.fn(),
-        destroy: jest.fn(),
-      })),
-      createTexture: jest.fn(() => ({
-        createView: jest.fn(() => ({})),
-        destroy: jest.fn(),
+      finish: jest.fn(() => ({})),
+      copyBufferToBuffer: jest.fn(),
+      copyTextureToTexture: jest.fn(),
+      copyBufferToTexture: jest.fn(),
+      copyTextureToBuffer: jest.fn(),
+    })),
+    createBuffer: jest.fn((descriptor) => ({
+      size: descriptor.size || 1024,
+      usage: descriptor.usage || 0,
+      mapState: 'unmapped',
+      mapAsync: jest.fn((mode, offset, size) => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1);
+        });
+      }),
+      getMappedRange: jest.fn((offset, size) => {
+        return new ArrayBuffer(size || 1024);
+      }),
+      unmap: jest.fn(),
+      destroy: jest.fn(),
+      label: descriptor.label,
+    })),
+    createTexture: jest.fn((descriptor) => ({
+      createView: jest.fn(() => ({
+        label: 'Mock Texture View',
       })),
       destroy: jest.fn(),
-      lost: new Promise(() => {}), // Never resolves in tests
+      width: descriptor.size?.width || 256,
+      height: descriptor.size?.height || 256,
+      format: descriptor.format || 'rgba8unorm',
+      label: descriptor.label,
     })),
-  })),
-  getPreferredCanvasFormat: jest.fn(() => 'bgra8unorm'),
+    createSampler: jest.fn(() => ({})),
+    createRenderBundleEncoder: jest.fn(() => ({})),
+    createQuerySet: jest.fn(() => ({})),
+    destroy: jest.fn(),
+    lost: new Promise(() => {}), // Never resolves in tests
+    label: 'Mock WebGPU Device',
+    // Additional mock methods for performance monitoring
+    getMemoryUsage: jest.fn(() => ({
+      heap: 100 * 1024 * 1024,
+      gpu: 50 * 1024 * 1024,
+    })),
+  });
+
+  // Setup navigator.gpu with enhanced mocking
+  Object.defineProperty(global.navigator, 'gpu', {
+    value: {
+      requestAdapter: jest.fn((options) => {
+        // Simulate different adapter scenarios
+        if (process.env.WEBGPU_TEST_SCENARIO === 'no-adapter') {
+          return Promise.resolve(null);
+        }
+        if (process.env.WEBGPU_TEST_SCENARIO === 'slow-adapter') {
+          return new Promise(resolve => {
+            setTimeout(() => resolve(createMockAdapter()), 100);
+          });
+        }
+        return Promise.resolve(createMockAdapter());
+      }),
+      getPreferredCanvasFormat: jest.fn(() => 'bgra8unorm'),
+    },
+    writable: true,
+    configurable: true,
+  });
+
+  return () => {
+    // Reset mocks to clean state
+    global.navigator.gpu.requestAdapter.mockClear();
+    global.navigator.gpu.getPreferredCanvasFormat.mockClear();
+  };
+});
+
+// Initialize enhanced WebGPU mocks
+const resetWebGPUMocks = setupWebGPUMocks();
+
+// Enhanced performance.memory mock
+if (!global.performance.memory) {
+  Object.defineProperty(global.performance, 'memory', {
+    value: {
+      usedJSHeapSize: 100 * 1024 * 1024, // 100MB
+      totalJSHeapSize: 200 * 1024 * 1024, // 200MB  
+      jsHeapSizeLimit: 1000 * 1024 * 1024, // 1GB
+      get usedJSHeapSize() {
+        // Dynamic values for more realistic testing
+        return Math.floor(50 * 1024 * 1024 + Math.random() * 100 * 1024 * 1024);
+      },
+      get totalJSHeapSize() {
+        return this.usedJSHeapSize * 1.5;
+      }
+    },
+    configurable: true,
+    writable: true,
+  });
+}
+
+// Add cleanup for WebGPU and performance mocks
+global.resetAllMocks = () => {
+  resetWebGPUMocks();
+  
+  // Reset performance.memory to stable values for predictable tests
+  if (global.performance.memory) {
+    Object.defineProperty(global.performance, 'memory', {
+      value: {
+        usedJSHeapSize: 52428800, // 50MB - stable value for tests
+        totalJSHeapSize: 104857600, // 100MB
+        jsHeapSizeLimit: 1073741824, // 1GB
+      },
+      configurable: true,
+      writable: true,
+    });
+  }
 };
 
 // Mock react-icons for better test readability
