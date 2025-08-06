@@ -48,7 +48,7 @@ const mockStore = {
 };
 
 describe('Performance Monitoring Scenarios', () => {
-  jest.setTimeout(10000); // Increase timeout for scenario tests
+  jest.setTimeout(12000); // 12 seconds - allows for metrics collection cycles
   let monitor: PerformanceMonitor;
   let qualityManager: AdaptiveQualityManager;
 

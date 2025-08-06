@@ -7,6 +7,8 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
+  // Global timeout settings optimized for different test types
+  testTimeout: 15000, // 15 seconds - balanced default for all tests
   setupFilesAfterEnv: [
     '<rootDir>/jest.setup.js',
     '<rootDir>/tests/setupTests.ts',

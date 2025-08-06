@@ -11,8 +11,8 @@ import { MobileCollector } from '../collectors/mobileCollector';
 import { AdaptiveQualityManager } from '../adaptiveQuality';
 import { PerformanceSnapshot } from '../types';
 
-// Extend timeout for benchmark tests
-jest.setTimeout(30000);
+// Extend timeout for comprehensive benchmark tests
+jest.setTimeout(25000); // 25 seconds - sufficient for benchmark scenarios
 
 // Suppress console logs during testing for cleaner output
 const originalLog = console.log;
