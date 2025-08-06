@@ -610,7 +610,7 @@ export class EdgeAIOptimizer {
     });
     
     // データ転送
-    this.webGPU.device.queue.writeBuffer(buffer, 0, inputData);
+    this.webGPU.device.queue.writeBuffer(buffer, 0, inputData.buffer);
     
     // コンピュートパス実行
     const commandEncoder = this.webGPU.device.createCommandEncoder();

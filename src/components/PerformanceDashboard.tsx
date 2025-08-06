@@ -118,24 +118,24 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
           <div className="flex items-center space-x-4">
             <div className="text-sm">
               <span className="text-gray-400">FPS:</span>
-              <span className={`ml-1 font-mono ${getFPSStatus(metrics.frameRate) === 'good' ? 'text-green-400' : 
-                getFPSStatus(metrics.frameRate) === 'warning' ? 'text-yellow-400' : 'text-red-400'}`}>
-                {metrics.frameRate || 0}
+              <span className={`ml-1 font-mono ${getFPSStatus((metrics as any).fps?.current || 0) === 'good' ? 'text-green-400' : 
+                getFPSStatus((metrics as any).fps?.current || 0) === 'warning' ? 'text-yellow-400' : 'text-red-400'}`}>
+                {(metrics as any).fps?.current || 0}
               </span>
             </div>
-            {metrics.renderMode && (
+            {(metrics as any).gpu && (
               <div className="text-sm">
-                <span className="text-gray-400">Mode:</span>
-                <span className={`ml-1 ${getRenderModeColor(metrics.renderMode)}`}>
-                  {metrics.renderMode.toUpperCase()}
+                <span className="text-gray-400">GPU:</span>
+                <span className="ml-1 text-blue-400">
+                  {(metrics as any).gpu?.utilization || 0}%
                 </span>
               </div>
             )}
-            {metrics.particleCount && (
+            {(metrics as any).memory && (
               <div className="text-sm">
-                <span className="text-gray-400">Particles:</span>
-                <span className="ml-1 text-blue-400 font-mono">
-                  {metrics.particleCount.toLocaleString()}
+                <span className="text-gray-400">Memory:</span>
+                <span className="ml-1 text-yellow-400 font-mono">
+                  {Math.round(((metrics as any).memory?.used || 0) / 1024 / 1024)}MB
                 </span>
               </div>
             )}
@@ -164,9 +164,9 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <div className="flex items-center space-x-2">
           {budgetStatus && (
             <span className={`text-xs px-2 py-1 rounded ${
-              budgetStatus.passed ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
+              (budgetStatus as any).passed ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
             }`}>
-              {budgetStatus.passed ? 'Performance Good' : `${budgetStatus.violations.length} Issues`}
+              {(budgetStatus as any).passed ? 'Performance Good' : `${(budgetStatus as any).violations?.length || 0} Issues`}
             </span>
           )}
           <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" title="Live monitoring active" />
@@ -177,58 +177,59 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <MetricCard
           title="Frame Rate"
-          value={metrics.frameRate || 0}
+          value={(metrics as any).fps?.current || 0}
           unit="fps"
-          status={getFPSStatus(metrics.frameRate || 0)}
+          status={getFPSStatus((metrics as any).fps?.current || 0)}
           description="Target: >45fps for smooth experience"
         />
         <MetricCard
           title="Memory Usage"
-          value={Math.round((metrics.memoryUsage || 0) / 1024 / 1024)}
+          value={Math.round(((metrics as any).memory?.used || 0) / 1024 / 1024)}
           unit="MB"
-          status={getMemoryStatus(metrics.memoryUsage || 0)}
+          status={getMemoryStatus((metrics as any).memory?.used || 0)}
           description="JavaScript heap memory"
         />
         <MetricCard
-          title="Render Mode"
-          value={metrics.renderMode?.toUpperCase() || 'UNKNOWN'}
-          status={metrics.renderMode === 'webgpu' ? 'good' : metrics.renderMode === 'webgl' ? 'warning' : 'critical'}
-          description="Current rendering backend"
+          title="CPU Usage"
+          value={`${(metrics as any).cpu?.usage || 0}%`}
+          status={(metrics as any).cpu?.usage > 80 ? 'critical' : (metrics as any).cpu?.usage > 50 ? 'warning' : 'good'}
+          description="CPU utilization"
         />
         <MetricCard
-          title="WebGPU Support"
-          value={metrics.webgpuSupported ? 'YES' : 'NO'}
-          status={metrics.webgpuSupported ? 'good' : 'warning'}
-          description="Browser WebGPU capability"
+          title="Network Latency"
+          value={`${(metrics as any).network?.latency || 0}`}
+          unit="ms"
+          status={(metrics as any).network?.latency > 100 ? 'warning' : 'good'}
+          description="Network response time"
         />
       </div>
 
       {/* Performance Details */}
-      {(metrics.particleCount || metrics.textureUploadTime || metrics.webgpuInitTime) && (
+      {((metrics as any).rendering || (metrics as any).audio) && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">Rendering Details</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {metrics.particleCount && (
+            {(metrics as any).rendering?.fps && (
               <MetricCard
-                title="Particle Count"
-                value={metrics.particleCount.toLocaleString()}
-                status={metrics.particleCount > 100000 ? 'warning' : 'good'}
+                title="Average FPS"
+                value={(metrics as any).rendering.fps.toFixed(1)}
+                unit="fps"
+                status={(metrics as any).rendering.fps > 45 ? 'good' : 'warning'}
               />
             )}
-            {metrics.textureUploadTime && (
+            {(metrics as any).rendering?.renderTime && (
               <MetricCard
-                title="Texture Upload"
-                value={metrics.textureUploadTime.toFixed(1)}
+                title="Render Time"
+                value={(metrics as any).rendering.renderTime.toFixed(1)}
                 unit="ms"
-                status={metrics.textureUploadTime > 50 ? 'warning' : 'good'}
+                status={(metrics as any).rendering.renderTime > 16 ? 'warning' : 'good'}
               />
             )}
-            {metrics.webgpuInitTime && (
+            {(metrics as any).rendering?.droppedFrames !== undefined && (
               <MetricCard
-                title="WebGPU Init"
-                value={metrics.webgpuInitTime.toFixed(1)}
-                unit="ms"
-                status={metrics.webgpuInitTime > 100 ? 'warning' : 'good'}
+                title="Dropped Frames"
+                value={(metrics as any).rendering.droppedFrames}
+                status={(metrics as any).rendering.droppedFrames > 10 ? 'warning' : 'good'}
               />
             )}
           </div>
@@ -236,12 +237,12 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       )}
 
       {/* Render Mode Statistics */}
-      {metrics.renderModeStats && (
+      {(metrics as any).renderModeStats && Object.keys((metrics as any).renderModeStats).length > 0 && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">Render Mode Usage</h3>
           <div className="bg-gray-800 rounded-lg p-4">
             <div className="flex space-x-6">
-              {Object.entries(metrics.renderModeStats).map(([mode, count]) => (
+              {Object.entries((metrics as any).renderModeStats).map(([mode, count]) => (
                 <div key={mode} className="text-center">
                   <div className={`text-2xl font-bold ${getRenderModeColor(mode)}`}>
                     {String(count)}
@@ -275,11 +276,11 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       )}
 
       {/* Performance Budget Violations */}
-      {budgetStatus && !budgetStatus.passed && (
+      {budgetStatus && !(budgetStatus as any).passed && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">Performance Issues</h3>
           <div className="space-y-2">
-            {budgetStatus.violations.map((violation: any, index: number) => (
+            {((budgetStatus as any).violations || []).map((violation: any, index: number) => (
               <div key={index} className="bg-yellow-900/20 border border-yellow-500/30 rounded p-3">
                 <p className="text-yellow-300 text-sm">{violation}</p>
               </div>
@@ -293,7 +294,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <strong>User Agent:</strong>
-            <div className="truncate">{metrics.userAgent}</div>
+            <div className="truncate">{navigator.userAgent}</div>
           </div>
           <div>
             <strong>Last Update:</strong>

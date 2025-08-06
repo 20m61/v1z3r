@@ -128,7 +128,9 @@ export class AudioProcessor {
    */
   extractFeatures(): MusicFeatures {
     // Get current audio data
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyser.getByteFrequencyData(this.frequencyData);
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyser.getByteTimeDomainData(this.timeData);
     
     // Convert to float arrays for processing

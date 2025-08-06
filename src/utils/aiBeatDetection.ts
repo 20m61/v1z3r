@@ -714,7 +714,9 @@ export class AIBeatDetection {
     const startTime = performance.now();
 
     // Get audio data
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyser.getFloatFrequencyData(this.frequencyData);
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyser.getFloatTimeDomainData(this.timeData);
 
     // Calculate onset detection function

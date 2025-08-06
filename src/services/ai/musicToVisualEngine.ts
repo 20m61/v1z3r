@@ -255,7 +255,9 @@ export class MusicToVisualEngine {
    */
   extractAudioFeatures(): AudioFeatures {
     // Get audio data
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyser.getFloatTimeDomainData(this.timeDomainData);
+    // @ts-ignore: TypeScript 5.9 ArrayBuffer compatibility issue
     this.analyser.getFloatFrequencyData(this.frequencyData);
     
     // Use GPU acceleration if available

@@ -129,7 +129,7 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
               <span>FPS</span>
             </div>
             <div className="text-lg font-mono">
-              {generalMetrics?.frameRate || gpuMetrics?.fps || 0}
+              {(generalMetrics as any)?.fps?.current || gpuMetrics?.fps || 0}
             </div>
           </div>
           
@@ -139,7 +139,7 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
               <span>Frame Time</span>
             </div>
             <div className="text-lg font-mono">
-              {formatTime(gpuMetrics?.frameTime || generalMetrics?.frameRate ? 1000 / generalMetrics!.frameRate : 0)}
+              {formatTime(gpuMetrics?.frameTime || (generalMetrics as any)?.fps?.current ? 1000 / ((generalMetrics as any)?.fps?.current || 60) : 0)}
             </div>
           </div>
           
@@ -149,7 +149,7 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
               <span>Memory</span>
             </div>
             <div className="text-lg font-mono">
-              {formatBytes(generalMetrics?.memoryUsage || 0)}
+              {formatBytes((generalMetrics as any)?.memory?.used || 0)}
             </div>
           </div>
           
@@ -200,15 +200,15 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span>LCP:</span>
-                  <span className="font-mono">{formatTime(generalMetrics?.LCP || 0)}</span>
+                  <span className="font-mono">{formatTime((generalMetrics as any)?.ux?.loadTime || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>FID:</span>
-                  <span className="font-mono">{formatTime(generalMetrics?.FID || 0)}</span>
+                  <span className="font-mono">{formatTime((generalMetrics as any)?.ux?.interactionDelay || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>CLS:</span>
-                  <span className="font-mono">{generalMetrics?.CLS?.toFixed(3) || '0.000'}</span>
+                  <span className="font-mono">{(generalMetrics as any)?.ux?.cumulativeLayoutShift?.toFixed(3) || '0.000'}</span>
                 </div>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span>JS Heap:</span>
-                  <span className="font-mono">{formatBytes(generalMetrics?.memoryUsage || 0)}</span>
+                  <span className="font-mono">{formatBytes((generalMetrics as any)?.memory?.used || 0)}</span>
                 </div>
                 {gpuMetrics && (
                   <>
@@ -261,17 +261,17 @@ export default function PerformanceDemo({ audioData }: PerformanceDemoProps) {
             <div>
               <h5 className="font-medium text-gray-400 mb-2">Performance Budget</h5>
               <div className="space-y-1">
-                {budgetStatus?.violations.map((violation: any, i: number) => (
+                {(budgetStatus as any)?.violations?.map((violation: any, i: number) => (
                   <div key={i} className="text-red-400 text-xs">
                     ⚠️ {violation}
                   </div>
                 ))}
-                {gpuStatus?.violations.map((violation: any, i: number) => (
+                {(gpuStatus as any)?.violations?.map((violation: any, i: number) => (
                   <div key={i} className="text-red-400 text-xs">
                     ⚠️ {violation}
                   </div>
                 ))}
-                {(!budgetStatus?.violations.length && !gpuStatus?.violations.length) && (
+                {(!(budgetStatus as any)?.violations?.length && !(gpuStatus as any)?.violations?.length) && (
                   <div className="text-green-400">✓ All metrics within budget</div>
                 )}
               </div>

@@ -324,7 +324,7 @@ export class WebGPUService {
       throw new Error('WebGPU device not initialized');
     }
 
-    this.device.queue.writeBuffer(buffer, offset, data);
+    this.device.queue.writeBuffer(buffer, offset, data instanceof ArrayBuffer ? data : data.buffer);
   }
 
   /**
