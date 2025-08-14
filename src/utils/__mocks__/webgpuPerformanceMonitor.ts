@@ -14,4 +14,5 @@ export const getWebGPUPerformanceMonitor = () => {
   };
 };
 
-export default { getWebGPUPerformanceMonitor };
+const mockWebGPUPerformanceMonitor = { getWebGPUPerformanceMonitor };
+export default mockWebGPUPerformanceMonitor;

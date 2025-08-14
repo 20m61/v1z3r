@@ -211,8 +211,10 @@ export const setupMIDIMocks = () => {
 
 // Cleanup function
 export const cleanupMIDIMocks = () => {
-  // @ts-ignore
-  delete global.navigator.requestMIDIAccess;
+  if (global.navigator && 'requestMIDIAccess' in global.navigator) {
+    // @ts-ignore
+    delete global.navigator.requestMIDIAccess;
+  }
 };
 
 // Simulate MIDI input

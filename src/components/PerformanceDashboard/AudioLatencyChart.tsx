@@ -3,7 +3,7 @@
  * Real-time audio latency and buffer visualization
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { PerformanceSnapshot } from '@/utils/performanceMonitor/types';
 
 interface AudioLatencyChartProps {
@@ -21,11 +21,8 @@ export const AudioLatencyChart: React.FC<AudioLatencyChartProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
-    drawChart();
-  }, [history, width, height]);
+  const drawChart = useCallback((): void => {
 
-  const drawChart = (): void => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -82,7 +79,12 @@ export const AudioLatencyChart: React.FC<AudioLatencyChartProps> = ({
 
     // Draw current value indicator
     drawCurrentValue(ctx, recentData, maxLatency);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history, width, height, timeWindow]);
+
+  useEffect(() => {
+    drawChart();
+  }, [drawChart]);
 
   const drawGrid = (ctx: CanvasRenderingContext2D, maxLatency: number): void => {
     ctx.strokeStyle = '#374151'; // gray-700

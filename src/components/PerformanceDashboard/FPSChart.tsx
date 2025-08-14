@@ -3,7 +3,7 @@
  * Real-time FPS visualization using HTML5 Canvas
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { PerformanceSnapshot } from '@/utils/performanceMonitor/types';
 
 interface FPSChartProps {
@@ -21,11 +21,8 @@ export const FPSChart: React.FC<FPSChartProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
-    drawChart();
-  }, [history, width, height]);
+  const drawChart = useCallback((): void => {
 
-  const drawChart = (): void => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -68,7 +65,12 @@ export const FPSChart: React.FC<FPSChartProps> = ({
 
     // Draw current value indicator
     drawCurrentValue(ctx, recentData);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history, width, height, timeWindow]);
+
+  useEffect(() => {
+    drawChart();
+  }, [drawChart]);
 
   const drawGrid = (ctx: CanvasRenderingContext2D): void => {
     ctx.strokeStyle = '#374151'; // gray-700

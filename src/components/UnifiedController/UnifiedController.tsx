@@ -32,7 +32,7 @@ export const UnifiedController: React.FC<UnifiedControllerProps> = ({
       // Note: For now, we'll handle specific initializations
       // In a real implementation, we'd use the store's setState method
     }
-  }, []);
+  }, [initialState]);
 
   // Notify parent of state changes
   useEffect(() => {

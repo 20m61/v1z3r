@@ -282,24 +282,53 @@ export const setupDOMMocks = () => {
   const documentMock = windowMock.document;
   
   // Setup global window properties - check if already exists
-  if (!global.window || global.window.constructor.name === 'Window') {
-    Object.defineProperty(global, 'window', {
-      value: windowMock,
-      writable: true,
-      configurable: true
-    });
-  } else {
+  try {
+    if (!global.window) {
+      Object.defineProperty(global, 'window', {
+        value: windowMock,
+        writable: true,
+        configurable: true
+      });
+    } else {
+      // If window already exists, try to replace it
+      if (Object.getOwnPropertyDescriptor(global, 'window')?.configurable !== false) {
+        delete (global as any).window;
+        Object.defineProperty(global, 'window', {
+          value: windowMock,
+          writable: true,
+          configurable: true
+        });
+      } else {
+        // Force replacement if not configurable
+        (global as any).window = windowMock;
+      }
+    }
+  } catch (error) {
+    // Fallback: force assign
     (global as any).window = windowMock;
   }
   
   // Setup global document
-  if (!global.document || global.document.constructor.name === 'Document') {
-    Object.defineProperty(global, 'document', {
-      value: documentMock,
-      writable: true,
-      configurable: true
-    });
-  } else {
+  try {
+    if (!global.document) {
+      Object.defineProperty(global, 'document', {
+        value: documentMock,
+        writable: true,
+        configurable: true
+      });
+    } else {
+      if (Object.getOwnPropertyDescriptor(global, 'document')?.configurable !== false) {
+        delete (global as any).document;
+        Object.defineProperty(global, 'document', {
+          value: documentMock,
+          writable: true,
+          configurable: true
+        });
+      } else {
+        (global as any).document = documentMock;
+      }
+    }
+  } catch (error) {
     (global as any).document = documentMock;
   }
   
