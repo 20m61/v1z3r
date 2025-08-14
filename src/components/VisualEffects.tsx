@@ -104,7 +104,7 @@ const VisualEffects: React.FC<VisualEffectsProps> = memo(({
       fpsCounterRef.current.frames = 0;
       fpsCounterRef.current.lastUpdate = now;
     }
-  }, [renderConfig.targetFps]);
+  }, []);
 
   // キャンバスのリサイズ（スロットリング適用）
   // eslint-disable-next-line react-hooks/exhaustive-deps

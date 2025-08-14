@@ -34,27 +34,31 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // Subscribe to performance metrics updates
-    unsubscribeRef.current = monitor.subscribe((newMetrics, newAlerts) => {
-      setMetrics(newMetrics);
-      setAlerts(newAlerts);
-      
-      // Update history for charts
-      setHistory(prevHistory => {
-        const newHistory = [...prevHistory, newMetrics];
-        // Keep last 300 entries (5 minutes at 1s intervals)
-        return newHistory.slice(-300);
+    try {
+      // Subscribe to performance metrics updates
+      unsubscribeRef.current = monitor.subscribe((newMetrics, newAlerts) => {
+        setMetrics(newMetrics);
+        setAlerts(newAlerts);
+        
+        // Update history for charts
+        setHistory(prevHistory => {
+          const newHistory = [...prevHistory, newMetrics];
+          // Keep last 300 entries (5 minutes at 1s intervals)
+          return newHistory.slice(-300);
+        });
       });
-    });
 
-    // Get initial data
-    const initialMetrics = monitor.getMetrics();
-    const initialAlerts = monitor.getActiveAlerts();
-    const initialHistory = monitor.getHistory(300000); // 5 minutes
+      // Get initial data
+      const initialMetrics = monitor.getMetrics();
+      const initialAlerts = monitor.getActiveAlerts();
+      const initialHistory = monitor.getHistory(300000); // 5 minutes
 
-    if (initialMetrics) setMetrics(initialMetrics);
-    setAlerts(initialAlerts);
-    setHistory(initialHistory.entries);
+      if (initialMetrics) setMetrics(initialMetrics);
+      setAlerts(initialAlerts);
+      setHistory(initialHistory.entries);
+    } catch (error) {
+      console.error('Failed to subscribe to performance monitor:', error);
+    }
 
     return () => {
       if (unsubscribeRef.current) {
