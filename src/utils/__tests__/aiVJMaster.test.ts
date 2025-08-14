@@ -4,10 +4,7 @@
 
 import { AIVJMaster, AIVJConfig } from '../aiVJMaster';
 import { webgpuDetector } from '../webgpuDetection';
-import { setupMocksForJest, createWebGPUDetectorMock, createMIDIManagerMock } from '../../__mocks__/setupMocks';
-
-// Setup comprehensive mocks
-setupMocksForJest();
+import { setupAllMocks, cleanupAllMocks, createWebGPUDetectorMock, createMIDIManagerMock } from '../../__mocks__/setupMocks';
 
 // Mock dependencies
 jest.mock('../webgpuRenderer', () => ({
@@ -96,6 +93,14 @@ describe('AIVJMaster', () => {
   let mockCanvas: HTMLCanvasElement;
   let mockAudioContext: AudioContext;
   let aiVJMaster: AIVJMaster;
+
+  beforeAll(() => {
+    setupAllMocks();
+  });
+
+  afterAll(() => {
+    cleanupAllMocks();
+  });
 
   beforeEach(() => {
     // Mock canvas
